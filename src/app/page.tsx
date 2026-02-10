@@ -22,8 +22,8 @@ export default function Home() {
       <div className="shell">
         <nav className="nav">
           <div className="brand">
-            <span className="badge">InsureTrain AI</span>
-            <span>Simulated Prospect Lab</span>
+            <span className="badge">Cream No Sugar</span>
+            <span>Your Caffiene For Closers</span>
           </div>
           <div className="hero-actions">
             <SignedOut>
@@ -51,14 +51,13 @@ export default function Home() {
           <section className="hero">
             <div className="hero-copy">
               <div className="tag">Life insurance sales training</div>
-              <h1>Practice the hardest part of the call before you pick up the phone.</h1>
+              <h1>Practice the toughest conversations before real money is on the line</h1>
               <p>
-                A two-minute simulated prospect that pushes real objections, adapts difficulty in real time, and
-                only concedes when your agent earns the appointment.
+                Instead of spending hours roleplaying in 1-1, you can upskill your entire downline at the same time.
               </p>
               <div className="hero-actions">
                 <a className="button" href="#demo">
-                  Start the 2-minute call
+                  Start a sample call
                 </a>
                 <SignedOut>
                   <SignUpButton mode="modal">
@@ -75,17 +74,18 @@ export default function Home() {
               </div>
               <div className="split">
                 <div className="card">
-                  <h4>Purpose-built for life insurance teams</h4>
-                  <p className="disclaimer">
-                    Teach agents to reframe, de-escalate, and secure the calendar invite without sounding scripted.
-                  </p>
-                </div>
+                <h4>The first real objection shouldn't be with a real prospect</h4>
+                <p className="disclaimer">
+                  Cream No Sugar. Smooth Delivered Training. No Sugar Added. You don't get paid to feel ready. You are
+                  paid to close. Cream No Sugar helps you get there.
+                </p>
+              </div>
                 <div className="card">
-                  <h4>Vapi-ready voice engine</h4>
-                  <p className="disclaimer">
-                    Plug into Vapi to run browser-based voice sessions with automatic scoring and coaching output.
-                  </p>
-                </div>
+                <h4>Confidence Comes from Repitition</h4>
+                <p className="disclaimer">
+                  Give every Agent a live realistic prospect for training whenver they need it.
+                </p>
+              </div>
               </div>
             </div>
 
@@ -93,8 +93,8 @@ export default function Home() {
           </section>
 
           <section className="glass panel" id="demo">
-            <div className="tag">What the prospect does</div>
-            <h3>Objection layers that force the rep to earn the sit.</h3>
+            <div className="tag">Customize the Difficulty and Objections</div>
+            <h3>You decide if they pass or fail</h3>
             <div className="grid">
               {objectionNodes.map((node) => (
                 <div key={node} className="metric">
@@ -108,7 +108,7 @@ export default function Home() {
           <section className="split">
             <div className="glass panel">
               <div className="tag">Training coverage</div>
-              <h3>Full life insurance portfolio support</h3>
+              <h3>Customize the Knowledge Base</h3>
               <div className="grid">
                 {trainingTracks.map((track) => (
                   <div key={track} className="metric">
@@ -120,7 +120,7 @@ export default function Home() {
             </div>
             <div className="glass panel">
               <div className="tag">Scoring output</div>
-              <h3>Turn every demo into coaching data</h3>
+              <h3>Every call provides coaching data</h3>
               <div className="grid">
                 <div className="metric">
                   <span>Insight</span>
@@ -149,19 +149,19 @@ export default function Home() {
               <div className="card">
                 <h4>Team subscription</h4>
                 <p className="disclaimer">
-                  Monthly per-agent access to full call library, difficulty tiers, and scoring analytics.
+                  Monthly subscription access to full call library, difficulty tiers and scoring analytics.
                 </p>
               </div>
               <div className="card">
                 <h4>Enterprise licensing</h4>
                 <p className="disclaimer">
-                  White-label the simulator for FMOs, IMOs, onboarding, or carrier certification pipelines.
+                  White-labeled for FMOs, IMOs, onboarding, or carrier certification pipelines.
                 </p>
               </div>
               <div className="card">
-                <h4>Pay-per-simulated-call</h4>
+                <h4>Pay-per-session</h4>
                 <p className="disclaimer">
-                  Give new reps a low-commitment path to practice and prove readiness.
+                  Give new reps practice to becoming an earner with a low-commitment path.
                 </p>
               </div>
             </div>

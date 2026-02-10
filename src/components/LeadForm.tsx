@@ -68,7 +68,7 @@ export default function LeadForm() {
   return (
     <div className="glass panel">
       <div className="tag">Start with a 2-minute demo</div>
-      <h3>Unlock the simulated prospect experience</h3>
+      <h3>Take it for a spin</h3>
       <form className="form" onSubmit={handleSubmit}>
         <label className="field">
           Full name
