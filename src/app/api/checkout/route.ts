@@ -2,21 +2,24 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getStripe } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/email";
+import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
 
 export const runtime = "nodejs";
 export const preferredRegion = "iad1";
 export const maxDuration = 10;
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const { userId, orgId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const priceId = process.env.STRIPE_PRICE_ID;
+    const body = await request.json().catch(() => ({}));
+    const selection = normalizeBillingSelection(body);
+    const { priceId, envKey } = resolveStripePriceId(selection);
     if (!priceId) {
-      return NextResponse.json({ error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
+      return NextResponse.json({ error: `Missing ${envKey}` }, { status: 500 });
     }
 
     const stripe = getStripe();
@@ -30,6 +33,8 @@ export async function POST() {
       metadata: {
         orgId: orgId ?? "unscoped",
         userId,
+        planId: selection.planId,
+        interval: selection.interval,
       },
     });
 

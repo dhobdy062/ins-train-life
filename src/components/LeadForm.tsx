@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 const policyOptions = [
@@ -67,6 +68,9 @@ export default function LeadForm() {
 
   return (
     <div className="glass panel">
+      <div className="demo-logo-wrap">
+        <Image className="demo-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={220} height={220} priority />
+      </div>
       <div className="tag">Start with a 2-minute demo</div>
       <h3>Take it for a spin</h3>
       <form className="form" onSubmit={handleSubmit}>

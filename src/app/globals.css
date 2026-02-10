@@ -187,6 +187,17 @@ main {
   gap: 14px;
 }
 
+.demo-logo-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.demo-logo {
+  width: min(220px, 70%);
+  height: auto;
+  object-fit: contain;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -253,6 +264,61 @@ main {
   font-size: 0.85rem;
 }
 
+.signin-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.pricing-stack {
+  gap: 16px;
+}
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.price-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(10, 11, 14, 0.6);
+  display: grid;
+  gap: 10px;
+}
+
+.price-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.price-row strong {
+  font-size: 1.1rem;
+}
+
+.price-row span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.plan-features {
+  display: grid;
+  gap: 6px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.signin-card {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 @keyframes rise {
   0% {
     opacity: 0;
@@ -272,5 +338,9 @@ main {
   .hero-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .signin-layout {
+    grid-template-columns: 1fr;
   }
 }

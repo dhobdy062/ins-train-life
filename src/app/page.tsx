@@ -74,9 +74,9 @@ export default function Home() {
               </div>
               <div className="split">
                 <div className="card">
-                <h4>The first real objection shouldn't be with a real prospect</h4>
+                <h4>The first real objection shouldn&apos;t be with a real prospect</h4>
                 <p className="disclaimer">
-                  Cream No Sugar. Smooth Delivered Training. No Sugar Added. You don't get paid to feel ready. You are
+                  Cream No Sugar. Smooth Delivered Training. No Sugar Added. You don&apos;t get paid to feel ready. You are
                   paid to close. Cream No Sugar helps you get there.
                 </p>
               </div>

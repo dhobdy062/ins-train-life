@@ -11,6 +11,8 @@ Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-
 - **Voice metrics webhook:** `POST /api/vapi/webhook` (thin handler, queued to Convex)
 - **Async processing:** Convex mutations/scheduled tasks for idempotency and rollups
 
+Pricing model reference: `docs/billing-pricing-model.md`
+
 ## Environment Variables
 
 Clerk supports keyless mode for local development, so you can run `npm run dev` without creating Clerk keys first.
@@ -33,6 +35,11 @@ When you are ready to claim the app or deploy to production, set the following v
 ### Stripe
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PRICE_ID`
+- `STRIPE_PRICE_STARTER_MONTHLY_ID`
+- `STRIPE_PRICE_STARTER_ANNUAL_ID`
+- `STRIPE_PRICE_PRO_ANNUAL_ID`
+- `STRIPE_PRICE_AGENCY_MONTHLY_ID`
+- `STRIPE_PRICE_AGENCY_ANNUAL_ID`
 - `STRIPE_WEBHOOK_SECRET`
 
 ### VAPI
