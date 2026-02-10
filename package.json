@@ -1,17 +1,24 @@
 {
-  "name": "ins-train-life2",
+  "name": "ins-train-life",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
+    "@vapi-ai/web": "^2.5.2",
+    "convex": "^1.31.7",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "resend": "^6.9.1",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
     "@types/node": "^20",

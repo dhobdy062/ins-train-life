@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InsureTrain AI (Vercel Hobby + US East)
 
-## Getting Started
+Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-backed async webhook processing.
 
-First, run the development server:
+## Architecture Highlights
+
+- **Hosting:** Vercel Hobby, single region (`iad1` / US East)
+- **Auth:** Clerk (`/demo` and `/api/vapi/session/start` are protected)
+- **Session launch:** `POST /api/vapi/session/start` (auth + org required)
+- **Billing webhook:** `POST /api/stripe/webhook` (thin handler, queued to Convex)
+- **Voice metrics webhook:** `POST /api/vapi/webhook` (thin handler, queued to Convex)
+- **Async processing:** Convex mutations/scheduled tasks for idempotency and rollups
+
+## Required Environment Variables
+
+Copy `.env.example` to `.env.local` and set real values.
+
+### Core app
+- `APP_URL`
+- `VERIFY_HMAC_SECRET`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+
+### Clerk
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+
+### Convex
+- `CONVEX_URL`
+- `CONVEX_ADMIN_KEY`
+
+### Stripe
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID`
+- `STRIPE_WEBHOOK_SECRET`
+
+### VAPI
+- `NEXT_PUBLIC_VAPI_PUBLIC_KEY`
+- `VAPI_ASSISTANT_ID`
+- `VAPI_WEBHOOK_SECRET`
+
+### Optional alerting
+- `ALERT_WEBHOOK_URL`
+- `CRON_SECRET`
+- `WEBHOOK_MAX_LAG_MS`
+
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Convex Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Initialize/login Convex locally (interactive):
+```bash
+npm run convex:dev
+```
+2. Deploy functions when ready:
+```bash
+npm run convex:deploy
+```
 
-## Learn More
+Note: this repository includes minimal `_generated` stubs to keep Next.js builds working before Convex codegen runs. Convex CLI will replace them.
 
-To learn more about Next.js, take a look at the following resources:
+## Webhook Endpoints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Stripe: `/api/stripe/webhook`
+- VAPI: `/api/vapi/webhook`
+- Legacy compatibility: `/api/webhook` (deprecated alias to Stripe route)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Both handlers are configured for:
+- `runtime = nodejs`
+- `preferredRegion = iad1`
+- short request path + async Convex queue handoff
 
-## Deploy on Vercel
+### Lag monitoring endpoint
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `GET /api/internal/webhook-lag` (protected by `CRON_SECRET`)
+- Vercel Cron in `vercel.json` runs every 10 minutes
+- If lag exceeds `WEBHOOK_MAX_LAG_MS`, alert events are stored in Convex and optional `ALERT_WEBHOOK_URL` is notified
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Vercel Deployment (Hobby)
+
+1. Import repo in Vercel.
+2. Set all env vars for **Development**, **Preview**, and **Production**.
+3. Confirm project region behavior uses `iad1` and webhook routes return `2xx` quickly.
+4. Configure Stripe and VAPI dashboards to call production webhook URLs.
+
+## Security Requirements
+
+- Never commit API secrets.
+- Rotate any exposed VAPI keys before production launch.
+- Keep Stripe/VAPI private keys server-only.
+
+## Upgrade Trigger to Vercel Pro
+
+Move from Hobby to Pro when one or more occur:
+- sustained webhook latency/error spikes
+- function limit pressure
+- team collaboration and advanced observability needs
