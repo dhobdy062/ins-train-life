@@ -9,12 +9,6 @@ export const maxDuration = 10;
 
 export async function POST() {
   try {
-    const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-    const clerkEnabled = Boolean(publishableKey && /^pk_(test|live)_/.test(publishableKey) && process.env.CLERK_SECRET_KEY);
-    if (!clerkEnabled) {
-      return NextResponse.json({ error: "Clerk is not configured." }, { status: 500 });
-    }
-
     const { userId, orgId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

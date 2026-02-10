@@ -25,18 +25,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const clerkEnabled = Boolean(publishableKey && /^pk_(test|live)_/.test(publishableKey));
-
   return (
-    <html lang="en">
-      {clerkEnabled ? (
-        <ClerkProvider publishableKey={publishableKey}>
-          <body className={`${sora.variable} ${plexMono.variable}`}>{children}</body>
-        </ClerkProvider>
-      ) : (
+    <ClerkProvider>
+      <html lang="en">
         <body className={`${sora.variable} ${plexMono.variable}`}>{children}</body>
-      )}
-    </html>
+      </html>
+    </ClerkProvider>
   );
 }

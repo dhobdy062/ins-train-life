@@ -11,9 +11,10 @@ Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-
 - **Voice metrics webhook:** `POST /api/vapi/webhook` (thin handler, queued to Convex)
 - **Async processing:** Convex mutations/scheduled tasks for idempotency and rollups
 
-## Required Environment Variables
+## Environment Variables
 
-Copy `.env.example` to `.env.local` and set real values.
+Clerk supports keyless mode for local development, so you can run `npm run dev` without creating Clerk keys first.
+When you are ready to claim the app or deploy to production, set the following variables.
 
 ### Core app
 - `APP_URL`
@@ -21,7 +22,7 @@ Copy `.env.example` to `.env.local` and set real values.
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
 
-### Clerk
+### Clerk (optional in local keyless mode, required for claimed/prod apps)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 

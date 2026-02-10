@@ -4,9 +4,7 @@ import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import DemoConsole from "@/components/DemoConsole";
 
 export default async function DemoPage() {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const clerkEnabled = Boolean(publishableKey && /^pk_(test|live)_/.test(publishableKey));
-  const { userId, orgId } = clerkEnabled ? await auth() : { userId: null, orgId: null };
+  const { userId, orgId } = await auth();
 
   return (
     <div className="page">
@@ -16,39 +14,24 @@ export default async function DemoPage() {
             <span className="badge">InsureTrain AI</span>
             <span>Voice Demo</span>
           </div>
-          {clerkEnabled ? (
-            <div className="hero-actions">
-              <OrganizationSwitcher
-                hidePersonal
-                appearance={{
-                  elements: {
-                    rootBox: { display: "flex", alignItems: "center" },
-                  },
-                }}
-              />
-              <UserButton />
-              <Link className="button secondary" href="/">
-                Back to home
-              </Link>
-            </div>
-          ) : (
+          <div className="hero-actions">
+            <OrganizationSwitcher
+              hidePersonal
+              appearance={{
+                elements: {
+                  rootBox: { display: "flex", alignItems: "center" },
+                },
+              }}
+            />
+            <UserButton />
             <Link className="button secondary" href="/">
               Back to home
             </Link>
-          )}
+          </div>
         </nav>
 
         <main>
-          {!clerkEnabled ? (
-            <div className="glass panel">
-              <div className="tag">Clerk config required</div>
-              <h3>Set Clerk keys to enable authenticated VAPI sessions.</h3>
-              <p className="disclaimer">
-                Add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in Vercel for development, preview,
-                and production environments.
-              </p>
-            </div>
-          ) : userId && orgId ? (
+          {userId && orgId ? (
             <DemoConsole />
           ) : (
             <div className="glass panel">

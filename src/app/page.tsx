@@ -17,9 +17,6 @@ const trainingTracks = [
 ];
 
 export default function Home() {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const clerkEnabled = Boolean(publishableKey && /^pk_(test|live)_/.test(publishableKey));
-
   return (
     <div className="page">
       <div className="shell">
@@ -28,32 +25,26 @@ export default function Home() {
             <span className="badge">InsureTrain AI</span>
             <span>Simulated Prospect Lab</span>
           </div>
-          {clerkEnabled ? (
-            <div className="hero-actions">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="button secondary" type="button">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="button" type="button">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <a className="button secondary" href="/demo">
-                  Open workspace
-                </a>
-                <UserButton />
-              </SignedIn>
-            </div>
-          ) : (
-            <a className="button secondary" href="/demo">
-              Open workspace
-            </a>
-          )}
+          <div className="hero-actions">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="button secondary" type="button">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="button" type="button">
+                  Sign up
+                </button>
+              </SignUpButton>
+            </SignedOut>
+            <SignedIn>
+              <a className="button secondary" href="/demo">
+                Open workspace
+              </a>
+              <UserButton />
+            </SignedIn>
+          </div>
         </nav>
 
         <main>
@@ -69,26 +60,18 @@ export default function Home() {
                 <a className="button" href="#demo">
                   Start the 2-minute call
                 </a>
-                {clerkEnabled ? (
-                  <>
-                    <SignedOut>
-                      <SignUpButton mode="modal">
-                        <button className="button secondary" type="button">
-                          Create trainer account
-                        </button>
-                      </SignUpButton>
-                    </SignedOut>
-                    <SignedIn>
-                      <a className="button secondary" href="/demo">
-                        Launch authenticated widget
-                      </a>
-                    </SignedIn>
-                  </>
-                ) : (
+                <SignedOut>
+                  <SignUpButton mode="modal">
+                    <button className="button secondary" type="button">
+                      Create trainer account
+                    </button>
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
                   <a className="button secondary" href="/demo">
-                    Launch workspace
+                    Launch authenticated widget
                   </a>
-                )}
+                </SignedIn>
               </div>
               <div className="split">
                 <div className="card">
