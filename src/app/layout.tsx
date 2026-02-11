@@ -15,9 +15,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InsureTrain AI | Life Insurance Sales Simulator",
+  title: "Cream No Sugar | Caffienated Training To Make Closers",
   description:
-    "Simulated prospect training for life insurance agents. Run 2-minute practice calls and sharpen objection handling.",
+    "Prospect simulation for life insurance agents",
 };
 
 export default function RootLayout({
