@@ -287,7 +287,41 @@ main {
   padding: 18px;
   background: rgba(10, 11, 14, 0.6);
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.price-card.selected {
+  border-color: rgba(137, 226, 193, 0.65);
+  box-shadow: 0 10px 34px rgba(137, 226, 193, 0.18);
+  transform: translateY(-2px);
+}
+
+.plan-image-shell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 8, 11, 0.55);
+  overflow: hidden;
+}
+
+.plan-image {
+  object-fit: contain;
+  padding: 10px;
+}
+
+.plan-image-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
 }
 
 .price-row {
@@ -303,6 +337,37 @@ main {
 .price-row span {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.plan-capacity {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.selected-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.selected-pill.active {
+  border-color: rgba(137, 226, 193, 0.55);
+  color: var(--ink);
+  background: rgba(137, 226, 193, 0.14);
+}
+
+.plan-cta-selected {
+  background: var(--accent);
+  border-color: transparent;
+  color: #0a0b0e;
 }
 
 .plan-features {

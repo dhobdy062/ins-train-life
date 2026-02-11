@@ -10,6 +10,8 @@ export type BillingPlan = {
   id: BillingPlanId;
   name: string;
   tagline: string;
+  imageSrc: string;
+  imageAlt: string;
   monthlyCents: number;
   annualCents: number;
   includedMinutesPerMonth: number;
@@ -28,8 +30,10 @@ export type BillingSelection = {
 export const BILLING_PLANS: BillingPlan[] = [
   {
     id: "starter",
-    name: "Starter",
-    tagline: "For solo agents validating scripts and objection handling.",
+    name: "Non Dairy-Starter",
+    tagline: "Solo rep fundamentals with clear usage guardrails.",
+    imageSrc: "/pricing/starter.png",
+    imageAlt: "Non Dairy-Starter plan image",
     monthlyCents: 7900,
     annualCents: 80600,
     includedMinutesPerMonth: 300,
@@ -44,8 +48,10 @@ export const BILLING_PLANS: BillingPlan[] = [
   },
   {
     id: "pro",
-    name: "Pro Team",
-    tagline: "For agencies coaching teams with custom scenarios.",
+    name: "Half and Half-Pro Team",
+    tagline: "Small team coaching with balanced minutes and seat capacity.",
+    imageSrc: "/pricing/pro.png",
+    imageAlt: "Half and Half-Pro Team plan image",
     monthlyCents: 24900,
     annualCents: 254000,
     includedMinutesPerMonth: 900,
@@ -60,8 +66,10 @@ export const BILLING_PLANS: BillingPlan[] = [
   },
   {
     id: "agency",
-    name: "Agency Scale",
-    tagline: "For high-volume teams with onboarding and compliance requirements.",
+    name: "Sweet Cream-Agency Scale",
+    tagline: "High-volume enablement for managers, QA, and larger cohorts.",
+    imageSrc: "/pricing/agency.png",
+    imageAlt: "Sweet Cream-Agency Scale plan image",
     monthlyCents: 69900,
     annualCents: 713000,
     includedMinutesPerMonth: 2500,
@@ -119,4 +127,8 @@ export function formatPlanPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
     cents / 100,
   );
+}
+
+export function formatMinutesAsHours(minutes: number): string {
+  return `${(minutes / 60).toFixed(1)} hours / month`;
 }

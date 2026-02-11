@@ -1,5 +1,7 @@
 import LeadForm from "@/components/LeadForm";
+import PricingCards from "@/components/PricingCards";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { normalizeBillingSelection } from "@/lib/billing";
 
 const objectionNodes = [
   "D1 Busy schedule",
@@ -16,7 +18,14 @@ const trainingTracks = [
   "Indexed Universal Life (IUL)",
 ];
 
-export default function Home() {
+type HomePageProps = {
+  searchParams: Promise<{ plan?: string; interval?: string }>;
+};
+
+export default async function Home({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const selection = normalizeBillingSelection({ planId: params.plan, interval: params.interval });
+
   return (
     <div className="page">
       <div className="shell">
@@ -144,33 +153,14 @@ export default function Home() {
 
           <section className="glass panel" id="pricing">
             <div className="tag">Pricing</div>
-            <h3>Scale training per agent, per team, or per call.</h3>
-            <div className="split">
-              <div className="card">
-                <h4>Team subscription</h4>
-                <p className="disclaimer">
-                  Monthly subscription access to full call library, difficulty tiers and scoring analytics.
-                </p>
-              </div>
-              <div className="card">
-                <h4>Enterprise licensing</h4>
-                <p className="disclaimer">
-                  White-labeled for FMOs, IMOs, onboarding, or carrier certification pipelines.
-                </p>
-              </div>
-              <div className="card">
-                <h4>Pay-per-session</h4>
-                <p className="disclaimer">
-                  Give new reps practice to becoming an earner with a low-commitment path.
-                </p>
-              </div>
-            </div>
+            <h3>Choose the plan, then continue directly to secure checkout.</h3>
+            <PricingCards selectedPlanId={selection.planId} selectedInterval={selection.interval} />
           </section>
         </main>
 
         <footer className="footer">
-          <span>InsureTrain AI. Built for life insurance sales coaches.</span>
-          <span>Demo flow is Term Life by default. Whole Life, Universal Life, and IUL are included.</span>
+          <span>Cream No Sugar. Built to Build Better Performing Salespeople</span>
+          <span>Demo Includes Term Life only</span>
         </footer>
       </div>
     </div>
