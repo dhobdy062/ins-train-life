@@ -88,7 +88,7 @@ Both handlers are configured for:
 ### Lag monitoring endpoint
 
 - `GET /api/internal/webhook-lag` (protected by `CRON_SECRET`)
-- Vercel Cron in `vercel.json` runs every 10 minutes
+- Vercel Cron in `vercel.json` runs daily at 15:00 UTC (Hobby-compatible)
 - If lag exceeds `WEBHOOK_MAX_LAG_MS`, alert events are stored in Convex and optional `ALERT_WEBHOOK_URL` is notified
 
 ## Vercel Deployment (Hobby)
