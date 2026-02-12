@@ -29,6 +29,23 @@ type VapiClient = {
   on: (event: string, callback: (...args: unknown[]) => void) => void;
 };
 
+function formatUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  if (typeof error === "object" && error !== null) {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unknown error";
+    }
+  }
+  return "Unknown error";
+}
+
 export default function TrialConsole() {
   const [loading, setLoading] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
@@ -60,7 +77,12 @@ export default function TrialConsole() {
 
     client.on("error", (error) => {
       setCallState("error");
-      setStatus(`VAPI error: ${String(error)}`);
+      setStatus(`Call error: ${formatUnknownError(error)}`);
+    });
+
+    client.on("call-start-failed", (event) => {
+      setCallState("error");
+      setStatus(`Unable to connect trial call: ${formatUnknownError(event)}`);
     });
 
     vapiRef.current = client;
@@ -79,7 +101,14 @@ export default function TrialConsole() {
         body: JSON.stringify({}),
       });
 
-      const payload = (await response.json()) as TrialStartSuccess | TrialStartError;
+      const payloadText = await response.text();
+      const payload = (() => {
+        try {
+          return JSON.parse(payloadText) as TrialStartSuccess | TrialStartError;
+        } catch {
+          return {};
+        }
+      })();
       if (!response.ok) {
         const errorPayload = payload as TrialStartError;
         if (errorPayload.code === "TRIAL_LIMIT_REACHED") {
@@ -105,7 +134,7 @@ export default function TrialConsole() {
       setStatus("Initializing trial call...");
     } catch (error) {
       setCallState("error");
-      setStatus(error instanceof Error ? error.message : "Unable to start trial call.");
+      setStatus(formatUnknownError(error));
     } finally {
       setLoading(false);
     }

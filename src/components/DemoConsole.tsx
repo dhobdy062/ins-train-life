@@ -38,6 +38,23 @@ const DEFAULT_REBUTTALS: Record<string, string> = {
 
 const REBUTTAL_FIELDS = Object.keys(DEFAULT_REBUTTALS);
 
+function formatUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  if (typeof error === "object" && error !== null) {
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unknown error";
+    }
+  }
+  return "Unknown error";
+}
+
 export default function DemoConsole() {
   const [difficulty, setDifficulty] = useState<Difficulty>("D2");
   const [objectionsRequired, setObjectionsRequired] = useState(3);
@@ -81,7 +98,12 @@ export default function DemoConsole() {
 
     client.on("error", (error) => {
       setCallState("error");
-      setStatus(`Call error: ${String(error)}`);
+      setStatus(`Call error: ${formatUnknownError(error)}`);
+    });
+
+    client.on("call-start-failed", (event) => {
+      setCallState("error");
+      setStatus(`Unable to connect call: ${formatUnknownError(event)}`);
     });
 
     vapiRef.current = client;
@@ -103,10 +125,22 @@ export default function DemoConsole() {
         }),
       });
 
-      const payload = (await response.json()) as SessionBootstrapResponse | { error: string };
+      const payloadText = await response.text();
+      const payload = (() => {
+        try {
+          return JSON.parse(payloadText) as SessionBootstrapResponse | { error?: string; message?: string };
+        } catch {
+          return {};
+        }
+      })();
 
       if (!response.ok || !("assistantId" in payload)) {
-        throw new Error("error" in payload ? payload.error : "Unable to initialize session.");
+        const maybeError =
+          typeof payload === "object" && payload !== null && ("error" in payload || "message" in payload)
+            ? (((payload as { error?: string; message?: string }).error ??
+                (payload as { error?: string; message?: string }).message) as string | undefined)
+            : undefined;
+        throw new Error(maybeError ?? `Unable to initialize session (HTTP ${response.status}).`);
       }
 
       const client = await ensureClient(payload.publicKey);
@@ -120,7 +154,7 @@ export default function DemoConsole() {
       setStatus("Session initialized. Connecting...");
     } catch (error) {
       setCallState("error");
-      setStatus(error instanceof Error ? error.message : "Unable to start call.");
+      setStatus(formatUnknownError(error));
     } finally {
       setLoading(false);
     }

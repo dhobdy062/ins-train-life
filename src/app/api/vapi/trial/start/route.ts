@@ -28,6 +28,15 @@ export async function POST(request: NextRequest) {
   if (!assistantId || !publicKey) {
     return NextResponse.json({ error: "VAPI config is missing." }, { status: 500 });
   }
+  if (assistantId === publicKey) {
+    return NextResponse.json(
+      {
+        error:
+          "VAPI_ASSISTANT_ID appears to be set to the public key. Set VAPI_ASSISTANT_ID to your Vapi assistant ID.",
+      },
+      { status: 500 },
+    );
+  }
 
   const trialIdentityToken = request.cookies.get("demo_trial_identity")?.value;
   if (!trialIdentityToken) {
