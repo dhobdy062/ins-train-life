@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyToken } from "@/lib/token";
+import { createToken, verifyToken } from "@/lib/token";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -14,17 +14,33 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/demo", request.url));
   }
 
-  const payload = verifyToken(token, secret);
+  const payload = (() => {
+    try {
+      return verifyToken(token, secret);
+    } catch {
+      return null;
+    }
+  })();
   if (!payload) {
     return NextResponse.redirect(new URL("/demo", request.url));
   }
 
-  const response = NextResponse.redirect(new URL("/demo", request.url));
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const trialIdentityToken = createToken({ email: normalizedEmail }, secret);
+
+  const response = NextResponse.redirect(new URL("/training/start", request.url));
   response.cookies.set("demo_verified", "true", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24,
+  });
+
+  response.cookies.set("demo_trial_identity", trialIdentityToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 30,
   });
 
   return response;

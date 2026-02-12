@@ -30,3 +30,29 @@ export const createTrainingSession = mutation({
     return { sessionKey };
   },
 });
+
+export const reserveTrialSession = mutation({
+  args: {
+    emailHash: v.string(),
+    sessionKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("trialSessions")
+      .withIndex("by_emailHash_createdAt", (q) => q.eq("emailHash", args.emailHash))
+      .take(3);
+
+    if (existing.length >= 3) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    await ctx.db.insert("trialSessions", {
+      emailHash: args.emailHash,
+      sessionKey: args.sessionKey,
+      source: "web_trial",
+      createdAt: Date.now(),
+    });
+
+    return { allowed: true, remaining: 3 - (existing.length + 1) };
+  },
+});

@@ -6,6 +6,7 @@ type WebhookProvider = "stripe" | "vapi";
 const enqueueWebhookEventRef = makeFunctionReference<"mutation">("webhooks.enqueueWebhookEvent");
 const recordAlertRef = makeFunctionReference<"mutation">("webhooks.recordAlert");
 const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions.createTrainingSession");
+const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions.reserveTrialSession");
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks.checkLaggingWebhooks");
 
 function getRequiredEnv(name: string) {
@@ -48,6 +49,11 @@ export async function createTrainingSession(args: {
 }) {
   const client = getClient();
   return client.mutation(createTrainingSessionRef, args as never) as Promise<{ sessionKey: string }>;
+}
+
+export async function reserveTrialSession(args: { emailHash: string; sessionKey: string }) {
+  const client = getClient();
+  return client.mutation(reserveTrialSessionRef, args as never) as Promise<{ allowed: boolean; remaining: number }>;
 }
 
 export async function recordAlert(args: {

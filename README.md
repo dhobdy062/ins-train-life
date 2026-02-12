@@ -23,6 +23,7 @@ When you are ready to claim the app or deploy to production, set the following v
 - `VERIFY_HMAC_SECRET`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
+- `TRAINING_CALL_NUMBER` (optional; shown on verified trial page)
 
 ### Clerk (optional in local keyless mode, required for claimed/prod apps)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`

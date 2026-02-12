@@ -33,6 +33,13 @@ export default defineSchema({
     .index("by_sessionKey", ["sessionKey"])
     .index("by_org_createdAt", ["orgId", "createdAt"]),
 
+  trialSessions: defineTable({
+    emailHash: v.string(),
+    sessionKey: v.string(),
+    source: v.literal("web_trial"),
+    createdAt: v.number(),
+  }).index("by_emailHash_createdAt", ["emailHash", "createdAt"]),
+
   sessionMetrics: defineTable({
     sessionKey: v.string(),
     orgId: v.string(),
