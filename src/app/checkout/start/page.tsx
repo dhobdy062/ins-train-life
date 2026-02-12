@@ -13,6 +13,33 @@ type CheckoutStartPageProps = {
   searchParams: Promise<{ plan?: string; interval?: string }>;
 };
 
+function getCheckoutHint(error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown checkout error";
+
+  if (message.startsWith("MISSING_PRICE_ENV:")) {
+    const envKey = message.replace("MISSING_PRICE_ENV:", "");
+    return `Missing ${envKey} in environment variables.`;
+  }
+
+  if (message.includes("Missing STRIPE_SECRET_KEY")) {
+    return "Missing STRIPE_SECRET_KEY in environment variables.";
+  }
+
+  if (message.includes("No such price")) {
+    return "Stripe price ID is invalid for the configured Stripe account/key.";
+  }
+
+  if (message.includes("Invalid API Key")) {
+    return "STRIPE_SECRET_KEY is invalid. Check live/test mode and account.";
+  }
+
+  if (message.includes("Restricted API key")) {
+    return "Stripe key does not allow creating Checkout sessions.";
+  }
+
+  return "Unable to create checkout session with current Stripe configuration.";
+}
+
 async function createCheckoutUrl(
   planId: string | undefined,
   interval: string | undefined,
@@ -20,9 +47,9 @@ async function createCheckoutUrl(
   orgId: string,
 ) {
   const selection = normalizeBillingSelection({ planId, interval });
-  const { priceId } = resolveStripePriceId(selection);
+  const { priceId, envKey } = resolveStripePriceId(selection);
   if (!priceId) {
-    return { url: null, selection };
+    throw new Error(`MISSING_PRICE_ENV:${envKey}`);
   }
 
   const stripe = getStripe();
@@ -49,6 +76,8 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
   const { userId, orgId } = await auth();
   const selection = normalizeBillingSelection({ planId: params.plan, interval: params.interval });
   const returnTarget = `/checkout/start?plan=${selection.planId}&interval=${selection.interval}`;
+  let checkoutHint =
+    "Please retry your plan selection. If this keeps happening, verify Stripe price environment variables are configured for each plan interval.";
 
   if (!userId) {
     redirect(
@@ -64,8 +93,16 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
     if (result.url) {
       redirect(result.url);
     }
-  } catch {
-    // Render fallback UI below.
+  } catch (error) {
+    checkoutHint = getCheckoutHint(error);
+    const message = error instanceof Error ? error.message : "Unknown checkout error";
+    console.error("[checkout/start] Failed to create checkout session", {
+      plan: selection.planId,
+      interval: selection.interval,
+      orgId,
+      userId,
+      message,
+    });
   }
 
   return (
@@ -75,10 +112,7 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
           <section className="glass panel">
             <div className="tag">Checkout unavailable</div>
             <h3>We could not start checkout for that plan right now.</h3>
-            <p className="disclaimer">
-              Please retry your plan selection. If this keeps happening, verify Stripe price environment variables are
-              configured for each plan interval.
-            </p>
+            <p className="disclaimer">{checkoutHint}</p>
             <div className="hero-actions">
               <Link className="button" href="/#pricing">
                 Back to pricing
