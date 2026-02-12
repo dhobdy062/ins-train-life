@@ -14,6 +14,9 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!orgId) {
+      return NextResponse.json({ error: "Organization context is required before checkout." }, { status: 400 });
+    }
 
     const body = await request.json().catch(() => ({}));
     const selection = normalizeBillingSelection(body);
@@ -26,12 +29,12 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: orgId ?? userId,
+      client_reference_id: orgId,
       success_url: `${getAppUrl()}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${getAppUrl()}/?canceled=1`,
       allow_promotion_codes: true,
       metadata: {
-        orgId: orgId ?? "unscoped",
+        orgId,
         userId,
         planId: selection.planId,
         interval: selection.interval,

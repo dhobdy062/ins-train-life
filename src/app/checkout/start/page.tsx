@@ -17,7 +17,7 @@ async function createCheckoutUrl(
   planId: string | undefined,
   interval: string | undefined,
   userId: string,
-  orgId: string | null | undefined,
+  orgId: string,
 ) {
   const selection = normalizeBillingSelection({ planId, interval });
   const { priceId } = resolveStripePriceId(selection);
@@ -29,12 +29,12 @@ async function createCheckoutUrl(
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    client_reference_id: orgId ?? userId,
+    client_reference_id: orgId,
     success_url: `${getAppUrl()}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${getAppUrl()}/?canceled=1`,
     allow_promotion_codes: true,
     metadata: {
-      orgId: orgId ?? "unscoped",
+      orgId,
       userId,
       planId: selection.planId,
       interval: selection.interval,
@@ -54,6 +54,9 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
     redirect(
       `/sign-in?plan=${selection.planId}&interval=${selection.interval}&redirect_url=${encodeURIComponent(returnTarget)}`,
     );
+  }
+  if (!orgId) {
+    redirect("/demo");
   }
 
   try {

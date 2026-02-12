@@ -8,6 +8,7 @@ const recordAlertRef = makeFunctionReference<"mutation">("webhooks.recordAlert")
 const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions.createTrainingSession");
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions.reserveTrialSession");
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks.checkLaggingWebhooks");
+const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks.getOrgBillingAccess");
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -71,5 +72,13 @@ export async function checkLaggingWebhooks(args: { maxLagMs: number; limit?: num
   return client.mutation(checkLaggingWebhooksRef, args as never) as Promise<{
     checked: number;
     laggingCount: number;
+  }>;
+}
+
+export async function getOrgBillingAccess(args: { orgId: string; limit?: number }) {
+  const client = getClient();
+  return client.query(getOrgBillingAccessRef, args as never) as Promise<{
+    hasAccess: boolean;
+    reason: string;
   }>;
 }

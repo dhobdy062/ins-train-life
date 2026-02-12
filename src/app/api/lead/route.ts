@@ -11,7 +11,6 @@ export async function POST(request: Request) {
       email?: string;
       policyType?: string;
     };
-
     if (!name || !agency || !email || !policyType) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
     await resend.emails.send({
       from: getFromAddress(),
       to: email,
-      subject: "Verify your InsureTrain AI demo",
+      subject: "Verify your Cream No Sugar demo",
       html: `
         <p>Hi ${name},</p>
         <p>Thanks for requesting the 2-minute simulated prospect demo.</p>

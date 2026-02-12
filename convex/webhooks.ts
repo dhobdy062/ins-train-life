@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 
 export const enqueueWebhookEvent = mutation({
   args: {
@@ -118,6 +118,65 @@ export const checkLaggingWebhooks = mutation({
       checked: queued.length,
       laggingCount: lagging.length,
     };
+  },
+});
+
+export const getOrgBillingAccess = query({
+  args: {
+    orgId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(args.limit ?? 200, 1), 500);
+
+    const events = await ctx.db
+      .query("billingEvents")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(limit);
+
+    if (events.length === 0) {
+      return { hasAccess: false, reason: "no_billing_events" as const };
+    }
+
+    const allowedStatuses = new Set(["active", "trialing", "past_due"]);
+    const deniedStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
+
+    const latestStatusBySubscription = new Map<string, string>();
+
+    for (const event of events) {
+      const subscriptionId = event.stripeSubscriptionId;
+      const status = event.status?.toLowerCase();
+
+      if (!subscriptionId || !status) {
+        continue;
+      }
+
+      if (!latestStatusBySubscription.has(subscriptionId)) {
+        latestStatusBySubscription.set(subscriptionId, status);
+      }
+    }
+
+    if (latestStatusBySubscription.size > 0) {
+      const statuses = [...latestStatusBySubscription.values()];
+
+      if (statuses.some((status) => allowedStatuses.has(status))) {
+        return { hasAccess: true, reason: "subscription_active" as const };
+      }
+
+      if (statuses.every((status) => deniedStatuses.has(status))) {
+        return { hasAccess: false, reason: "subscription_inactive" as const };
+      }
+
+      return { hasAccess: false, reason: "subscription_status_unknown" as const };
+    }
+
+    const hasCompletedCheckout = events.some((event) => event.eventType === "checkout.session.completed");
+    if (hasCompletedCheckout) {
+      return { hasAccess: true, reason: "checkout_completed" as const };
+    }
+
+    return { hasAccess: false, reason: "no_active_subscription" as const };
   },
 });
 

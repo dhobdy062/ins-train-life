@@ -6,7 +6,7 @@ export default function SuccessPage() {
       <div className="shell">
         <nav className="nav">
           <div className="brand">
-            <span className="badge">InsureTrain AI</span>
+            <span className="badge">Cream No Sugar</span>
             <span>Payment confirmed</span>
           </div>
           <Link className="button secondary" href="/">
@@ -16,9 +16,9 @@ export default function SuccessPage() {
         <main>
           <div className="glass panel">
             <div className="tag">Success</div>
-            <h3>Welcome to InsureTrain AI.</h3>
+            <h3>Welcome to Cream No Sugar.</h3>
             <p className="disclaimer">
-              Your subscription is active. The next step is to onboard your team, connect your Vapi key, and assign
+              Your subscription is active. Next, onboard your team, configure your call assistant, and assign
               difficulty tiers.
             </p>
             <div className="hero-actions">

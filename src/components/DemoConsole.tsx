@@ -81,7 +81,7 @@ export default function DemoConsole() {
 
     client.on("error", (error) => {
       setCallState("error");
-      setStatus(`VAPI error: ${String(error)}`);
+      setStatus(`Call error: ${String(error)}`);
     });
 
     vapiRef.current = client;
@@ -117,7 +117,7 @@ export default function DemoConsole() {
 
       setSessionKey(payload.sessionKey);
       setCallState("starting");
-      setStatus("Session initialized. Connecting to VAPI...");
+      setStatus("Session initialized. Connecting...");
     } catch (error) {
       setCallState("error");
       setStatus(error instanceof Error ? error.message : "Unable to start call.");
@@ -147,11 +147,11 @@ export default function DemoConsole() {
 
   return (
     <div className="glass panel">
-      <div className="tag">Authenticated VAPI trainer workspace</div>
-      <h3>Launch a web training session with org-scoped tracking</h3>
+      <div className="tag">Cream No Sugar workspace</div>
+      <h3>Run a guided practice call</h3>
       <p className="disclaimer">
-        This launcher creates an authenticated session record, pushes VAPI variables, and lets Convex process webhook
-        metrics asynchronously for Vercel Hobby reliability.
+        1. Choose difficulty and objection count. 2. Adjust rebuttal prompts. 3. Start the call. 4. Review call
+        status and results after the session ends.
       </p>
 
       <div className="grid">
@@ -210,7 +210,7 @@ export default function DemoConsole() {
 
       <div className="hero-actions">
         <button className="button" onClick={handleStart} disabled={loading}>
-          {loading ? "Starting..." : "Start VAPI web session"}
+          {loading ? "Starting..." : "Start practice call"}
         </button>
         <button className="button secondary" onClick={handleStop} disabled={loading || !vapiRef.current}>
           Stop call

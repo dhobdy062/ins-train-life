@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTrainingSession, recordAlert } from "@/lib/convex";
+import { createTrainingSession, getOrgBillingAccess, recordAlert } from "@/lib/convex";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
 
@@ -33,6 +33,11 @@ export async function POST(request: Request) {
 
   if (!orgId) {
     return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+  }
+
+  const access = await getOrgBillingAccess({ orgId }).catch(() => null);
+  if (!access?.hasAccess) {
+    return NextResponse.json({ error: "Active subscription required for this organization." }, { status: 402 });
   }
 
   const assistantId = process.env.VAPI_ASSISTANT_ID;
