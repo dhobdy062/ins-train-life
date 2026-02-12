@@ -13,5 +13,14 @@ export function getFromAddress() {
 }
 
 export function getAppUrl() {
-  return process.env.APP_URL || "http://localhost:3000";
+  const appUrl = process.env.APP_URL;
+  if (appUrl) {
+    return appUrl;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Missing APP_URL");
+  }
+
+  return "http://localhost:3000";
 }

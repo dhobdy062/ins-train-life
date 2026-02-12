@@ -25,6 +25,10 @@ function getCheckoutHint(error: unknown) {
     return "Missing STRIPE_SECRET_KEY in environment variables.";
   }
 
+  if (message.includes("Missing APP_URL")) {
+    return "Missing APP_URL in environment variables. Set it to your production site URL (https://...).";
+  }
+
   if (message.includes("No such price")) {
     return "Stripe price ID is invalid for the configured Stripe account/key.";
   }
