@@ -60,7 +60,7 @@ export const BILLING_PLANS: BillingPlan[] = [
     overageCentsPerMinute: 12,
     features: ["Up to 5 seats", "900 AI training minutes / month", "$39/additional seat/month"],
     stripePriceEnv: {
-      monthly: "STRIPE_PRICE_ID",
+      monthly: "STRIPE_PRICE_PRO_MONTHLY_ID",
       annual: "STRIPE_PRICE_PRO_ANNUAL_ID",
     },
   },

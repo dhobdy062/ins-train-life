@@ -43,7 +43,7 @@ const PLANS = [
       included_seats: "5",
     },
     stripePriceEnv: {
-      monthly: "STRIPE_PRICE_ID",
+      monthly: "STRIPE_PRICE_PRO_MONTHLY_ID",
       annual: "STRIPE_PRICE_PRO_ANNUAL_ID",
     },
   },

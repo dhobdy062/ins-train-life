@@ -19,7 +19,7 @@ Create six recurring prices in Stripe and map them to these env vars:
 
 - `STRIPE_PRICE_STARTER_MONTHLY_ID` -> Starter monthly (`$79`)
 - `STRIPE_PRICE_STARTER_ANNUAL_ID` -> Starter annual (`$806`)
-- `STRIPE_PRICE_ID` -> Pro Team monthly (`$249`)
+- `STRIPE_PRICE_PRO_MONTHLY_ID` -> Pro Team monthly (`$249`)
 - `STRIPE_PRICE_PRO_ANNUAL_ID` -> Pro Team annual (`$2,540`)
 - `STRIPE_PRICE_AGENCY_MONTHLY_ID` -> Agency Scale monthly (`$699`)
 - `STRIPE_PRICE_AGENCY_ANNUAL_ID` -> Agency Scale annual (`$7,130`)
