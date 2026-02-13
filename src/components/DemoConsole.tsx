@@ -8,15 +8,12 @@ type SessionBootstrapResponse = {
   sessionKey: string;
   assistantId: string;
   publicKey: string;
-  variableValues: {
-    difficulty: Difficulty;
-    objectionsRequired: string;
-    rebuttals: string;
-  };
+  variableValues: Record<string, string>;
   metadata: {
     orgId: string;
     trainerId: string;
     sessionKey: string;
+    sequenceStage?: string;
   };
 };
 
@@ -63,6 +60,9 @@ export default function DemoConsole() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [sequenceStage, setSequenceStage] = useState<string>("Pending");
+  const [agentRole, setAgentRole] = useState<string>("Pending");
+  const [agentBrand, setAgentBrand] = useState<string>("Cream No Sugar");
 
   const vapiRef = useRef<VapiClient | null>(null);
 
@@ -150,8 +150,13 @@ export default function DemoConsole() {
       });
 
       setSessionKey(payload.sessionKey);
+      setSequenceStage(payload.variableValues.email_sequence_stage ?? payload.metadata.sequenceStage ?? "session_summary");
+      setAgentRole(payload.variableValues.dashboard_role ?? "trainer");
+      setAgentBrand(payload.variableValues.brand_name ?? "Cream No Sugar");
       setCallState("starting");
-      setStatus("Session initialized. Connecting...");
+      setStatus(
+        `Session initialized. Connecting... Email sequence stage: ${payload.variableValues.email_sequence_stage ?? "session_summary"}.`,
+      );
     } catch (error) {
       setCallState("error");
       setStatus(formatUnknownError(error));
@@ -235,6 +240,18 @@ export default function DemoConsole() {
         <div className="metric">
           <span>Session key</span>
           <strong>{sessionKey ?? "Pending"}</strong>
+        </div>
+        <div className="metric">
+          <span>Agent brand</span>
+          <strong>{agentBrand}</strong>
+        </div>
+        <div className="metric">
+          <span>Agent role</span>
+          <strong>{agentRole}</strong>
+        </div>
+        <div className="metric">
+          <span>Email sequence stage</span>
+          <strong>{sequenceStage}</strong>
         </div>
         <div className="metric">
           <span>Call status</span>

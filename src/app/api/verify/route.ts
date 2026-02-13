@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const normalizedEmail = payload.email.trim().toLowerCase();
   const trialIdentityToken = createToken({ email: normalizedEmail }, secret);
 
-  const response = NextResponse.redirect(new URL("/training/start", request.url));
+  const response = NextResponse.redirect(new URL("/dashboard/trainee", request.url));
   response.cookies.set("demo_verified", "true", {
     httpOnly: true,
     sameSite: "lax",

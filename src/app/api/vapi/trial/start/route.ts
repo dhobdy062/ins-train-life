@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { reserveTrialSession } from "@/lib/convex";
 import { verifyToken } from "@/lib/token";
+import { buildAgentVariableValues } from "@/lib/agent-context";
 
 const DEFAULT_REBUTTALS: Record<string, string> = {
   busy: "I understand you are busy. This is a quick 15-minute policy review.",
@@ -75,14 +76,22 @@ export async function POST(request: NextRequest) {
     assistantId,
     publicKey,
     remainingTrialSessions: reservation.remaining,
-    variableValues: {
+    variableValues: buildAgentVariableValues({
       difficulty: "D2",
-      objectionsRequired: "2",
-      rebuttals: JSON.stringify(DEFAULT_REBUTTALS),
-    },
+      objectionsRequired: 2,
+      rebuttals: DEFAULT_REBUTTALS,
+      role: "trainee",
+      activeSequence: "trainee_invitation",
+      extraVariables: {
+        trial_mode: "true",
+        session_key: sessionKey,
+        trainee_email_hash: emailHash,
+      },
+    }),
     metadata: {
       sessionKey,
       source: "web_trial",
+      sequenceStage: "trainee_invitation",
     },
   });
 }

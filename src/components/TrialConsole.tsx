@@ -8,11 +8,7 @@ type TrialStartSuccess = {
   assistantId: string;
   publicKey: string;
   remainingTrialSessions: number;
-  variableValues: {
-    difficulty: string;
-    objectionsRequired: string;
-    rebuttals: string;
-  };
+  variableValues: Record<string, string>;
   metadata: Record<string, string>;
 };
 
@@ -54,6 +50,8 @@ export default function TrialConsole() {
   const [remainingTrialSessions, setRemainingTrialSessions] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   const [limitCtaUrl, setLimitCtaUrl] = useState("/sign-up");
+  const [sequenceStage, setSequenceStage] = useState<string>("Pending");
+  const [agentBrand, setAgentBrand] = useState<string>("Cream No Sugar");
   const vapiRef = useRef<VapiClient | null>(null);
 
   async function ensureClient(publicKey: string) {
@@ -130,8 +128,12 @@ export default function TrialConsole() {
 
       setSessionKey(successPayload.sessionKey);
       setRemainingTrialSessions(successPayload.remainingTrialSessions);
+      setSequenceStage(successPayload.variableValues.email_sequence_stage ?? "trainee_invitation");
+      setAgentBrand(successPayload.variableValues.brand_name ?? "Cream No Sugar");
       setCallState("starting");
-      setStatus("Initializing trial call...");
+      setStatus(
+        `Initializing trial call... Email sequence stage: ${successPayload.variableValues.email_sequence_stage ?? "trainee_invitation"}.`,
+      );
     } catch (error) {
       setCallState("error");
       setStatus(formatUnknownError(error));
@@ -174,6 +176,14 @@ export default function TrialConsole() {
         <div className="metric">
           <span>Trial sessions remaining</span>
           <strong>{remainingTrialSessions ?? "-"}</strong>
+        </div>
+        <div className="metric">
+          <span>Agent brand</span>
+          <strong>{agentBrand}</strong>
+        </div>
+        <div className="metric">
+          <span>Email sequence stage</span>
+          <strong>{sequenceStage}</strong>
         </div>
         <div className="metric">
           <span>Call status</span>

@@ -15,7 +15,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cream No Sugar | Caffienated Training To Make Closers",
+  title: "Cream No Sugar | Caffeinated Training To Make Closers",
   description:
     "Prospect simulation for life insurance agents",
 };

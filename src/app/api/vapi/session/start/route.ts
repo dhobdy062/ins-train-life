@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createTrainingSession, getOrgBillingAccess, recordAlert } from "@/lib/convex";
+import { buildAgentVariableValues } from "@/lib/agent-context";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
 
@@ -111,19 +112,29 @@ export async function POST(request: Request) {
       channel: "web",
     });
 
+    const variableValues = buildAgentVariableValues({
+      difficulty,
+      objectionsRequired,
+      rebuttals,
+      role: "trainer",
+      activeSequence: "session_summary",
+      extraVariables: {
+        org_id: orgId,
+        trainer_id: userId,
+        session_key: session.sessionKey,
+      },
+    });
+
     return NextResponse.json({
       sessionKey: session.sessionKey,
       assistantId,
       publicKey,
-      variableValues: {
-        difficulty,
-        objectionsRequired: String(objectionsRequired),
-        rebuttals: JSON.stringify(rebuttals),
-      },
+      variableValues,
       metadata: {
         orgId,
         trainerId: userId,
         sessionKey: session.sessionKey,
+        sequenceStage: variableValues.email_sequence_stage,
       },
     });
   } catch (error) {

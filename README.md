@@ -5,10 +5,12 @@ Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-
 ## Architecture Highlights
 
 - **Hosting:** Vercel Hobby, single region (`iad1` / US East)
-- **Auth:** Clerk (`/demo` and `/api/vapi/session/start` are protected)
+- **Auth:** Clerk (`/demo`, `/dashboard/trainer`, `/api/vapi/session/start`, and `/api/email/sequence` are protected)
 - **Session launch:** `POST /api/vapi/session/start` (auth + org required)
+- **Dashboards:** `GET /dashboard/trainer` and `GET /dashboard/trainee` (Cream No Sugar branded)
 - **Billing webhook:** `POST /api/stripe/webhook` (thin handler, queued to Convex)
 - **Voice metrics webhook:** `POST /api/vapi/webhook` (thin handler, queued to Convex)
+- **Email sequencing:** `POST /api/email/sequence` for `trainer_welcome`, `trainee_invitation`, `session_summary`
 - **Async processing:** Convex mutations/scheduled tasks for idempotency and rollups
 
 Pricing model reference: `docs/billing-pricing-model.md`
@@ -48,6 +50,13 @@ When you are ready to claim the app or deploy to production, set the following v
 - `VAPI_ASSISTANT_ID`
 - `VAPI_WEBHOOK_SECRET`
 
+The app now forwards additional branded variables to VAPI at session start, including:
+- `brand_name`
+- `trainer_dashboard_url`
+- `trainee_dashboard_url`
+- `email_sequence_order`
+- `email_sequence_stage`
+
 ### Optional alerting
 - `ALERT_WEBHOOK_URL`
 - `CRON_SECRET`
@@ -80,6 +89,7 @@ Note: this repository includes minimal `_generated` stubs to keep Next.js builds
 - Stripe: `/api/stripe/webhook`
 - VAPI: `/api/vapi/webhook`
 - Legacy compatibility: `/api/webhook` (deprecated alias to Stripe route)
+- Email sequence API: `/api/email/sequence` (authenticated)
 
 Both handlers are configured for:
 - `runtime = nodejs`

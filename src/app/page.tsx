@@ -32,7 +32,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <nav className="nav">
           <div className="brand">
             <span className="badge">Cream No Sugar</span>
-            <span>Your Caffiene For Closers</span>
+            <span>Your Caffeine For Closers</span>
           </div>
           <div className="hero-actions">
             <SignedOut>
@@ -48,7 +48,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <a className="button secondary" href="/demo">
+              <a className="button secondary" href="/dashboard/trainer">
                 Open workspace
               </a>
               <UserButton />
@@ -76,7 +76,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                   </SignUpButton>
                 </SignedOut>
                 <SignedIn>
-                  <a className="button secondary" href="/demo">
+                  <a className="button secondary" href="/dashboard/trainer">
                     Launch authenticated widget
                   </a>
                 </SignedIn>
@@ -92,7 +92,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                 <div className="card">
                 <h4>Confidence Comes from Repitition</h4>
                 <p className="disclaimer">
-                  Give every Agent a live realistic prospect for training whenver they need it.
+                  Give every agent a live realistic prospect for training whenever they need it.
                 </p>
               </div>
               </div>
