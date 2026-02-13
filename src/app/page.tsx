@@ -1,6 +1,6 @@
 import LeadForm from "@/components/LeadForm";
 import PricingCards from "@/components/PricingCards";
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
 import { normalizeBillingSelection } from "@/lib/billing";
 
 const objectionNodes = [
@@ -29,33 +29,6 @@ export default async function Home({ searchParams }: HomePageProps) {
   return (
     <div className="page">
       <div className="shell">
-        <nav className="nav">
-          <div className="brand">
-            <span className="badge">Cream No Sugar</span>
-            <span>Your Caffeine For Closers</span>
-          </div>
-          <div className="hero-actions">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="button secondary" type="button">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="button" type="button">
-                  Sign up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <a className="button secondary" href="/dashboard/trainer">
-                Open workspace
-              </a>
-              <UserButton />
-            </SignedIn>
-          </div>
-        </nav>
-
         <main>
           <section className="hero">
             <div className="hero-copy">

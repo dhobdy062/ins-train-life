@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sora, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import SiteNav from "@/components/SiteNav";
 import "./globals.css";
 
 const sora = Sora({
@@ -28,7 +29,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${sora.variable} ${plexMono.variable}`}>{children}</body>
+        <body className={`${sora.variable} ${plexMono.variable}`}>
+          <SiteNav />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
