@@ -48,3 +48,38 @@ Follow the instructions in the [official documentation](https://docs.stripe.com/
   ```bash
   stripe customers create --email="test@example.com" --name="Test User"
   ```
+
+## 4. Production Webhook Setup (Vercel)
+
+Complete these steps in Stripe **Live mode** for production billing unlocks.
+
+1. Open Stripe Dashboard -> Developers -> Webhooks -> **Add endpoint**.
+2. Endpoint URL:
+   ```text
+   https://<your-production-domain>/api/stripe/webhook
+   ```
+3. Select these events:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+4. Save endpoint and copy the signing secret (`whsec_...`).
+5. In Vercel -> Project -> Settings -> Environment Variables (Production), set:
+   - `STRIPE_WEBHOOK_SECRET=<whsec_...>`
+   - `STRIPE_SECRET_KEY=<sk_live_...>`
+   - all required `STRIPE_PRICE_*` vars
+   - `APP_URL=https://<your-production-domain>`
+6. Redeploy production after env updates.
+
+## 5. Production Validation Checklist
+
+1. Complete one checkout in the same Stripe mode as your `STRIPE_SECRET_KEY`.
+2. In Stripe -> Webhooks, confirm your endpoint received `checkout.session.completed` with `2xx`.
+3. In Vercel logs, confirm `/api/stripe/webhook` responded with:
+   ```json
+   { "received": true, "queued": true }
+   ```
+4. In Convex data, verify a `billingEvents` entry exists for your org.
+5. Retry training start for that org. It should no longer return subscription-required.

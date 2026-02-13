@@ -2,6 +2,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 
 type WebhookProvider = "stripe" | "vapi";
+type AdminConvexHttpClient = ConvexHttpClient & { setAdminAuth?: (token: string) => void };
 
 const enqueueWebhookEventRef = makeFunctionReference<"mutation">("webhooks.enqueueWebhookEvent");
 const recordAlertRef = makeFunctionReference<"mutation">("webhooks.recordAlert");
@@ -23,7 +24,13 @@ function getClient() {
   const convexAdminKey = getRequiredEnv("CONVEX_ADMIN_KEY");
 
   const client = new ConvexHttpClient(convexUrl);
-  client.setAuth(convexAdminKey);
+  // Convex runtime supports setAdminAuth, but some package type defs omit it.
+  const adminClient = client as AdminConvexHttpClient;
+  if (typeof adminClient.setAdminAuth === "function") {
+    adminClient.setAdminAuth(convexAdminKey);
+  } else {
+    client.setAuth(convexAdminKey);
+  }
   return client;
 }
 

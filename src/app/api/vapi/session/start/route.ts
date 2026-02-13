@@ -35,8 +35,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
   }
 
-  const access = await getOrgBillingAccess({ orgId }).catch(() => null);
-  if (!access?.hasAccess) {
+  let access: { hasAccess: boolean; reason: string };
+  try {
+    access = await getOrgBillingAccess({ orgId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Billing access lookup failed";
+
+    try {
+      await recordAlert({
+        source: "api/vapi/session/start.billing-access",
+        severity: "critical",
+        message,
+        context: { userId, orgId },
+      });
+    } catch {
+      // Ignore secondary logging errors.
+    }
+
+    return NextResponse.json(
+      { error: "Billing status is temporarily unavailable. Please retry in one minute." },
+      { status: 503 },
+    );
+  }
+
+  if (!access.hasAccess) {
     return NextResponse.json({ error: "Active subscription required for this organization." }, { status: 402 });
   }
 
