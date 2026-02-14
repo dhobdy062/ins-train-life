@@ -41,6 +41,10 @@ function getCheckoutHint(error: unknown) {
     return "Stripe key does not allow creating Checkout sessions.";
   }
 
+  if (message.includes("Invalid API Version")) {
+    return "Configured Stripe API version is invalid for this Stripe account.";
+  }
+
   return "Unable to create checkout session with current Stripe configuration.";
 }
 

@@ -6,7 +6,5 @@ export function getStripe() {
     throw new Error("Missing STRIPE_SECRET_KEY");
   }
 
-  return new Stripe(key, {
-    apiVersion: "2026-01-28.clover",
-  });
+  return new Stripe(key);
 }
