@@ -63,8 +63,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Active subscription required for this organization." }, { status: 402 });
   }
 
-  const assistantId = process.env.VAPI_TEST_ASSISTANT_ID ?? process.env.VAPI_ASSISTANT_ID;
-  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
+  const assistantId = (process.env.VAPI_TEST_ASSISTANT_ID ?? process.env.VAPI_ASSISTANT_ID)?.trim();
+  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
 
   if (!assistantId || !publicKey) {
     return NextResponse.json({ error: "VAPI config is missing." }, { status: 500 });
