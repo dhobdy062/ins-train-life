@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       from: getFromAddress(),
       to: email,
       subject: "Verify your Cream No Sugar demo",
-      html: `
++0      html: `
         <p>Hi ${name},</p>
         <p>Thanks for requesting the 2-minute simulated prospect demo.</p>
         <p><a href="${verifyUrl}">Click here to verify your email and start the demo</a>.</p>
