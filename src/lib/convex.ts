@@ -8,6 +8,10 @@ const enqueueWebhookEventRef = makeFunctionReference<"mutation">("webhooks.enque
 const recordAlertRef = makeFunctionReference<"mutation">("webhooks.recordAlert");
 const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions.createTrainingSession");
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions.reserveTrialSession");
+const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("sessions.deleteSessionWithArtifacts");
+const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage.storeSessionRecording");
+const storeTranscriptRef = makeFunctionReference<"mutation">("storage.storeTranscript");
+const getSessionWithFilesRef = makeFunctionReference<"query">("storage.getSessionWithFiles");
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks.checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks.getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks.getOrgEntitlement");
@@ -50,11 +54,19 @@ export async function enqueueWebhookEvent(args: {
 export async function createTrainingSession(args: {
   orgId: string;
   trainerId: string;
+  traineeId?: string;
   assistantId: string;
   difficulty: string;
   objectionsRequired: number;
   rebuttalKeys: string[];
   channel: "web";
+  identityMode?: "ip_match" | "backup_code" | "manual_override";
+  ipHash?: string;
+  profileSnapshot?: {
+    difficultyLevel: string;
+    objectionsRequired: number;
+    expectedRebuttals: string[];
+  };
 }) {
   const client = getClient();
   return client.mutation(createTrainingSessionRef, args as never) as Promise<{ sessionKey: string }>;
@@ -63,6 +75,61 @@ export async function createTrainingSession(args: {
 export async function reserveTrialSession(args: { emailHash: string; sessionKey: string }) {
   const client = getClient();
   return client.mutation(reserveTrialSessionRef, args as never) as Promise<{ allowed: boolean; remaining: number }>;
+}
+
+export async function deleteSessionWithArtifacts(args: { sessionKey: string; orgId: string; userId: string }) {
+  const client = getClient();
+  return client.mutation(deleteSessionWithArtifactsRef, args as never) as Promise<{
+    success: boolean;
+    deletedResponses: number;
+  }>;
+}
+
+export async function storeSessionRecording(args: {
+  sessionKey: string;
+  orgId: string;
+  userId: string;
+  recordingBuffer: string;
+  mimeType?: string;
+}) {
+  const client = getClient();
+  return client.mutation(storeSessionRecordingRef, args as never) as Promise<{
+    success: boolean;
+    sessionKey: string;
+    storageId: string;
+  }>;
+}
+
+export async function storeTranscript(args: {
+  sessionKey: string;
+  orgId: string;
+  userId: string;
+  transcriptText: string;
+  mimeType?: string;
+}) {
+  const client = getClient();
+  return client.mutation(storeTranscriptRef, args as never) as Promise<{
+    success: boolean;
+    sessionKey: string;
+    storageId: string;
+  }>;
+}
+
+export async function getSessionWithFiles(args: { sessionKey: string; orgId: string; userId: string }) {
+  const client = getClient();
+  return client.query(getSessionWithFilesRef, args as never) as Promise<{
+    sessionKey: string;
+    orgId: string;
+    trainerId: string;
+    traineeId: string | null;
+    status: string;
+    createdAt: number;
+    endedAt: number | null;
+    recordingStorageId: string | null;
+    transcriptStorageId: string | null;
+    recordingUrl: string | null;
+    transcriptUrl: string | null;
+  }>;
 }
 
 export async function recordAlert(args: {

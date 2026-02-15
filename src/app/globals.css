@@ -294,6 +294,18 @@ main {
   font-size: 0.85rem;
 }
 
+.footer-link {
+  width: fit-content;
+  border-bottom: 1px solid transparent;
+  color: var(--ink);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.footer-link:hover {
+  border-color: rgba(137, 226, 193, 0.65);
+  color: var(--accent);
+}
+
 .signin-layout {
   display: grid;
   grid-template-columns: minmax(320px, 1.2fr) minmax(320px, 1fr);

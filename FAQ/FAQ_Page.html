@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cream No Sugar - FAQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0c0e13;
+            --bg-deep: #07080b;
+            --ink: #f7f7f2;
+            --muted: #c6c7c0;
+            --accent: #89e2c1;
+            --accent-2: #f0b36a;
+            --glass: rgba(255, 255, 255, 0.08);
+            --stroke: rgba(255, 255, 255, 0.16);
+            --shadow: 0 24px 80px rgba(7, 8, 11, 0.5);
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Sora", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(137, 226, 193, 0.15), transparent 45%),
+                radial-gradient(circle at 80% 10%, rgba(240, 179, 106, 0.2), transparent 40%),
+                linear-gradient(160deg, var(--bg), var(--bg-deep));
+            color: var(--ink);
+            line-height: 1.6;
+            padding: 0 24px 64px;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .header-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            backdrop-filter: blur(14px);
+            background: linear-gradient(180deg, rgba(12, 14, 19, 0.92), rgba(12, 14, 19, 0.55));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin: 0 -24px;
+            padding: 0 24px;
+        }
+
+        .header {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .brand img {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+        }
+
+        .back-link {
+            border-radius: 999px;
+            padding: 10px 16px;
+            border: 1px solid var(--stroke);
+            color: var(--ink);
+            font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .back-link:hover {
+            border-color: rgba(137, 226, 193, 0.65);
+            color: var(--accent);
+        }
+
+        .hero {
+            max-width: 1160px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 72px 0 40px;
+        }
+
+        .tag {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 2vw + 1.8rem, 3.2rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            max-width: 760px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+            color: var(--muted);
+        }
+
+        .hero .subtitle {
+            margin-top: 16px;
+            font-size: 0.95rem;
+        }
+
+        .hero .subtitle a {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .hero .subtitle a:hover {
+            color: var(--accent-2);
+        }
+
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section {
+            margin-bottom: 52px;
+        }
+
+        .section-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+
+        .section-divider {
+            width: 3rem;
+            height: 0.25rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: 9999px;
+            margin-bottom: 2rem;
+        }
+
+        .faq-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .faq-item {
+            background: var(--glass);
+            border: 1px solid var(--stroke);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .faq-item:hover {
+            border-color: rgba(137, 226, 193, 0.55);
+            transform: translateY(-1px);
+        }
+
+        .faq-button {
+            width: 100%;
+            padding: 1.2rem 1.3rem;
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: background 0.2s ease;
+        }
+
+        .faq-button:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .faq-question {
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: var(--ink);
+            text-align: left;
+            flex: 1;
+            padding-right: 1rem;
+        }
+
+        .faq-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent);
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .faq-item.expanded .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            display: none;
+            padding: 0 1.3rem 1.2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.09);
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        .faq-item.expanded .faq-answer {
+            display: block;
+        }
+
+        .cta-section {
+            margin-top: 1rem;
+            padding: 2.2rem;
+            background: linear-gradient(150deg, rgba(137, 226, 193, 0.2), rgba(240, 179, 106, 0.17));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .cta-section h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0a0b0e;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            color: #15171c;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+            .cta-buttons {
+                flex-direction: row;
+            }
+        }
+
+        .btn {
+            padding: 0.8rem 1.8rem;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid transparent;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #0a0b0e;
+            color: var(--ink);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(7, 8, 11, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border-color: rgba(10, 11, 14, 0.22);
+            color: #0a0b0e;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(7, 8, 11, 0.16);
+        }
+
+        .faq-footer {
+            max-width: 1160px;
+            margin: 42px auto 0;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--muted);
+            font-size: 0.82rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0 16px 48px;
+            }
+
+            .header-wrap {
+                margin: 0 -16px;
+                padding: 0 16px;
+            }
+
+            .brand img {
+                width: 38px;
+                height: 38px;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .faq-button {
+                padding: 1rem;
+            }
+
+            .faq-question {
+                font-size: 1rem;
+            }
+
+            .hero {
+                padding-top: 54px;
+            }
+        }
+
+        svg {
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-wrap">
+        <div class="header">
+            <a class="brand" href="/">
+                <img src="/nosugar.svg" alt="Cream No Sugar logo">
+                <span>Cream No Sugar</span>
+            </a>
+            <a class="back-link" href="/">Back to site</a>
+        </div>
+    </div>
+
+    <header class="hero">
+        <div class="tag">FAQ Knowledge Base</div>
+        <h1>Frequently Asked Questions</h1>
+        <p>Everything you need to know about Cream No Sugar and how we train life insurance closers with realistic voice simulations.</p>
+        <p class="subtitle">Need help now? <a href="mailto:support@cream.retrospxt.com">Email support@cream.retrospxt.com</a>.</p>
+    </header>
+
+    <main class="container" id="faq-container"></main>
+
+    <div class="container">
+        <div class="cta-section">
+            <h3>Ready to Transform Your Sales Training?</h3>
+            <p>Start your free 7-day trial with full platform access and real objection simulation from day one.</p>
+            <div class="cta-buttons">
+                <a href="/#pricing" class="btn btn-primary">Choose Your Plan</a>
+                <a href="mailto:support@cream.retrospxt.com" class="btn btn-secondary">Schedule a Demo</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="faq-footer">
+        <span>Cream No Sugar. Built to Build Better Performing Salespeople.</span>
+        <span>Demo includes Term Life only.</span>
+    </footer>
+
+    <script>
+const faqData = [
+            {
+                title: "Getting Started",
+                items: [
+                    {
+                        id: "getting-started-1",
+                        question: "What is Cream No Sugar?",
+                        answer: "Cream No Sugar is an AI-powered voice training platform designed specifically for life insurance sales teams. Instead of traditional role-playing with colleagues, your team practices real-world sales conversations with an AI prospect that adapts to different difficulty levels and throws authentic objections they'll face in the field."
+                    },
+                    {
+                        id: "getting-started-2",
+                        question: "How does it work?",
+                        answer: "Simple: You add your trainees to the platform and assign them a difficulty level (D1-D5). They click 'Start Training' and have a voice conversation with an AI prospect who presents objections. After each call, they get instant feedback on their score, tone, and approach. You can listen to recordings, see metrics, and adjust their difficulty as they improve."
+                    },
+                    {
+                        id: "getting-started-3",
+                        question: "Do I need any special equipment?",
+                        answer: "No. Just a phone, microphone, or headset and an internet connection. Trainees can train from anywhere—their desk, home, car, wherever they have 8-10 minutes and a quiet space. It's that simple."
+                    },
+                    {
+                        id: "getting-started-4",
+                        question: "Can I customize the objections for my market?",
+                        answer: "Yes. Every organization can customize their objection library to match their specific market, product focus (Term Life, Whole Life, Universal Life, IUL), and regional nuances. Your objections stay within your organization—completely private."
+                    }
+                ]
+            },
+            {
+                title: "How Training Works",
+                items: [
+                    {
+                        id: "training-1",
+                        question: "What are the 5 difficulty levels?",
+                        answer: "D1 (Busy Schedule): Warm leads who remember the form but are time-pressed. D2 (Doesn't Remember): Leads who forgot they filled out a form, need credibility building. D3 (Needs Spouse): Family-focused objections, requires collaborative selling. D4 (Already Covered): Over-confident prospects with false assumptions about coverage. D5 (Brick Wall): Highly skeptical, multiple objections, tests agent resilience. Start new trainees on D1 and progress as they master each level."
+                    },
+                    {
+                        id: "training-2",
+                        question: "How long is each training session?",
+                        answer: "Typical sessions are 8-12 minutes depending on difficulty level and number of objections. Each call counts as billable minutes against your plan. A trainee making 10 calls per week uses roughly 100 minutes—well within most plans."
+                    },
+                    {
+                        id: "training-3",
+                        question: "What happens during a call?",
+                        answer: "You (trainer) start the session from your dashboard. The AI prospect calls your trainee (or vice versa). The prospect has a personality—skeptical, friendly, defensive, etc. They present objections one at a time. Your trainee responds. The AI scores their response (0-100%) based on their strategy, tone, and execution. Feedback is instant. Call ends after all objections are handled or a 'hard stop' (trainee gets frustrated)."
+                    },
+                    {
+                        id: "training-4",
+                        question: "What is a 'hard stop'?",
+                        answer: "A hard stop happens when a trainee loses their cool, gets too pushy, or asks the prospect to be removed from the list. It's a boundary indicator. One hard stop per session doesn't hurt, but we track them to help coaches identify when agents need emotional control coaching. They're learning tools, not punishments."
+                    },
+                    {
+                        id: "training-5",
+                        question: "How is scoring calculated?",
+                        answer: "Scores are based on: Rebuttal Accuracy (40%) - did they use the right strategy for this objection type? Execution Quality (30%) - tone, specificity, empathy, clarity. Timing (15%) - did they respond quickly and decisively? Prospect Response (15%) - did it move the conversation toward an appointment? Grades: 90-100% = Excellent, 75-89% = Good, 60-74% = Fair, Below 60% = Poor."
+                    }
+                ]
+            },
+            {
+                title: "Pricing & Plans",
+                items: [
+                    {
+                        id: "pricing-1",
+                        question: "What's included in each plan?",
+                        answer: "Non-Dairy Starter ($79/mo): 300 minutes/month, 1 seat, perfect for solo reps. Half and Half Pro ($249/mo): 900 minutes/month, up to 5 seats, great for small teams. Sweet Cream Agency ($699/mo): 2,500 minutes/month, up to 20 seats, built for scaling. All plans include full analytics, call recordings, and trainer coaching tools."
+                    },
+                    {
+                        id: "pricing-2",
+                        question: "What happens if I exceed my monthly minutes?",
+                        answer: "No panic. We charge $0.12 per extra minute used. So if you're on the Pro plan (900 min/mo) and use 950 minutes, you're charged $6 for the extra 50 minutes. Charges appear on your next invoice. We email you warnings when you hit 80% of your limit so there are no surprises."
+                    },
+                    {
+                        id: "pricing-3",
+                        question: "Can I upgrade or downgrade anytime?",
+                        answer: "Yes. Changes take effect immediately. Upgrade mid-month? You're pro-rated. Downgrade? We pause billing and apply unused credit to your next billing cycle. No contracts, no BS."
+                    },
+                    {
+                        id: "pricing-4",
+                        question: "Do you offer annual discounts?",
+                        answer: "Yes! All plans are 15% cheaper when billed annually. Non-Dairy Starter: $806/year (vs $948 monthly). Half and Half Pro: $2,540/year (vs $2,988 monthly). Sweet Cream Agency: $7,130/year (vs $8,388 monthly). Annual billing also locks in your price for 12 months."
+                    },
+                    {
+                        id: "pricing-5",
+                        question: "Is there a free trial?",
+                        answer: "Yes. All new organizations get 7 days free with 1,000 training minutes. No credit card required. You can add trainees, run full sessions, see all features. After 7 days, choose a plan or your account goes on pause (data is saved forever)."
+                    }
+                ]
+            },
+            {
+                title: "For Trainers",
+                items: [
+                    {
+                        id: "trainer-1",
+                        question: "How do I add trainees?",
+                        answer: "Go to your Dashboard > Add Trainee. Enter their name, email, starting difficulty level, and how many objections you want them to face per session (2-5 recommended). They get an email invitation with their training link. One click and they're ready to train. Takes 30 seconds per trainee."
+                    },
+                    {
+                        id: "trainer-2",
+                        question: "Can I listen to trainee calls?",
+                        answer: "Absolutely. Every call is recorded with full audio and transcript. Go to a trainee's profile, click any session, and listen to the recording. You can see the exact moment they struggled, hear their tone, and provide targeted coaching. This is your coaching goldmine."
+                    },
+                    {
+                        id: "trainer-3",
+                        question: "How do I know when a trainee is ready to progress?",
+                        answer: "The system auto-suggests progression when trainees average 80%+ on their difficulty level for 10+ calls with fewer than 2 hard stops. You can manually override and promote/demote anytime. Progression typically takes 1-2 weeks per level with consistent practice."
+                    },
+                    {
+                        id: "trainer-4",
+                        question: "What metrics should I monitor?",
+                        answer: "Watch these KPIs: Appointment Set Rate (% of calls ending in scheduled meetings—aim for 60%+). Average Rebuttal Score by Type (shows which objections each agent struggles with). Hard Stop Rate (should stay below 5%). Call Frequency (consistency matters more than volume—5 calls/week beats 20 calls/week). Level Progression Speed (faster progression = better learning)."
+                    },
+                    {
+                        id: "trainer-5",
+                        question: "Can I customize the AI prospect?",
+                        answer: "Yes. You can set the prospect's personality (skeptical, friendly, aggressive), tone of voice, opening line, and which objections they throw at each difficulty level. Every organization's AI prospect can be unique to your market and culture."
+                    }
+                ]
+            },
+            {
+                title: "For Trainees",
+                items: [
+                    {
+                        id: "trainee-1",
+                        question: "What should I do before my first call?",
+                        answer: "Have water nearby. Find a quiet space. Smile while you talk—it changes your tone for the better. Don't memorize a script—just speak naturally. Remember: the AI is on your side trying to help you improve. It's not trying to trick you. Be yourself."
+                    },
+                    {
+                        id: "trainee-2",
+                        question: "What if I freeze up during a call?",
+                        answer: "Pause, breathe, and keep going. It happens to everyone. The call doesn't end just because you hesitate. The AI prospect will wait. If you genuinely need to restart, you can end the session anytime and start fresh. No judgment, no penalties. Every call is practice."
+                    },
+                    {
+                        id: "trainee-3",
+                        question: "How often should I train?",
+                        answer: "Ideal: 2-3 calls per week consistently. That's 30-40 minutes/week of focused practice. Not 20 calls in one day—that burns you out. Consistency beats volume. After 4-6 weeks at one level with 2-3 calls/week, you'll be ready to progress."
+                    },
+                    {
+                        id: "trainee-4",
+                        question: "Can I see my progress over time?",
+                        answer: "Yes. Your dashboard shows your average score over time, which objection types you're best at, your appointment set rate, and how you stack up against your team's averages (completely anonymized). You earn badges and achievements as you hit milestones. It's designed to be motivating, not demotivating."
+                    },
+                    {
+                        id: "trainee-5",
+                        question: "What if I disagree with my score?",
+                        answer: "Fair question. Scores are AI-generated but transparent. Your trainer can listen to the recording and see exactly how the score was calculated. If there's a legitimate issue, they can adjust it. The system learns from feedback. Keep in mind: the AI is usually right about tone and strategy—it's harder to fool a machine than a human."
+                    }
+                ]
+            },
+            {
+                title: "Technical & Support",
+                items: [
+                    {
+                        id: "technical-1",
+                        question: "What if my internet cuts out during a call?",
+                        answer: "The call ends, but your progress is saved up to that point. You can start a new session immediately. No data loss, no charges for partial calls (we only bill for completed sessions). Stable internet is ideal but we handle glitches gracefully."
+                    },
+                    {
+                        id: "technical-2",
+                        question: "What devices can I use?",
+                        answer: "Any device with internet and a microphone: laptop, phone, tablet. iOS, Android, Windows, Mac—all supported. Works best on phones and laptops with good microphones. Headsets recommended for clearer audio quality."
+                    },
+                    {
+                        id: "technical-3",
+                        question: "Is my data private and secure?",
+                        answer: "Completely. All calls, recordings, transcripts, and trainee data are encrypted at rest and in transit. Only you and your team can access your organization's data. We never share data with other customers, sell data, or use it for any purpose other than improving your training experience."
+                    },
+                    {
+                        id: "technical-4",
+                        question: "Can I export call recordings and data?",
+                        answer: "Yes. You can download individual call recordings, full transcripts, and export your organization's data anytime. All your data is yours. If you cancel, we keep your data for 90 days in case you want to export before deletion."
+                    },
+                    {
+                        id: "technical-5",
+                        question: "What's your uptime and support?",
+                        answer: "We maintain 99.5%+ uptime. If something breaks, we fix it ASAP. Email support is included for all plans (usually respond within 2 hours). Starter plan gets email support. Pro and Agency plans get priority email + chat support. No phone support yet—we're a lean team but we're responsive."
+                    }
+                ]
+            },
+            {
+                title: "Results & ROI",
+                items: [
+                    {
+                        id: "results-1",
+                        question: "How much does this actually improve my team's closing rate?",
+                        answer: "Early data shows teams using Cream No Sugar 2-3x/week see 15-25% improvement in real-world closing rates within 4-6 weeks. Why? Because practice builds confidence, habit, and muscle memory. Your team is rehearsing the exact objections they'll face. They're prepared, not nervous."
+                    },
+                    {
+                        id: "results-2",
+                        question: "How long until I see ROI?",
+                        answer: "Most teams see results within 2-3 weeks. If your average commission is $500-$2,000 per sale, one extra close per agent per week pays for the entire platform. Within 30 days, you're ahead. Within 90 days, it's a no-brainer."
+                    },
+                    {
+                        id: "results-3",
+                        question: "Can I measure my team's improvement?",
+                        answer: "Yes. The platform gives you average scores by difficulty level, objection type, and individual agent. You can compare before/after. Track appointment set rates. Monitor hard stops (should go down as confidence increases). See progression through difficulty levels. All measurable, all in your dashboard."
+                    },
+                    {
+                        id: "results-4",
+                        question: "What if my team doesn't like it?",
+                        answer: "Happens rarely, but if a trainee really struggles with voice training, they can pause or take a break. Some people need different coaching styles. Most teams report that trainees actually enjoy it—it's low-pressure, non-judgmental, and they see measurable progress. Gamification and badges help with engagement."
+                    },
+                    {
+                        id: "results-5",
+                        question: "Can new hires use this to onboard faster?",
+                        answer: "Absolutely. New reps often struggle because they haven't faced objections yet. Cream No Sugar compresses 6 months of learning into 4 weeks. They hear common objections immediately, rehearse responses safely, and hit the field with confidence. Ramp time: 4-6 weeks instead of 4-6 months."
+                    }
+                ]
+            },
+            {
+                title: "Comparison & Competition",
+                items: [
+                    {
+                        id: "comparison-1",
+                        question: "How is this different from traditional role-playing?",
+                        answer: "Traditional role-playing: Your manager pretends to be a prospect. Awkward. You read from a script. You only practice objections your manager thinks of. Inconsistent quality. Cream No Sugar: AI prospect never gets tired, always consistent, throws random objections, you can't predict it, forces you to think on your feet, instant scoring, recorded for coaching, no awkwardness. It's practice at scale without the cringe."
+                    },
+                    {
+                        id: "comparison-2",
+                        question: "How does this compare to other sales training platforms?",
+                        answer: "Most platforms are video-based (passive watching) or text-based quizzes (boring). Cream No Sugar is voice-based conversation training. You actually speak and hear yourself. The AI learns your patterns and adapts. You get real feedback on tone, not just strategy. It's the closest thing to real selling without the stakes."
+                    },
+                    {
+                        id: "comparison-3",
+                        question: "Why voice training instead of video?",
+                        answer: "Life insurance sales is 90% about tone, confidence, and how you handle pressure over the phone. Video training doesn't teach that. Voice training forces you to focus on what matters: your words, your tone, your ability to think fast and respond intelligently. Plus it's faster (8 min vs 30 min), less intimidating, and more effective for confidence building."
+                    }
+                ]
+            },
+            {
+                title: "Getting Help & Next Steps",
+                items: [
+                    {
+                        id: "help-1",
+                        question: "I have a question not answered here. Who do I contact?",
+                        answer: "Email us at support@cream.retrospxt.com or reply to your welcome email. We respond within 2 hours on weekdays. For urgent issues, use the chat widget in your dashboard. We're here to help you succeed."
+                    },
+                    {
+                        id: "help-2",
+                        question: "Can I talk to someone before I buy?",
+                        answer: "Yes. Book a 15-minute demo with our team. We'll walk you through the platform, answer your specific questions, and show you exactly how it works for your use case. No pressure, just answers."
+                    },
+                    {
+                        id: "help-3",
+                        question: "What if I want to cancel?",
+                        answer: "You can cancel anytime. No questions asked, no penalties. Your data stays for 90 days in case you want it. Monthly plans cancel immediately. Annual plans: you get a refund for unused months. Simple."
+                    },
+                    {
+                        id: "help-4",
+                        question: "Ready to get started?",
+                        answer: "Choose your plan above and start your free 7-day trial. Add your first trainee in 30 seconds. They'll get training in minutes. See for yourself why elite sales teams use Cream No Sugar. Start small, scale fast."
+                    }
+                ]
+            }
+        ];
+
+        const container = document.getElementById('faq-container');
+
+        faqData.forEach((section) => {
+            const sectionDiv = document.createElement('section');
+            sectionDiv.className = 'section';
+
+            const titleDiv = document.createElement('h2');
+            titleDiv.className = 'section-title';
+            titleDiv.textContent = section.title;
+
+            const dividerDiv = document.createElement('div');
+            dividerDiv.className = 'section-divider';
+
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'faq-items';
+
+            section.items.forEach((item) => {
+                const itemDiv = document.createElement('article');
+                itemDiv.className = 'faq-item';
+                itemDiv.id = item.id;
+
+                const button = document.createElement('button');
+                button.className = 'faq-button';
+                button.type = 'button';
+                button.setAttribute('aria-expanded', 'false');
+                button.setAttribute('aria-controls', `${item.id}-answer`);
+                button.innerHTML = `
+                    <div class="faq-question">${item.question}</div>
+                    <div class="faq-icon" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                `;
+
+                const answer = document.createElement('div');
+                answer.className = 'faq-answer';
+                answer.id = `${item.id}-answer`;
+                answer.textContent = item.answer;
+
+                button.addEventListener('click', () => {
+                    const expanded = itemDiv.classList.toggle('expanded');
+                    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                });
+
+                itemDiv.appendChild(button);
+                itemDiv.appendChild(answer);
+                itemsDiv.appendChild(itemDiv);
+            });
+
+            sectionDiv.appendChild(titleDiv);
+            sectionDiv.appendChild(dividerDiv);
+            sectionDiv.appendChild(itemsDiv);
+            container.appendChild(sectionDiv);
+        });
+    </script>
+</body>
+</html>

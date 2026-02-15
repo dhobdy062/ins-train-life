@@ -134,6 +134,9 @@ export default async function Home({ searchParams }: HomePageProps) {
         <footer className="footer">
           <span>Cream No Sugar. Built to Build Better Performing Salespeople</span>
           <span>Demo Includes Term Life only</span>
+          <a className="footer-link" href="/FAQ_Page.html" target="_blank" rel="noreferrer">
+            Frequently Asked Questions
+          </a>
         </footer>
       </div>
     </div>

@@ -21,14 +21,27 @@ export default defineSchema({
     sessionKey: v.string(),
     orgId: v.string(),
     trainerId: v.string(),
+    traineeId: v.optional(v.string()),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
     rebuttalKeys: v.array(v.string()),
     channel: v.literal("web"),
+    identityMode: v.optional(v.union(v.literal("ip_match"), v.literal("backup_code"), v.literal("manual_override"))),
+    ipHash: v.optional(v.string()),
+    profileSnapshot: v.optional(
+      v.object({
+        difficultyLevel: v.string(),
+        objectionsRequired: v.number(),
+        expectedRebuttals: v.array(v.string()),
+      }),
+    ),
+    recordingStorageId: v.optional(v.id("_storage")),
+    transcriptStorageId: v.optional(v.id("_storage")),
     status: v.union(v.literal("started"), v.literal("completed"), v.literal("abandoned")),
     createdAt: v.number(),
     endedAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_sessionKey", ["sessionKey"])
     .index("by_org_createdAt", ["orgId", "createdAt"]),
@@ -54,6 +67,23 @@ export default defineSchema({
   })
     .index("by_sessionKey", ["sessionKey"])
     .index("by_org_createdAt", ["orgId", "createdAt"]),
+
+  rebuttalResponses: defineTable({
+    sessionKey: v.string(),
+    orgId: v.string(),
+    traineeId: v.optional(v.string()),
+    objectionId: v.optional(v.string()),
+    rebuttalTypeExpected: v.optional(v.string()),
+    agentResponse: v.string(),
+    toneAnalysis: v.optional(v.string()),
+    score: v.number(),
+    grade: v.string(),
+    feedback: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_sessionKey", ["sessionKey"])
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_trainee_createdAt", ["traineeId", "createdAt"]),
 
   usageRollups: defineTable({
     orgId: v.string(),

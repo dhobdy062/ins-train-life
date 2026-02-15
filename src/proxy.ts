@@ -5,6 +5,7 @@ const isProtectedRoute = createRouteMatcher([
   "/workspace/dashboard(.*)",
   "/dashboard/trainer(.*)",
   "/api/vapi/session/start(.*)",
+  "/api/training/session(.*)",
   "/api/email/sequence(.*)",
 ]);
 
