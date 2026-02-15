@@ -10,6 +10,7 @@ const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions.cre
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions.reserveTrialSession");
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks.checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks.getOrgBillingAccess");
+const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks.getOrgEntitlement");
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -86,6 +87,17 @@ export async function getOrgBillingAccess(args: { orgId: string; limit?: number 
   const client = getClient();
   return client.query(getOrgBillingAccessRef, args as never) as Promise<{
     hasAccess: boolean;
+    reason: string;
+  }>;
+}
+
+export async function getOrgEntitlement(args: { orgId: string; limit?: number }) {
+  const client = getClient();
+  return client.query(getOrgEntitlementRef, args as never) as Promise<{
+    mode: "paid" | "trial" | "blocked";
+    minutesUsed: number;
+    minutesLimit: number | null;
+    minutesRemaining: number;
     reason: string;
   }>;
 }

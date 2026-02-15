@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default async function TrainingStartPage() {
+export default function WorkspaceDashboardAliasPage() {
   redirect("/dashboard/trainer");
 }

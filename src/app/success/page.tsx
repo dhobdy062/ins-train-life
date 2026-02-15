@@ -22,8 +22,8 @@ export default function SuccessPage() {
               difficulty tiers.
             </p>
             <div className="hero-actions">
-              <Link className="button" href="/demo">
-                Run the 2-minute demo
+              <Link className="button" href="/workspace/dashboard">
+                Open workspace dashboard
               </Link>
               <button className="button secondary">Request onboarding call</button>
             </div>

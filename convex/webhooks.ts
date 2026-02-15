@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 
+const DEFAULT_BILLING_EVENT_LIMIT = 200;
+const MAX_BILLING_EVENT_LIMIT = 500;
+const ORG_TRIAL_MINUTES_LIMIT = 15;
+
 export const enqueueWebhookEvent = mutation({
   args: {
     provider: v.union(v.literal("stripe"), v.literal("vapi")),
@@ -127,7 +131,7 @@ export const getOrgBillingAccess = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(Math.max(args.limit ?? 200, 1), 500);
+    const limit = normalizeLimit(args.limit);
 
     const events = await ctx.db
       .query("billingEvents")
@@ -135,48 +139,64 @@ export const getOrgBillingAccess = query({
       .order("desc")
       .take(limit);
 
-    if (events.length === 0) {
-      return { hasAccess: false, reason: "no_billing_events" as const };
+    return resolveBillingAccess(events);
+  },
+});
+
+export const getOrgEntitlement = query({
+  args: {
+    orgId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = normalizeLimit(args.limit);
+    const billingEvents = await ctx.db
+      .query("billingEvents")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(limit);
+
+    const billingAccess = resolveBillingAccess(billingEvents);
+    const usageRecords = await ctx.db
+      .query("usageRollups")
+      .withIndex("by_org_day_provider", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const minutesUsed = usageRecords.reduce((total, record) => {
+      if (record.provider !== "vapi") {
+        return total;
+      }
+      return total + Math.max(record.minutesTotal, 0);
+    }, 0);
+
+    const minutesRemaining = Math.max(ORG_TRIAL_MINUTES_LIMIT - minutesUsed, 0);
+    if (billingAccess.hasAccess) {
+      return {
+        mode: "paid" as const,
+        minutesUsed,
+        minutesLimit: null,
+        minutesRemaining,
+        reason: billingAccess.reason,
+      };
     }
 
-    const allowedStatuses = new Set(["active", "trialing", "past_due"]);
-    const deniedStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
-
-    const latestStatusBySubscription = new Map<string, string>();
-
-    for (const event of events) {
-      const subscriptionId = event.stripeSubscriptionId;
-      const status = event.status?.toLowerCase();
-
-      if (!subscriptionId || !status) {
-        continue;
-      }
-
-      if (!latestStatusBySubscription.has(subscriptionId)) {
-        latestStatusBySubscription.set(subscriptionId, status);
-      }
+    if (minutesRemaining === 0) {
+      return {
+        mode: "blocked" as const,
+        minutesUsed,
+        minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
+        minutesRemaining,
+        reason: "trial_limit_reached" as const,
+      };
     }
 
-    if (latestStatusBySubscription.size > 0) {
-      const statuses = [...latestStatusBySubscription.values()];
-
-      if (statuses.some((status) => allowedStatuses.has(status))) {
-        return { hasAccess: true, reason: "subscription_active" as const };
-      }
-
-      if (statuses.every((status) => deniedStatuses.has(status))) {
-        return { hasAccess: false, reason: "subscription_inactive" as const };
-      }
-
-      return { hasAccess: false, reason: "subscription_status_unknown" as const };
-    }
-
-    const hasCompletedCheckout = events.some((event) => event.eventType === "checkout.session.completed");
-    if (hasCompletedCheckout) {
-      return { hasAccess: true, reason: "checkout_completed" as const };
-    }
-
-    return { hasAccess: false, reason: "no_active_subscription" as const };
+    return {
+      mode: "trial" as const,
+      minutesUsed,
+      minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
+      minutesRemaining,
+      reason: "trial_available" as const,
+    };
   },
 });
 
@@ -235,10 +255,16 @@ async function persistVapiEvent(
   const sessionKey =
     asString(call?.id) || asString(payload?.callId) || asString(payload?.sessionId) || asString(payload?.id) || "unknown";
 
+  const metadata = call?.metadata ?? payload?.metadata ?? message?.metadata ?? {};
   const orgId =
-    asString(call?.metadata?.orgId) ||
+    asString(metadata?.orgId) ||
+    asString(metadata?.org_id) ||
+    asString(call?.orgId) ||
+    asString(call?.org_id) ||
     asString(payload?.orgId) ||
+    asString(payload?.org_id) ||
     asString(payload?.metadata?.orgId) ||
+    asString(payload?.metadata?.org_id) ||
     "unscoped";
 
   const eventType =
@@ -310,6 +336,61 @@ async function incrementUsageRollup(
 
 function dayKey(timestamp: number) {
   return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function normalizeLimit(limit: number | undefined) {
+  return Math.min(Math.max(limit ?? DEFAULT_BILLING_EVENT_LIMIT, 1), MAX_BILLING_EVENT_LIMIT);
+}
+
+function resolveBillingAccess(
+  events: Array<{
+    stripeSubscriptionId?: string;
+    status?: string;
+    eventType: string;
+  }>,
+) {
+  if (events.length === 0) {
+    return { hasAccess: false, reason: "no_billing_events" as const };
+  }
+
+  const allowedStatuses = new Set(["active", "trialing", "past_due"]);
+  const deniedStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
+
+  const latestStatusBySubscription = new Map<string, string>();
+
+  for (const event of events) {
+    const subscriptionId = event.stripeSubscriptionId;
+    const status = event.status?.toLowerCase();
+
+    if (!subscriptionId || !status) {
+      continue;
+    }
+
+    if (!latestStatusBySubscription.has(subscriptionId)) {
+      latestStatusBySubscription.set(subscriptionId, status);
+    }
+  }
+
+  if (latestStatusBySubscription.size > 0) {
+    const statuses = [...latestStatusBySubscription.values()];
+
+    if (statuses.some((status) => allowedStatuses.has(status))) {
+      return { hasAccess: true, reason: "subscription_active" as const };
+    }
+
+    if (statuses.every((status) => deniedStatuses.has(status))) {
+      return { hasAccess: false, reason: "subscription_inactive" as const };
+    }
+
+    return { hasAccess: false, reason: "subscription_status_unknown" as const };
+  }
+
+  const hasCompletedCheckout = events.some((event) => event.eventType === "checkout.session.completed");
+  if (hasCompletedCheckout) {
+    return { hasAccess: true, reason: "checkout_completed" as const };
+  }
+
+  return { hasAccess: false, reason: "no_active_subscription" as const };
 }
 
 function asString(value: unknown): string | undefined {

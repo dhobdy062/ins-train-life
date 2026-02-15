@@ -3,12 +3,15 @@ import Link from "next/link";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import DemoConsole from "@/components/DemoConsole";
 import SequencePlannerCard from "@/components/SequencePlannerCard";
-import { getOrgBillingAccess } from "@/lib/convex";
+import { getOrgEntitlement } from "@/lib/convex";
 
 export default async function TrainerDashboardPage() {
   const { userId, orgId } = await auth();
-  const access = orgId ? await getOrgBillingAccess({ orgId }).catch(() => null) : null;
-  const hasBillingAccess = Boolean(access?.hasAccess);
+  const entitlement = orgId ? await getOrgEntitlement({ orgId }).catch(() => null) : null;
+  const canOpenDashboard = Boolean(userId && orgId);
+  const isPaid = entitlement?.mode === "paid";
+  const isTrial = entitlement?.mode === "trial";
+  const isBlocked = entitlement?.mode === "blocked";
 
   return (
     <div className="page">
@@ -35,7 +38,7 @@ export default async function TrainerDashboardPage() {
         </nav>
 
         <main>
-          {userId && orgId && hasBillingAccess ? (
+          {canOpenDashboard ? (
             <>
               <section className="glass panel">
                 <div className="tag">Control center</div>
@@ -57,21 +60,56 @@ export default async function TrainerDashboardPage() {
                     <span>Email sequence path</span>
                     <strong>/api/email/sequence</strong>
                   </div>
+                  <div className="metric">
+                    <span>Access mode</span>
+                    <strong>{isPaid ? "Paid" : isBlocked ? "Trial locked" : "Trial"}</strong>
+                  </div>
+                  <div className="metric">
+                    <span>Trial usage</span>
+                    <strong>
+                      {entitlement?.minutesUsed ?? 0}
+                      {entitlement?.minutesLimit ? ` / ${entitlement.minutesLimit} minutes` : " minutes"}
+                    </strong>
+                  </div>
+                  <div className="metric">
+                    <span>Trial remaining</span>
+                    <strong>{entitlement?.minutesLimit ? entitlement.minutesRemaining : "Unlimited"}</strong>
+                  </div>
                 </div>
               </section>
 
+              {isTrial ? (
+                <section className="glass panel">
+                  <div className="tag">Trial active</div>
+                  <h3>You are on trial with 15 total talk minutes.</h3>
+                  <p className="disclaimer">
+                    Calls continue normally once started. New calls are blocked only after your organization reaches 15
+                    total minutes.
+                  </p>
+                </section>
+              ) : null}
+
+              {isBlocked ? (
+                <section className="glass panel">
+                  <div className="tag">Trial limit reached</div>
+                  <h3>Your organization has used all available trial talk time.</h3>
+                  <p className="disclaimer">Upgrade to continue launching new calls from this dashboard.</p>
+                  <div className="hero-actions">
+                    <Link className="button" href="/#pricing">
+                      Upgrade plan
+                    </Link>
+                  </div>
+                </section>
+              ) : null}
+
               <SequencePlannerCard />
-              <DemoConsole />
+              <DemoConsole
+                startDisabled={isBlocked}
+                blockedStatusMessage={
+                  isBlocked ? "Trial talk-time limit reached. Upgrade to continue starting new calls." : null
+                }
+              />
             </>
-          ) : userId && orgId ? (
-            <div className="glass panel">
-              <div className="tag">Subscription required</div>
-              <h3>This organization does not have an active subscription yet.</h3>
-              <p className="disclaimer">Select a paid plan to unlock team training sessions.</p>
-              <Link className="button" href="/#pricing">
-                View pricing
-              </Link>
-            </div>
           ) : (
             <div className="glass panel">
               <div className="tag">Authentication required</div>

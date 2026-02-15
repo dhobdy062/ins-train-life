@@ -17,6 +17,15 @@ type SessionBootstrapResponse = {
   };
 };
 
+type SessionBootstrapError = {
+  code?: string;
+  error?: string;
+  message?: string;
+  minutesUsed?: number;
+  minutesLimit?: number | null;
+  minutesRemaining?: number;
+};
+
 type VapiClient = {
   start: (assistant: string, options?: Record<string, unknown>) => Promise<unknown>;
   stop: () => Promise<void>;
@@ -52,7 +61,12 @@ function formatUnknownError(error: unknown) {
   return "Unknown error";
 }
 
-export default function DemoConsole() {
+type DemoConsoleProps = {
+  startDisabled?: boolean;
+  blockedStatusMessage?: string | null;
+};
+
+export default function DemoConsole({ startDisabled = false, blockedStatusMessage = null }: DemoConsoleProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>("D2");
   const [objectionsRequired, setObjectionsRequired] = useState(3);
   const [rebuttals, setRebuttals] = useState(DEFAULT_REBUTTALS);
@@ -111,6 +125,12 @@ export default function DemoConsole() {
   }
 
   async function handleStart() {
+    if (startDisabled) {
+      setCallState("blocked");
+      setStatus(blockedStatusMessage ?? "Call start is currently blocked for this workspace.");
+      return;
+    }
+
     setLoading(true);
     setStatus(null);
 
@@ -128,13 +148,22 @@ export default function DemoConsole() {
       const payloadText = await response.text();
       const payload = (() => {
         try {
-          return JSON.parse(payloadText) as SessionBootstrapResponse | { error?: string; message?: string };
+          return JSON.parse(payloadText) as SessionBootstrapResponse | SessionBootstrapError;
         } catch {
           return {};
         }
       })();
 
       if (!response.ok || !("assistantId" in payload)) {
+        const errorPayload = payload as SessionBootstrapError;
+        if (errorPayload.code === "TRIAL_LIMIT_REACHED") {
+          setCallState("blocked");
+          throw new Error(
+            errorPayload.message ??
+              "Trial talk-time limit reached for this organization. Upgrade to continue starting calls.",
+          );
+        }
+
         const maybeError =
           typeof payload === "object" && payload !== null && ("error" in payload || "message" in payload)
             ? (((payload as { error?: string; message?: string }).error ??
@@ -260,7 +289,7 @@ export default function DemoConsole() {
       </div>
 
       <div className="hero-actions">
-        <button className="button" onClick={handleStart} disabled={loading}>
+        <button className="button" onClick={handleStart} disabled={loading || startDisabled}>
           {loading ? "Starting..." : "Start practice call"}
         </button>
         <button className="button secondary" onClick={handleStop} disabled={loading || !vapiRef.current}>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTrainingSession, getOrgBillingAccess, recordAlert } from "@/lib/convex";
+import { createTrainingSession, getOrgEntitlement, recordAlert } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
@@ -36,15 +36,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
   }
 
-  let access: { hasAccess: boolean; reason: string };
+  let entitlement: {
+    mode: "paid" | "trial" | "blocked";
+    minutesUsed: number;
+    minutesLimit: number | null;
+    minutesRemaining: number;
+    reason: string;
+  };
   try {
-    access = await getOrgBillingAccess({ orgId });
+    entitlement = await getOrgEntitlement({ orgId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Billing access lookup failed";
+    const message = error instanceof Error ? error.message : "Entitlement lookup failed";
 
     try {
       await recordAlert({
-        source: "api/vapi/session/start.billing-access",
+        source: "api/vapi/session/start.entitlement",
         severity: "critical",
         message,
         context: { userId, orgId },
@@ -54,13 +60,23 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "Billing status is temporarily unavailable. Please retry in one minute." },
+      { error: "Access status is temporarily unavailable. Please retry in one minute." },
       { status: 503 },
     );
   }
 
-  if (!access.hasAccess) {
-    return NextResponse.json({ error: "Active subscription required for this organization." }, { status: 402 });
+  if (entitlement.mode === "blocked") {
+    return NextResponse.json(
+      {
+        code: "TRIAL_LIMIT_REACHED",
+        error: "Trial talk-time limit reached for this organization.",
+        message: "Your organization has used all 15 trial minutes. Upgrade to continue.",
+        minutesUsed: entitlement.minutesUsed,
+        minutesLimit: entitlement.minutesLimit,
+        minutesRemaining: entitlement.minutesRemaining,
+      },
+      { status: 403 },
+    );
   }
 
   const assistantId = (process.env.VAPI_TEST_ASSISTANT_ID ?? process.env.VAPI_ASSISTANT_ID)?.trim();
@@ -135,6 +151,7 @@ export async function POST(request: Request) {
         trainerId: userId,
         sessionKey: session.sessionKey,
         sequenceStage: variableValues.email_sequence_stage,
+        entitlementMode: entitlement.mode,
       },
     });
   } catch (error) {
