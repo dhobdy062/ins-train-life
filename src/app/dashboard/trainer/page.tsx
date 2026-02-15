@@ -3,6 +3,7 @@ import Link from "next/link";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import DemoConsole from "@/components/DemoConsole";
 import SequencePlannerCard from "@/components/SequencePlannerCard";
+import DashboardTabs, { DashboardTabPanel } from "@/components/dashboard/DashboardTabs";
 import { getOrgEntitlement } from "@/lib/convex";
 
 export default async function TrainerDashboardPage() {
@@ -12,6 +13,10 @@ export default async function TrainerDashboardPage() {
   const isPaid = entitlement?.mode === "paid";
   const isTrial = entitlement?.mode === "trial";
   const isBlocked = entitlement?.mode === "blocked";
+  const minutesUsed = entitlement?.minutesUsed ?? 0;
+  const minutesLimit = entitlement?.minutesLimit;
+  const minutesRemaining = entitlement?.minutesRemaining;
+  const accessLabel = isPaid ? "Paid plan" : isBlocked ? "Upgrade needed" : "Trial";
 
   return (
     <div className="page">
@@ -31,8 +36,8 @@ export default async function TrainerDashboardPage() {
               }}
             />
             <UserButton />
-            <Link className="button secondary" href="/">
-              Back to home
+            <Link className="button secondary" href="/dashboard/trainer">
+              Home
             </Link>
           </div>
         </nav>
@@ -40,81 +45,81 @@ export default async function TrainerDashboardPage() {
         <main>
           {canOpenDashboard ? (
             <>
-              <section className="glass panel">
-                <div className="tag">Control center</div>
-                <h3>Configure training, monitor agents, and launch sessions</h3>
-                <div className="grid">
-                  <div className="metric">
-                    <span>Brand mode</span>
-                    <strong>Cream No Sugar</strong>
-                  </div>
-                  <div className="metric">
-                    <span>Dashboard role</span>
-                    <strong>Trainer</strong>
-                  </div>
-                  <div className="metric">
-                    <span>Voice session path</span>
-                    <strong>/api/vapi/session/start</strong>
-                  </div>
-                  <div className="metric">
-                    <span>Email sequence path</span>
-                    <strong>/api/email/sequence</strong>
-                  </div>
-                  <div className="metric">
-                    <span>Access mode</span>
-                    <strong>{isPaid ? "Paid" : isBlocked ? "Trial locked" : "Trial"}</strong>
-                  </div>
-                  <div className="metric">
-                    <span>Trial usage</span>
-                    <strong>
-                      {entitlement?.minutesUsed ?? 0}
-                      {entitlement?.minutesLimit ? ` / ${entitlement.minutesLimit} minutes` : " minutes"}
-                    </strong>
-                  </div>
-                  <div className="metric">
-                    <span>Trial remaining</span>
-                    <strong>{entitlement?.minutesLimit ? entitlement.minutesRemaining : "Unlimited"}</strong>
-                  </div>
-                </div>
-              </section>
+              <DashboardTabs defaultTab="home">
+                <DashboardTabPanel id="home" label="Home">
+                  <section className="glass panel">
+                    <div className="tag">Control center</div>
+                    <h3>Lead your team&apos;s daily training plan</h3>
+                    <div className="grid">
+                      <div className="metric">
+                        <span>Brand</span>
+                        <strong>Cream No Sugar</strong>
+                      </div>
+                      <div className="metric">
+                        <span>Role</span>
+                        <strong>Trainer</strong>
+                      </div>
+                      <div className="metric">
+                        <span>Access</span>
+                        <strong>{accessLabel}</strong>
+                      </div>
+                      <div className="metric">
+                        <span>Talk time used</span>
+                        <strong>
+                          {minutesUsed}
+                          {minutesLimit ? ` / ${minutesLimit} minutes` : " minutes"}
+                        </strong>
+                      </div>
+                      <div className="metric">
+                        <span>Talk time remaining</span>
+                        <strong>{minutesLimit ? minutesRemaining : "Unlimited"}</strong>
+                      </div>
+                    </div>
+                  </section>
 
-              {isTrial ? (
-                <section className="glass panel">
-                  <div className="tag">Trial active</div>
-                  <h3>You are on trial with 15 total talk minutes.</h3>
-                  <p className="disclaimer">
-                    Calls continue normally once started. New calls are blocked only after your organization reaches 15
-                    total minutes.
-                  </p>
-                </section>
-              ) : null}
+                  {isTrial ? (
+                    <section className="glass panel">
+                      <div className="tag">Trial active</div>
+                      <h3>Your trial is active with 15 total talk minutes.</h3>
+                      <p className="disclaimer">
+                        In-progress calls continue normally. New calls pause after your team reaches the limit.
+                      </p>
+                    </section>
+                  ) : null}
 
-              {isBlocked ? (
-                <section className="glass panel">
-                  <div className="tag">Trial limit reached</div>
-                  <h3>Your organization has used all available trial talk time.</h3>
-                  <p className="disclaimer">Upgrade to continue launching new calls from this dashboard.</p>
-                  <div className="hero-actions">
-                    <Link className="button" href="/#pricing">
-                      Upgrade plan
-                    </Link>
-                  </div>
-                </section>
-              ) : null}
+                  {isBlocked ? (
+                    <section className="glass panel">
+                      <div className="tag">Talk time limit reached</div>
+                      <h3>Your team has used all available trial talk time.</h3>
+                      <p className="disclaimer">Upgrade to continue launching new practice calls.</p>
+                      <div className="hero-actions">
+                        <Link className="button" href="/#pricing">
+                          Upgrade plan
+                        </Link>
+                      </div>
+                    </section>
+                  ) : null}
+                </DashboardTabPanel>
 
-              <SequencePlannerCard />
-              <DemoConsole
-                startDisabled={isBlocked}
-                blockedStatusMessage={
-                  isBlocked ? "Trial talk-time limit reached. Upgrade to continue starting new calls." : null
-                }
-              />
+                <DashboardTabPanel id="practice" label="Practice">
+                  <DemoConsole
+                    startDisabled={isBlocked}
+                    blockedStatusMessage={
+                      isBlocked ? "Trial talk-time limit reached. Upgrade to continue starting new calls." : null
+                    }
+                  />
+                </DashboardTabPanel>
+
+                <DashboardTabPanel id="team" label="Team">
+                  <SequencePlannerCard />
+                </DashboardTabPanel>
+              </DashboardTabs>
             </>
           ) : (
             <div className="glass panel">
               <div className="tag">Authentication required</div>
               <h3>Sign in and choose an organization to open the trainer dashboard.</h3>
-              <p className="disclaimer">Sign-in protects training configuration and organization-scoped analytics.</p>
+              <p className="disclaimer">Sign-in keeps your organization&apos;s coaching progress secure.</p>
               <Link className="button" href="/sign-in?redirect_url=/dashboard/trainer">
                 Sign in
               </Link>

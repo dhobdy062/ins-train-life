@@ -61,6 +61,36 @@ function formatUnknownError(error: unknown) {
   return "Unknown error";
 }
 
+function toFriendlyCallError(rawMessage: string) {
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("trial talk-time limit reached") || message.includes("trial limit reached")) {
+    return "You have reached your current talk-time limit. Upgrade to continue starting new calls.";
+  }
+
+  if (message.includes("network") || message.includes("failed to fetch")) {
+    return "We could not connect right now. Check your connection and try again.";
+  }
+
+  if (
+    message.includes("unable to initialize session") ||
+    message.includes("unable to connect call") ||
+    message.includes("http")
+  ) {
+    return "We could not start the practice call. Please try again in a moment.";
+  }
+
+  return "Something went wrong while starting the practice call. Please try again.";
+}
+
+function formatRoleLabel(role: string) {
+  if (!role) {
+    return "Trainer";
+  }
+
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 type DemoConsoleProps = {
   startDisabled?: boolean;
   blockedStatusMessage?: string | null;
@@ -73,9 +103,7 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
   const [callState, setCallState] = useState("ready");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sessionKey, setSessionKey] = useState<string | null>(null);
-  const [sequenceStage, setSequenceStage] = useState<string>("Pending");
-  const [agentRole, setAgentRole] = useState<string>("Pending");
+  const [agentRole, setAgentRole] = useState<string>("Trainer");
   const [agentBrand, setAgentBrand] = useState<string>("Cream No Sugar");
 
   const vapiRef = useRef<VapiClient | null>(null);
@@ -102,22 +130,22 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
 
     client.on("call-start", () => {
       setCallState("in_call");
-      setStatus("Call connected. Prospect is live.");
+      setStatus("Call connected. Your prospect is live.");
     });
 
     client.on("call-end", () => {
       setCallState("ended");
-      setStatus("Call ended. Metrics will continue processing asynchronously.");
+      setStatus("Call ended. Your results will refresh shortly.");
     });
 
     client.on("error", (error) => {
       setCallState("error");
-      setStatus(`Call error: ${formatUnknownError(error)}`);
+      setStatus(toFriendlyCallError(formatUnknownError(error)));
     });
 
     client.on("call-start-failed", (event) => {
       setCallState("error");
-      setStatus(`Unable to connect call: ${formatUnknownError(event)}`);
+      setStatus(toFriendlyCallError(`Unable to connect call: ${formatUnknownError(event)}`));
     });
 
     vapiRef.current = client;
@@ -127,7 +155,7 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
   async function handleStart() {
     if (startDisabled) {
       setCallState("blocked");
-      setStatus(blockedStatusMessage ?? "Call start is currently blocked for this workspace.");
+      setStatus(blockedStatusMessage ?? "Call start is currently unavailable for this team.");
       return;
     }
 
@@ -178,17 +206,13 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
         metadata: payload.metadata,
       });
 
-      setSessionKey(payload.sessionKey);
-      setSequenceStage(payload.variableValues.email_sequence_stage ?? payload.metadata.sequenceStage ?? "session_summary");
-      setAgentRole(payload.variableValues.dashboard_role ?? "trainer");
+      setAgentRole(formatRoleLabel(payload.variableValues.dashboard_role ?? "trainer"));
       setAgentBrand(payload.variableValues.brand_name ?? "Cream No Sugar");
       setCallState("starting");
-      setStatus(
-        `Session initialized. Connecting... Email sequence stage: ${payload.variableValues.email_sequence_stage ?? "session_summary"}.`,
-      );
+      setStatus("Practice call is preparing. Connecting now...");
     } catch (error) {
       setCallState("error");
-      setStatus(formatUnknownError(error));
+      setStatus(toFriendlyCallError(formatUnknownError(error)));
     } finally {
       setLoading(false);
     }
@@ -207,7 +231,7 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
       setStatus("Call stopped.");
     } catch {
       setCallState("error");
-      setStatus("Unable to stop call cleanly.");
+      setStatus("We could not end the call cleanly. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -215,11 +239,11 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
 
   return (
     <div className="glass panel">
-      <div className="tag">Cream No Sugar workspace</div>
+      <div className="tag">Practice studio</div>
       <h3>Run a guided practice call</h3>
       <p className="disclaimer">
-        1. Choose difficulty and objection count. 2. Adjust rebuttal prompts. 3. Start the call. 4. Review call
-        status and results after the session ends.
+        1. Choose difficulty and objection count. 2. Update response guides. 3. Start the call. 4. Review coaching
+        feedback after the session ends.
       </p>
 
       <div className="grid">
@@ -267,24 +291,20 @@ export default function DemoConsole({ startDisabled = false, blockedStatusMessag
 
       <div className="grid">
         <div className="metric">
-          <span>Session key</span>
-          <strong>{sessionKey ?? "Pending"}</strong>
-        </div>
-        <div className="metric">
-          <span>Agent brand</span>
+          <span>Brand</span>
           <strong>{agentBrand}</strong>
         </div>
         <div className="metric">
-          <span>Agent role</span>
+          <span>Role</span>
           <strong>{agentRole}</strong>
-        </div>
-        <div className="metric">
-          <span>Email sequence stage</span>
-          <strong>{sequenceStage}</strong>
         </div>
         <div className="metric">
           <span>Call status</span>
           <strong>{callState}</strong>
+        </div>
+        <div className="metric">
+          <span>Current difficulty</span>
+          <strong>{difficulty}</strong>
         </div>
       </div>
 

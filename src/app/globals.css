@@ -177,11 +177,75 @@ main {
   box-shadow: 0 12px 30px rgba(137, 226, 193, 0.2);
 }
 
+.button:focus-visible {
+  outline: 2px solid rgba(137, 226, 193, 0.9);
+  outline-offset: 2px;
+}
+
 .panel {
   padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.dashboard-tabs {
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: rgba(12, 14, 19, 0.45);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-tab.active {
+  border-color: rgba(137, 226, 193, 0.65);
+  color: var(--ink);
+  background: rgba(137, 226, 193, 0.14);
+}
+
+.dashboard-tab:hover {
+  transform: translateY(-1px);
+}
+
+.dashboard-tab:focus-visible {
+  outline: 2px solid rgba(137, 226, 193, 0.9);
+  outline-offset: 2px;
+}
+
+.dashboard-panels {
+  display: grid;
+  gap: 24px;
+}
+
+.dashboard-panel {
+  display: grid;
+  gap: 24px;
+  animation: rise 0.35s ease;
+}
+
+.dashboard-panel[hidden] {
+  display: none;
 }
 
 .panel h3 {
@@ -460,7 +524,34 @@ main {
     align-items: stretch;
   }
 
+  .dashboard-tablist {
+    gap: 8px;
+  }
+
+  .dashboard-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
   .signin-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .button,
+  .dashboard-tab,
+  .dashboard-panel {
+    transition: none;
+    animation: none;
+  }
+
+  .button:hover,
+  .dashboard-tab:hover {
+    transform: none;
   }
 }

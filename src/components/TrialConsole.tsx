@@ -42,15 +42,35 @@ function formatUnknownError(error: unknown) {
   return "Unknown error";
 }
 
+function toFriendlyTrialError(rawMessage: string) {
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("trial limit reached")) {
+    return "You have reached the free practice limit for this email.";
+  }
+
+  if (message.includes("network") || message.includes("failed to fetch")) {
+    return "We could not connect right now. Check your connection and try again.";
+  }
+
+  if (
+    message.includes("unable to start trial call") ||
+    message.includes("unable to connect trial call") ||
+    message.includes("http")
+  ) {
+    return "We could not start your practice call. Please try again in a moment.";
+  }
+
+  return "Something went wrong while starting your practice call. Please try again.";
+}
+
 export default function TrialConsole() {
   const [loading, setLoading] = useState(false);
-  const [sessionKey, setSessionKey] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [callState, setCallState] = useState("ready");
   const [remainingTrialSessions, setRemainingTrialSessions] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   const [limitCtaUrl, setLimitCtaUrl] = useState("/sign-up");
-  const [sequenceStage, setSequenceStage] = useState<string>("Pending");
   const [agentBrand, setAgentBrand] = useState<string>("Cream No Sugar");
   const vapiRef = useRef<VapiClient | null>(null);
 
@@ -65,22 +85,22 @@ export default function TrialConsole() {
 
     client.on("call-start", () => {
       setCallState("in_call");
-      setStatus("Trial call connected.");
+      setStatus("Call connected. Your prospect is live.");
     });
 
     client.on("call-end", () => {
       setCallState("ended");
-      setStatus("Trial call ended.");
+      setStatus("Call ended. Great work.");
     });
 
     client.on("error", (error) => {
       setCallState("error");
-      setStatus(`Call error: ${formatUnknownError(error)}`);
+      setStatus(toFriendlyTrialError(formatUnknownError(error)));
     });
 
     client.on("call-start-failed", (event) => {
       setCallState("error");
-      setStatus(`Unable to connect trial call: ${formatUnknownError(event)}`);
+      setStatus(toFriendlyTrialError(`Unable to connect trial call: ${formatUnknownError(event)}`));
     });
 
     vapiRef.current = client;
@@ -112,7 +132,7 @@ export default function TrialConsole() {
         if (errorPayload.code === "TRIAL_LIMIT_REACHED") {
           setLimitReached(true);
           setLimitCtaUrl(errorPayload.ctaUrl ?? "/sign-up");
-          setStatus(errorPayload.message ?? "Trial limit reached.");
+          setStatus(toFriendlyTrialError(errorPayload.message ?? "Trial limit reached."));
           return;
         }
 
@@ -126,17 +146,13 @@ export default function TrialConsole() {
         metadata: successPayload.metadata,
       });
 
-      setSessionKey(successPayload.sessionKey);
       setRemainingTrialSessions(successPayload.remainingTrialSessions);
-      setSequenceStage(successPayload.variableValues.email_sequence_stage ?? "trainee_invitation");
       setAgentBrand(successPayload.variableValues.brand_name ?? "Cream No Sugar");
       setCallState("starting");
-      setStatus(
-        `Initializing trial call... Email sequence stage: ${successPayload.variableValues.email_sequence_stage ?? "trainee_invitation"}.`,
-      );
+      setStatus("Practice call is preparing. Connecting now...");
     } catch (error) {
       setCallState("error");
-      setStatus(formatUnknownError(error));
+      setStatus(toFriendlyTrialError(formatUnknownError(error)));
     } finally {
       setLoading(false);
     }
@@ -151,10 +167,10 @@ export default function TrialConsole() {
     try {
       await vapiRef.current.stop();
       setCallState("ended");
-      setStatus("Trial call stopped.");
+      setStatus("Call stopped.");
     } catch {
       setCallState("error");
-      setStatus("Unable to stop call cleanly.");
+      setStatus("We could not end the call cleanly. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -162,28 +178,20 @@ export default function TrialConsole() {
 
   return (
     <div className="glass panel">
-      <div className="tag">Web trial</div>
-      <h3>Start a 2-minute practice call</h3>
+      <div className="tag">Practice session</div>
+      <h3>Start a short practice call</h3>
       <p className="disclaimer">
-        You can run up to 3 lifetime trial sessions with this verified email before moving to a paid plan.
+        You can run up to 3 free practice sessions with this verified email before moving to a paid plan.
       </p>
 
       <div className="grid">
         <div className="metric">
-          <span>Session key</span>
-          <strong>{sessionKey ?? "Pending"}</strong>
-        </div>
-        <div className="metric">
-          <span>Trial sessions remaining</span>
+          <span>Free sessions remaining</span>
           <strong>{remainingTrialSessions ?? "-"}</strong>
         </div>
         <div className="metric">
-          <span>Agent brand</span>
+          <span>Brand</span>
           <strong>{agentBrand}</strong>
-        </div>
-        <div className="metric">
-          <span>Email sequence stage</span>
-          <strong>{sequenceStage}</strong>
         </div>
         <div className="metric">
           <span>Call status</span>
@@ -193,7 +201,7 @@ export default function TrialConsole() {
 
       <div className="hero-actions">
         <button className="button" onClick={handleStartTrial} disabled={loading || limitReached}>
-          {loading ? "Starting..." : "Start web trial"}
+          {loading ? "Starting..." : "Start practice call"}
         </button>
         <button className="button secondary" onClick={handleStopTrial} disabled={loading || !vapiRef.current}>
           Stop call
@@ -205,7 +213,7 @@ export default function TrialConsole() {
       {limitReached ? (
         <div className="hero-actions">
           <Link className="button" href={limitCtaUrl}>
-            Upgrade to continue training
+            Upgrade to continue practice
           </Link>
           <Link className="button secondary" href="/#pricing">
             Back to pricing
