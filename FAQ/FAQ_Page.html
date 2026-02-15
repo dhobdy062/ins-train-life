@@ -251,8 +251,11 @@
         .cta-section {
             margin-top: 1rem;
             padding: 2.2rem;
-            background: linear-gradient(150deg, rgba(137, 226, 193, 0.2), rgba(240, 179, 106, 0.17));
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background:
+                radial-gradient(circle at 15% 15%, rgba(137, 226, 193, 0.2), transparent 42%),
+                radial-gradient(circle at 85% 10%, rgba(240, 179, 106, 0.16), transparent 45%),
+                linear-gradient(140deg, rgba(12, 14, 19, 0.94), rgba(7, 8, 11, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 24px;
             text-align: center;
             box-shadow: var(--shadow);
@@ -261,12 +264,12 @@
         .cta-section h3 {
             font-size: 1.4rem;
             font-weight: 700;
-            color: #0a0b0e;
+            color: var(--ink);
             margin-bottom: 1rem;
         }
 
         .cta-section p {
-            color: #15171c;
+            color: rgba(247, 247, 242, 0.88);
             font-size: 1rem;
             margin-bottom: 2rem;
         }
@@ -296,24 +299,24 @@
         }
 
         .btn-primary {
-            background: #0a0b0e;
-            color: var(--ink);
+            background: var(--accent);
+            color: #0a0b0e;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(7, 8, 11, 0.3);
+            box-shadow: 0 12px 30px rgba(137, 226, 193, 0.2);
         }
 
         .btn-secondary {
             background: transparent;
-            border-color: rgba(10, 11, 14, 0.22);
-            color: #0a0b0e;
+            border-color: rgba(255, 255, 255, 0.28);
+            color: var(--ink);
         }
 
         .btn-secondary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(7, 8, 11, 0.16);
+            box-shadow: 0 12px 24px rgba(7, 8, 11, 0.24);
         }
 
         .faq-footer {
@@ -393,7 +396,7 @@
     <div class="container">
         <div class="cta-section">
             <h3>Ready to Transform Your Sales Training?</h3>
-            <p>Start your free 7-day trial with full platform access and real objection simulation from day one.</p>
+            <p>Choose your plan above or Schedule a Demo and see for yourself why Cream No Sugar is the fastest way to level up your sales team. Start small, scale fast.</p>
             <div class="cta-buttons">
                 <a href="/#pricing" class="btn btn-primary">Choose Your Plan</a>
                 <a href="mailto:support@cream.retrospxt.com" class="btn btn-secondary">Schedule a Demo</a>
@@ -650,11 +653,6 @@ const faqData = [
                         id: "help-3",
                         question: "What if I want to cancel?",
                         answer: "You can cancel anytime. No questions asked, no penalties. Your data stays for 90 days in case you want it. Monthly plans cancel immediately. Annual plans: you get a refund for unused months. Simple."
-                    },
-                    {
-                        id: "help-4",
-                        question: "Ready to get started?",
-                        answer: "Choose your plan above and start your free 7-day trial. Add your first trainee in 30 seconds. They'll get training in minutes. See for yourself why elite sales teams use Cream No Sugar. Start small, scale fast."
                     }
                 ]
             }
