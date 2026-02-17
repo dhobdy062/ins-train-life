@@ -33,6 +33,10 @@ function getCheckoutHint(error: unknown) {
     return "Stripe price ID is invalid for the configured Stripe account/key.";
   }
 
+  if (message.includes("similar object exists in") && message.includes("mode")) {
+    return "Stripe key mode does not match the configured price IDs (test vs live mismatch).";
+  }
+
   if (message.includes("Invalid API Key")) {
     return "STRIPE_SECRET_KEY is invalid. Check live/test mode and account.";
   }
@@ -46,6 +50,33 @@ function getCheckoutHint(error: unknown) {
   }
 
   return "Unable to create checkout session with current Stripe configuration.";
+}
+
+
+function getCheckoutErrorDetails(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return {};
+  }
+
+  const stripeLike = error as {
+    type?: unknown;
+    code?: unknown;
+    decline_code?: unknown;
+    param?: unknown;
+    requestId?: unknown;
+    statusCode?: unknown;
+    doc_url?: unknown;
+  };
+
+  return {
+    errorType: typeof stripeLike.type === "string" ? stripeLike.type : undefined,
+    errorCode: typeof stripeLike.code === "string" ? stripeLike.code : undefined,
+    declineCode: typeof stripeLike.decline_code === "string" ? stripeLike.decline_code : undefined,
+    errorParam: typeof stripeLike.param === "string" ? stripeLike.param : undefined,
+    requestId: typeof stripeLike.requestId === "string" ? stripeLike.requestId : undefined,
+    statusCode: typeof stripeLike.statusCode === "number" ? stripeLike.statusCode : undefined,
+    docUrl: typeof stripeLike.doc_url === "string" ? stripeLike.doc_url : undefined,
+  };
 }
 
 async function createCheckoutUrl(
@@ -104,12 +135,14 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
   } catch (error) {
     checkoutHint = getCheckoutHint(error);
     const message = error instanceof Error ? error.message : "Unknown checkout error";
+    const errorDetails = getCheckoutErrorDetails(error);
     console.error("[checkout/start] Failed to create checkout session", {
       plan: selection.planId,
       interval: selection.interval,
       orgId,
       userId,
       message,
+      ...errorDetails,
     });
   }
 
