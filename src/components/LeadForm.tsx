@@ -71,8 +71,8 @@ export default function LeadForm() {
       <div className="demo-logo-wrap">
         <Image className="demo-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={220} height={220} priority />
       </div>
-      <div className="tag">Start with a 2-minute demo</div>
-      <h3>Take it for a spin</h3>
+      <div className="tag">Try it for yourself</div>
+      <h3>No credit card needed to try a call. Sign up and get sent a verification link.</h3>
       <form className="form" onSubmit={handleSubmit}>
         <label className="field">
           Full name
@@ -109,7 +109,7 @@ export default function LeadForm() {
         </button>
       </div>
       {status ? <p className="disclaimer">{status}</p> : null}
-      <p className="disclaimer">
+      <p className="disclaimer disclaimer-highlight">
         Verification email unlocks the demo. Paid plans unlock full call library, scoring, and team analytics.
       </p>
     </div>
