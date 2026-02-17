@@ -64,7 +64,7 @@ function toFriendlyTrialError(rawMessage: string) {
   return "Something went wrong while starting your practice call. Please try again.";
 }
 
-export default function TrialConsole() {
+export default function TraineePracticeConsole() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [callState, setCallState] = useState("ready");

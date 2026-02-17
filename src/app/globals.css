@@ -276,6 +276,94 @@ main {
   font-size: 1.2rem;
 }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 14, 19, 0.42);
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.roster-table th,
+.roster-table td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: middle;
+}
+
+.roster-table th {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(198, 199, 192, 0.85);
+}
+
+.roster-table td {
+  font-size: 0.9rem;
+}
+
+.roster-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table-primary {
+  font-weight: 600;
+}
+
+.table-secondary {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.tone-success {
+  border-color: rgba(40, 184, 130, 0.5);
+  background: rgba(40, 184, 130, 0.14);
+  color: #9ff3ce;
+}
+
+.tone-info {
+  border-color: rgba(89, 174, 255, 0.5);
+  background: rgba(89, 174, 255, 0.14);
+  color: #b6ddff;
+}
+
+.tone-warning {
+  border-color: rgba(240, 179, 106, 0.5);
+  background: rgba(240, 179, 106, 0.14);
+  color: #ffd8aa;
+}
+
+.tone-danger {
+  border-color: rgba(255, 107, 107, 0.5);
+  background: rgba(255, 107, 107, 0.14);
+  color: #ffc6c6;
+}
+
+.tone-neutral {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+}
+
 .form {
   display: grid;
   gap: 14px;
