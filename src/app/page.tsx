@@ -50,7 +50,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                 </SignedOut>
                 <SignedIn>
                   <a className="button secondary" href="/dashboard/trainer">
-                    Launch authenticated widget
+                    Go to Dashboard
                   </a>
                 </SignedIn>
               </div>
