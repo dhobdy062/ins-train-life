@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createTrainingSession, getOrgEntitlement, recordAlert } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
+import { syncIdentityForRequest } from "@/lib/identitySync";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
 
@@ -43,6 +44,18 @@ export async function POST(request: Request) {
     minutesRemaining: number;
     reason: string;
   };
+  const identitySync = await syncIdentityForRequest({
+    userId,
+    orgId,
+    source: "api/vapi/session/start",
+    failClosed: true,
+  });
+  if (!identitySync.ok) {
+    return NextResponse.json(
+      { error: "Identity sync is temporarily unavailable. Please retry in one minute." },
+      { status: 503 },
+    );
+  }
   try {
     entitlement = await getOrgEntitlement({ orgId });
   } catch (error) {

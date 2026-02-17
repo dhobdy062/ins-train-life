@@ -2,6 +2,45 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  users: defineTable({
+    clerkUserId: v.string(),
+    primaryEmail: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    fullName: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastSyncedAt: v.number(),
+  }).index("by_clerkUserId", ["clerkUserId"]),
+
+  organizations: defineTable({
+    clerkOrgId: v.string(),
+    name: v.optional(v.string()),
+    slug: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastSyncedAt: v.number(),
+  }).index("by_clerkOrgId", ["clerkOrgId"]),
+
+  organizationMemberships: defineTable({
+    clerkMembershipId: v.string(),
+    clerkOrgId: v.string(),
+    clerkUserId: v.string(),
+    role: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastSyncedAt: v.number(),
+  })
+    .index("by_clerkMembershipId", ["clerkMembershipId"])
+    .index("by_org_user", ["clerkOrgId", "clerkUserId"])
+    .index("by_clerkOrgId", ["clerkOrgId"])
+    .index("by_clerkUserId", ["clerkUserId"]),
+
   webhookEvents: defineTable({
     provider: v.union(v.literal("stripe"), v.literal("vapi")),
     idempotencyKey: v.string(),

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "convex:dev": "convex dev",
-    "convex:deploy": "convex deploy"
+    "convex:deploy": "convex deploy",
+    "backfill:clerk:convex": "tsx scripts/backfill-clerk-to-convex.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
@@ -18,7 +19,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.1",
-    "stripe": "^20.3.1"
+    "stripe": "^20.3.1",
+    "svix": "^1.58.0"
   },
   "devDependencies": {
     "@types/node": "^20",

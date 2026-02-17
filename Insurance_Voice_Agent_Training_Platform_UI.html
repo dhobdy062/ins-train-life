@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Voice Agent Training Platform - Trainer Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+            padding: 0 30px;
+        }
+
+        .nav-tab {
+            padding: 15px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab:hover {
+            color: #2563eb;
+        }
+
+        .nav-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        /* Sections */
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #1f2937;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .section h3 {
+            font-size: 16px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Cards */
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafbfc;
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 15px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        /* Difficulty Level Tags */
+        .difficulty-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .difficulty-d1 { background: #d1fae5; color: #065f46; }
+        .difficulty-d2 { background: #dbeafe; color: #0c4a6e; }
+        .difficulty-d3 { background: #fef3c7; color: #92400e; }
+        .difficulty-d4 { background: #fed7aa; color: #7c2d12; }
+        .difficulty-d5 { background: #fecaca; color: #7f1d1d; }
+
+        /* Score Badges */
+        .score-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .score-excellent { background: #d1fae5; color: #065f46; }
+        .score-good { background: #dbeafe; color: #0c4a6e; }
+        .score-fair { background: #fef3c7; color: #92400e; }
+        .score-poor { background: #fecaca; color: #7f1d1d; }
+
+        /* Objection Cards */
+        .objection-card {
+            border-left: 4px solid #2563eb;
+            background: #f0f9ff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .objection-card.d1 { border-left-color: #10b981; }
+        .objection-card.d2 { border-left-color: #3b82f6; }
+        .objection-card.d3 { border-left-color: #f59e0b; }
+        .objection-card.d4 { border-left-color: #ef5350; }
+        .objection-card.d5 { border-left-color: #dc2626; }
+
+        .objection-text {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .objection-rebuttal {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .objection-frequency {
+            display: inline-block;
+            padding: 4px 8px;
+            background: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* Alert Box */
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            color: #0c4a6e;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Hidden Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Collapsible */
+        .collapsible {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .collapsible:hover {
+            background: #f3f4f6;
+        }
+
+        .collapsible-header {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .collapsible-toggle {
+            font-size: 20px;
+            color: #6b7280;
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible.open .collapsible-toggle {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 15px 15px 0 15px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            margin-bottom: 10px;
+        }
+
+        .collapsible.open + .collapsible-content {
+            display: block;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 40px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🎙️ Insurance Voice Agent Training Platform</h1>
+        <p>Trainer Dashboard – Configuration & Objection Management</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab(event, 'faq')">📚 FAQ</button>
+        <button class="nav-tab" onclick="switchTab(event, 'objections')">🎯 Objection Library</button>
+        <button class="nav-tab" onclick="switchTab(event, 'rebuttals')">💬 Rebuttal Strategies</button>
+        <button class="nav-tab" onclick="switchTab(event, 'agents')">👥 Agent Management</button>
+        <button class="nav-tab" onclick="switchTab(event, 'scoring')">📊 Scoring Config</button>
+        <button class="nav-tab" onclick="switchTab(event, 'training')">🎓 Training Plans</button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+
+        <!-- FAQ TAB -->
+        <div id="faq" class="tab-content active">
+            <div class="section">
+                <h2>📚 Frequently Asked Questions</h2>
+
+                <div class="alert alert-info">
+                    <div>
+                        <strong>Welcome, Trainer!</strong> This page helps you configure the platform for your team. Use these FAQs to understand how everything works, then customize the objections, rebuttals, and difficulty levels for your specific market.
+                    </div>
+                </div>
+
+                <h3>For Trainees</h3>
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">How do difficulty levels work?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>D1:</strong> Prospect remembers form, low resistance – builds confidence</p>
+                    <p><strong>D2:</strong> Skeptical, doesn't remember you – teaches credibility-building</p>
+                    <p><strong>D3:</strong> Family/timing concerns – teaches collaborative selling</p>
+                    <p><strong>D4:</strong> False confidence (already covered) – teaches needs analysis</p>
+                    <p><strong>D5:</strong> Brick wall – tests mastery of all techniques</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">What happens when I get an objection?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>The voice agent presents an objection. You have 30 seconds to respond with an appropriate rebuttal. The system scores your response (0-100 points) and the prospect reacts based on your score. You'll see immediate feedback on whether you used the right strategy.</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">How am I scored?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Rebuttal Type Accuracy (40%):</strong> Did you use the correct strategy?</p>
+                    <p><strong>Execution Quality (30%):</strong> Tone, specificity, empathy, clarity</p>
+                    <p><strong>Timing (15%):</strong> Responded within 30 seconds?</p>
+                    <p><strong>Prospect Response (15%):</strong> Did it move toward appointment-setting?</p>
+                </div>
+
+                <h3>For Trainers</h3>
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">How do I track my agents' progress?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>Go to the Agent Management tab. You'll see each agent's call history, average score by difficulty level, weak areas (objection types they struggle with), and recommendations for next training focus.</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">Can I customize the objections my agents see?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Yes!</strong> Go to the Objection Library tab. You can edit wording, add new objections, map them to rebuttal types, and adjust frequency. This allows you to tailor training to your specific market and product.</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">When should I move an agent to the next difficulty level?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Look for:</strong> Average score >75% on current level for 10+ calls, consistent success with all objection types, zero "hard stops" (prospects asking to be removed from list). You can set auto-progression rules or manually move agents up.</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">What's a "hard stop"?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p>When a prospect explicitly asks to be removed from your list, hangs up in frustration, or says "Stop calling"—it's logged as a hard stop. The agent scores 0 points on that objection. Too many hard stops indicate tone issues that need coaching.</p>
+                </div>
+
+                <div class="collapsible" onclick="toggleCollapsible(event)">
+                    <span class="collapsible-header">What metrics should I track?</span>
+                    <span class="collapsible-toggle">⋯</span>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Key KPIs:</strong> Appointment Set Rate (%), Average Rebuttal Score, Objection Success Rate by type, Level Progression speed (D1→D5), Hard Stop Rate (should be <5%)</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- OBJECTION LIBRARY TAB -->
+        <div id="objections" class="tab-content">
+            <div class="section">
+                <h2>🎯 Objection Library Manager</h2>
+
+                <div class="alert alert-info">
+                    <div>Customize objections for your market. Edit wording, set frequency, map to rebuttal types. Default library is pre-loaded below.</div>
+                </div>
+
+                <!-- D1 Objections -->
+                <h3>D1 – Low-Interest Leads (Remember Form, Easy Objections)</h3>
+                
+                <div class="objection-card d1">
+                    <div class="objection-text">"I'm kind of slammed right now. I really don't have time for a whole appointment."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>busy</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D1_1')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D1_1')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d1">
+                    <div class="objection-text">"Can you just send me something and I'll look at it when I get a chance?"</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>send_info</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D1_2')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D1_2')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addObjection('D1')">+ Add New D1 Objection</button>
+
+                <!-- D2 Objections -->
+                <h3 style="margin-top: 40px;">D2 – Skeptical Leads (Doesn't Remember, Defensive)</h3>
+                
+                <div class="objection-card d2">
+                    <div class="objection-text">"How did you get my number?"</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>dont_remember</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_1')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_1')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d2">
+                    <div class="objection-text">"I get a lot of calls like this. I'm not really interested."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_2')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_2')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d2">
+                    <div class="objection-text">"Even if I did, I'm not setting an appointment. Just tell me what this is about."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_3')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D2_3')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addObjection('D2')">+ Add New D2 Objection</button>
+
+                <!-- D3 Objections -->
+                <h3 style="margin-top: 40px;">D3 – Family-Focused (Personal Reasons, Timing)</h3>
+                
+                <div class="objection-card d3">
+                    <div class="objection-text">"I need to talk to my spouse about this."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>spouse</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_1')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_1')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d3">
+                    <div class="objection-text">"Bad timing, I'm dealing with family stuff right now."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>timing</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_2')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_2')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d3">
+                    <div class="objection-text">"Can we revisit this in a few months? Life's just crazy right now."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>timing</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_3')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D3_3')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addObjection('D3')">+ Add New D3 Objection</button>
+
+                <!-- D4 Objections -->
+                <h3 style="margin-top: 40px;">D4 – Over-Confident (False Assumptions)</h3>
+                
+                <div class="objection-card d4">
+                    <div class="objection-text">"I'm already covered. I have life insurance."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>already_covered</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_1')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_1')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d4">
+                    <div class="objection-text">"My company gives me life insurance as part of my benefits."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>already_covered</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_2')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_2')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d4">
+                    <div class="objection-text">"Look, this sounds like a sales pitch. I'm not interested."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_3')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_3')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d4">
+                    <div class="objection-text">"I really don't have time for this right now."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>busy</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_4')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D4_4')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addObjection('D4')">+ Add New D4 Objection</button>
+
+                <!-- D5 Objections -->
+                <h3 style="margin-top: 40px;">D5 – Brick Wall (Highly Resistant)</h3>
+                
+                <div class="objection-card d5">
+                    <div class="objection-text">"Who are you again? I don't remember filling anything out."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>dont_remember</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_1')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_1')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d5">
+                    <div class="objection-text">"Look, I'm not interested. I've heard this pitch before."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_2')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_2')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d5">
+                    <div class="objection-text">"I don't appreciate you trying to control my decision."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_3')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_3')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d5">
+                    <div class="objection-text">"What do you do with my personal information?"</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>not_interested</strong></div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_4')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_4')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <div class="objection-card d5">
+                    <div class="objection-text">"Just stop calling me. I'm not interested in this ever."</div>
+                    <div class="objection-rebuttal">🔄 Rebuttal Type: <strong>busy</strong> (Hard Stop)</div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_5')">Edit Wording</button>
+                        <button class="btn btn-secondary" onclick="editObjection('D5_5')">Set Frequency</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addObjection('D5')">+ Add New D5 Objection</button>
+
+            </div>
+        </div>
+
+        <!-- REBUTTAL STRATEGIES TAB -->
+        <div id="rebuttals" class="tab-content">
+            <div class="section">
+                <h2>💬 Rebuttal Strategy Reference</h2>
+
+                <div class="alert alert-success">
+                    <div><strong>Tip:</strong> These are the 7 core rebuttal types. Each objection maps to one of these strategies. Customize examples to match your market.</div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rebuttal Type</th>
+                            <th>When to Use</th>
+                            <th>Key Strategy</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>busy</strong></td>
+                            <td>Time objections</td>
+                            <td>Acknowledge + offer brief alternative</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>send_info</strong></td>
+                            <td>"Email me" requests</td>
+                            <td>Explain why call is better</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>dont_remember</strong></td>
+                            <td>Credibility questions</td>
+                            <td>Specific detail + establish rapport</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>not_interested</strong></td>
+                            <td>General disinterest</td>
+                            <td>Validate + reframe</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>spouse</strong></td>
+                            <td>Family decisions</td>
+                            <td>Include spouse in call</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>timing</strong></td>
+                            <td>"Later" objections</td>
+                            <td>Get specific timeline</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>already_covered</strong></td>
+                            <td>False confidence</td>
+                            <td>Ask diagnostic questions</td>
+                            <td><button class="btn btn-secondary btn-sm">Configure</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 40px;">📚 Add Custom Rebuttal Examples</h3>
+
+                <div class="card">
+                    <div class="card-title">Rebuttal: <strong>busy</strong></div>
+                    <div class="card-subtitle">Used when: Prospect doesn't have time</div>
+                    
+                    <div class="form-group">
+                        <label>✅ Good Example (agents should say):</label>
+                        <textarea placeholder="Type a good example response here...">"I totally get it—I know your time is valuable. That's why I'm thinking we do a quick 15-minute call next Thursday. Does that work?"</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>❌ Poor Example (agents should NOT say):</label>
+                        <textarea placeholder="Type a poor example response here...">"It'll just take a second." / "I promise this is really quick."</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📝 Coaching Notes:</label>
+                        <textarea placeholder="Add coaching tips..."  rows="4">Don't minimize their concern. Offer specific time, not vague "call me later". Show empathy first, then solution.</textarea>
+                    </div>
+
+                    <button class="btn btn-primary">Save Examples</button>
+                    <button class="btn btn-secondary">Reset to Default</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- AGENT MANAGEMENT TAB -->
+        <div id="agents" class="tab-content">
+            <div class="section">
+                <h2>👥 Agent Management</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Total Agents</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="stat-value">78%</div>
+                        <div class="stat-label">Avg Score</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="stat-value">8</div>
+                        <div class="stat-label">At D3+</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div class="stat-value">2%</div>
+                        <div class="stat-label">Hard Stop Rate</div>
+                    </div>
+                </div>
+
+                <h3>Agent Roster</h3>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Agent Name</th>
+                            <th>Current Level</th>
+                            <th>Avg Score</th>
+                            <th>Calls (This Level)</th>
+                            <th>Hard Stops</th>
+                            <th>Recommendation</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sarah Johnson</td>
+                            <td><span class="difficulty-tag difficulty-d2">D2</span></td>
+                            <td><span class="score-badge score-good">82%</span></td>
+                            <td>12</td>
+                            <td>0</td>
+                            <td><span style="color: #10b981; font-weight: 600;">✓ Unlock D3</span></td>
+                            <td><button class="btn btn-primary" onclick="manageAgent('sarah')">Manage</button></td>
+                        </tr>
+                        <tr>
+                            <td>Mike Chen</td>
+                            <td><span class="difficulty-tag difficulty-d3">D3</span></td>
+                            <td><span class="score-badge score-good">76%</span></td>
+                            <td>10</td>
+                            <td>1</td>
+                            <td><span style="color: #f59e0b; font-weight: 600;">→ Continue D3</span></td>
+                            <td><button class="btn btn-primary" onclick="manageAgent('mike')">Manage</button></td>
+                        </tr>
+                        <tr>
+                            <td>Jennifer Lee</td>
+                            <td><span class="difficulty-tag difficulty-d4">D4</span></td>
+                            <td><span class="score-badge score-excellent">88%</span></td>
+                            <td>8</td>
+                            <td>0</td>
+                            <td><span style="color: #10b981; font-weight: 600;">✓ Unlock D5</span></td>
+                            <td><button class="btn btn-primary" onclick="manageAgent('jennifer')">Manage</button></td>
+                        </tr>
+                        <tr>
+                            <td>David Martinez</td>
+                            <td><span class="difficulty-tag difficulty-d1">D1</span></td>
+                            <td><span class="score-badge score-fair">72%</span></td>
+                            <td>5</td>
+                            <td>2</td>
+                            <td><span style="color: #ef5350; font-weight: 600;">⚠ Coaching Needed</span></td>
+                            <td><button class="btn btn-primary" onclick="manageAgent('david')">Manage</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <button class="btn btn-primary" style="margin-top: 20px;">+ Add New Agent</button>
+
+                <h3 style="margin-top: 40px;">Difficulty Level Configuration</h3>
+
+                <div class="card">
+                    <div class="card-title">Progression Rules</div>
+                    <div class="form-group">
+                        <label>Unlock D2 when:</label>
+                        <input type="text" value="D1 average score ≥ 80% AND ≥10 calls AND hard stops ≤1">
+                    </div>
+                    <div class="form-group">
+                        <label>Unlock D3 when:</label>
+                        <input type="text" value="D1+D2 average ≥ 80% AND D2 ≥10 calls AND hard stops ≤1">
+                    </div>
+                    <div class="form-group">
+                        <label>Unlock D4 when:</label>
+                        <input type="text" value="D1+D2+D3 average ≥ 80% AND all levels ≥10 calls AND hard stops ≤1">
+                    </div>
+                    <div class="form-group">
+                        <label>Unlock D5 when:</label>
+                        <input type="text" value="D1+D2+D3+D4 average ≥ 85% AND D4 ≥15 calls AND hard stops = 0">
+                    </div>
+                    <button class="btn btn-primary">Save Rules</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SCORING CONFIG TAB -->
+        <div id="scoring" class="tab-content">
+            <div class="section">
+                <h2>📊 Scoring Configuration</h2>
+
+                <div class="alert alert-warning">
+                    <div><strong>Advanced:</strong> Customize how responses are scored. The default configuration is balanced for most insurance teams. Only modify if you have specific coaching priorities.</div>
+                </div>
+
+                <h3>Scoring Weight Configuration</h3>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label>Rebuttal Type Accuracy: <strong>40%</strong></label>
+                        <input type="range" min="0" max="100" value="40">
+                        <small>Did agent use the correct rebuttal strategy?</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Execution Quality: <strong>30%</strong></label>
+                        <input type="range" min="0" max="100" value="30">
+                        <small>Tone, specificity, empathy, clarity</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Timing: <strong>15%</strong></label>
+                        <input type="range" min="0" max="100" value="15">
+                        <small>Responded within 30 seconds?</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Prospect Response: <strong>15%</strong></label>
+                        <input type="range" min="0" max="100" value="15">
+                        <small>Did it move toward appointment-setting?</small>
+                    </div>
+                </div>
+
+                <h3>Grade Thresholds</h3>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label>Excellent Grade: <strong>90–100</strong></label>
+                        <input type="text" placeholder="90" value="90"> to 100
+                    </div>
+                    <div class="form-group">
+                        <label>Good Grade: <strong>75–89</strong></label>
+                        <input type="text" placeholder="75" value="75"> to <input type="text" placeholder="89" value="89">
+                    </div>
+                    <div class="form-group">
+                        <label>Fair Grade: <strong>60–74</strong></label>
+                        <input type="text" placeholder="60" value="60"> to <input type="text" placeholder="74" value="74">
+                    </div>
+                    <div class="form-group">
+                        <label>Poor Grade: <strong>0–59</strong></label>
+                        0 to <input type="text" placeholder="59" value="59">
+                    </div>
+                </div>
+
+                <h3>Hard Stop Rules</h3>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label><input type="checkbox" checked> Prospect asks to be removed</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" checked> Prospect hangs up abruptly</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" checked> Prospect says "Stop calling"</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" checked> Prospect ends in frustration</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Hard stops trigger coaching at: <input type="text" value="2" style="width: 60px;"> or more in <input type="text" value="7" style="width: 60px;"> days</label>
+                    </div>
+                    <button class="btn btn-primary">Save Configuration</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TRAINING PLANS TAB -->
+        <div id="training" class="tab-content">
+            <div class="section">
+                <h2>🎓 Training Plans & Goals</h2>
+
+                <div class="alert alert-info">
+                    <div>Create team-wide training goals and schedule group coaching sessions based on weak areas.</div>
+                </div>
+
+                <h3>30/60/90 Day Goals</h3>
+
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">30-Day Goal</div>
+                        <div class="form-group">
+                            <label>Goal:</label>
+                            <input type="text" value="New agents reach D2, avg score 75%+">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Date:</label>
+                            <input type="date" value="2025-03-13">
+                        </div>
+                        <button class="btn btn-primary">Set Goal</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">60-Day Goal</div>
+                        <div class="form-group">
+                            <label>Goal:</label>
+                            <input type="text" value="50% of team at D3+, zero hard stops">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Date:</label>
+                            <input type="date" value="2025-04-13">
+                        </div>
+                        <button class="btn btn-primary">Set Goal</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">90-Day Goal</div>
+                        <div class="form-group">
+                            <label>Goal:</label>
+                            <input type="text" value="All agents D4+, ready for field deployment">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Date:</label>
+                            <input type="date" value="2025-05-13">
+                        </div>
+                        <button class="btn btn-primary">Set Goal</button>
+                    </div>
+                </div>
+
+                <h3>Schedule Group Training Session</h3>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label>Topic (e.g., "Mastering Spouse Objections"):</label>
+                        <input type="text" placeholder="Enter training topic...">
+                    </div>
+                    <div class="form-group">
+                        <label>Focus Objection Type:</label>
+                        <select>
+                            <option>Select rebuttal type...</option>
+                            <option>busy</option>
+                            <option>send_info</option>
+                            <option>dont_remember</option>
+                            <option>not_interested</option>
+                            <option>spouse</option>
+                            <option>timing</option>
+                            <option>already_covered</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time:</label>
+                        <input type="datetime-local">
+                    </div>
+                    <div class="form-group">
+                        <label>Attendees:</label>
+                        <input type="text" placeholder="Select agents...">
+                    </div>
+                    <button class="btn btn-primary">Schedule Session</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2025 Insurance Voice Agent Training Platform | Helping trainers develop elite sales teams</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function switchTab(event, tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Deactivate all nav buttons
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function toggleCollapsible(event) {
+            const collapsible = event.currentTarget;
+            collapsible.classList.toggle('open');
+        }
+
+        function editObjection(objectionId) {
+            alert('Edit modal would open for objection: ' + objectionId);
+        }
+
+        function addObjection(difficulty) {
+            alert('Add new objection modal for ' + difficulty);
+        }
+
+        function manageAgent(agentName) {
+            alert('Manage agent: ' + agentName);
+        }
+    </script>
+</body>
+</html>
