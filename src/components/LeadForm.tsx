@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
+import { DEFAULT_BILLING_SELECTION } from "@/lib/billing";
 
 const policyOptions = [
   "Term Life",
@@ -39,29 +41,6 @@ export default function LeadForm() {
     } catch {
       setStatus("Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleCheckout() {
-    setLoading(true);
-    setStatus(null);
-
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data?.url) {
-        throw new Error("Checkout failed.");
-      }
-
-      window.location.href = data.url;
-    } catch {
-      setStatus("Unable to start checkout. Please try again later.");
       setLoading(false);
     }
   }
@@ -104,9 +83,12 @@ export default function LeadForm() {
         </button>
       </form>
       <div className="hero-actions">
-        <button className="button secondary" type="button" onClick={handleCheckout} disabled={loading}>
+        <Link
+          className="button secondary"
+          href={`/checkout/start?plan=${DEFAULT_BILLING_SELECTION.planId}&interval=${DEFAULT_BILLING_SELECTION.interval}`}
+        >
           Start paid training
-        </button>
+        </Link>
       </div>
       {status ? <p className="disclaimer">{status}</p> : null}
       <p className="disclaimer">
