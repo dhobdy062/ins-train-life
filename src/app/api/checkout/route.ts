@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getStripe } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/email";
 import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
+import { syncIdentityForRequest } from "@/lib/identitySync";
 
 export const runtime = "nodejs";
 export const preferredRegion = "iad1";
@@ -17,6 +18,13 @@ export async function POST(request: Request) {
     if (!orgId) {
       return NextResponse.json({ error: "Organization context is required before checkout." }, { status: 400 });
     }
+
+    await syncIdentityForRequest({
+      userId,
+      orgId,
+      source: "api/checkout",
+      failClosed: false,
+    });
 
     const body = await request.json().catch(() => ({}));
     const selection = normalizeBillingSelection(body);

@@ -1,4 +1,4 @@
-# InsureTrain AI (Vercel Hobby + US East)
+# Cream No Sugar (Vercel Hobby + US East)
 
 Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-backed async webhook processing.
 
@@ -6,6 +6,7 @@ Next.js training platform with Clerk-authenticated VAPI web sessions and Convex-
 
 - **Hosting:** Vercel Hobby, single region (`iad1` / US East)
 - **Auth:** Clerk (`/demo`, `/dashboard/trainer`, `/api/vapi/session/start`, and `/api/email/sequence` are protected)
+- **Identity mirror:** Clerk users/orgs/memberships are mirrored into Convex via webhook + auth fallback sync
 - **Session launch:** `POST /api/vapi/session/start` (auth + org required)
 - **Dashboards:** `GET /dashboard/trainer` and `GET /dashboard/trainee` (Cream No Sugar branded)
 - **Billing webhook:** `POST /api/stripe/webhook` (thin handler, queued to Convex)
@@ -30,6 +31,7 @@ When you are ready to claim the app or deploy to production, set the following v
 ### Clerk (optional in local keyless mode, required for claimed/prod apps)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SIGNING_SECRET`
 
 ### Convex
 - `CONVEX_URL`
@@ -37,9 +39,9 @@ When you are ready to claim the app or deploy to production, set the following v
 
 ### Stripe
 - `STRIPE_SECRET_KEY`
-- `STRIPE_PRICE_ID`
 - `STRIPE_PRICE_STARTER_MONTHLY_ID`
 - `STRIPE_PRICE_STARTER_ANNUAL_ID`
+- `STRIPE_PRICE_PRO_MONTHLY_ID`
 - `STRIPE_PRICE_PRO_ANNUAL_ID`
 - `STRIPE_PRICE_AGENCY_MONTHLY_ID`
 - `STRIPE_PRICE_AGENCY_ANNUAL_ID`
@@ -86,6 +88,7 @@ Note: this repository includes minimal `_generated` stubs to keep Next.js builds
 
 ## Webhook Endpoints
 
+- Clerk: `/api/clerk/webhook`
 - Stripe: `/api/stripe/webhook`
 - VAPI: `/api/vapi/webhook`
 - Legacy compatibility: `/api/webhook` (deprecated alias to Stripe route)
@@ -95,6 +98,31 @@ Both handlers are configured for:
 - `runtime = nodejs`
 - `preferredRegion = iad1`
 - short request path + async Convex queue handoff
+
+### Clerk webhook setup
+
+1. In Clerk Dashboard, add endpoint:
+   - `https://<your-domain>/api/clerk/webhook`
+2. Subscribe to:
+   - `user.created`
+   - `user.updated`
+   - `user.deleted`
+   - `organization.created`
+   - `organization.updated`
+   - `organization.deleted`
+   - `organizationMembership.created`
+   - `organizationMembership.updated`
+   - `organizationMembership.deleted`
+3. Copy Clerk signing secret into:
+   - `CLERK_WEBHOOK_SIGNING_SECRET`
+
+### Clerk backfill
+
+Run once after deploying identity schema/functions:
+
+```bash
+npm run backfill:clerk:convex
+```
 
 ### Lag monitoring endpoint
 

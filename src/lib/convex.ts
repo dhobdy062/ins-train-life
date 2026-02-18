@@ -15,6 +15,15 @@ const getSessionWithFilesRef = makeFunctionReference<"query">("storage.getSessio
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks.checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks.getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks.getOrgEntitlement");
+const upsertUserRef = makeFunctionReference<"mutation">("identity.upsertUser");
+const upsertOrganizationRef = makeFunctionReference<"mutation">("identity.upsertOrganization");
+const upsertOrganizationMembershipRef = makeFunctionReference<"mutation">("identity.upsertOrganizationMembership");
+const markUserDeletedRef = makeFunctionReference<"mutation">("identity.markUserDeleted");
+const markOrganizationDeletedRef = makeFunctionReference<"mutation">("identity.markOrganizationDeleted");
+const markOrganizationMembershipDeletedRef = makeFunctionReference<"mutation">("identity.markOrganizationMembershipDeleted");
+const getUserByClerkIdRef = makeFunctionReference<"query">("identity.getUserByClerkId");
+const getOrganizationByClerkIdRef = makeFunctionReference<"query">("identity.getOrganizationByClerkId");
+const getMembershipByClerkIdRef = makeFunctionReference<"query">("identity.getMembershipByClerkId");
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -167,4 +176,84 @@ export async function getOrgEntitlement(args: { orgId: string; limit?: number })
     minutesRemaining: number;
     reason: string;
   }>;
+}
+
+export async function upsertIdentityUser(args: {
+  clerkUserId: string;
+  primaryEmail?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  imageUrl?: string;
+  status?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(upsertUserRef, args as never);
+}
+
+export async function upsertIdentityOrganization(args: {
+  clerkOrgId: string;
+  name?: string;
+  slug?: string;
+  imageUrl?: string;
+  status?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(upsertOrganizationRef, args as never);
+}
+
+export async function upsertIdentityOrganizationMembership(args: {
+  clerkMembershipId: string;
+  clerkOrgId: string;
+  clerkUserId: string;
+  role?: string;
+  status?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(upsertOrganizationMembershipRef, args as never);
+}
+
+export async function markIdentityUserDeleted(args: {
+  clerkUserId: string;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(markUserDeletedRef, args as never);
+}
+
+export async function markIdentityOrganizationDeleted(args: {
+  clerkOrgId: string;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(markOrganizationDeletedRef, args as never);
+}
+
+export async function markIdentityOrganizationMembershipDeleted(args: {
+  clerkMembershipId: string;
+  updatedAt?: number;
+}) {
+  const client = getClient();
+  return client.mutation(markOrganizationMembershipDeletedRef, args as never);
+}
+
+export async function getIdentityUserByClerkId(args: { clerkUserId: string }) {
+  const client = getClient();
+  return client.query(getUserByClerkIdRef, args as never);
+}
+
+export async function getIdentityOrganizationByClerkId(args: { clerkOrgId: string }) {
+  const client = getClient();
+  return client.query(getOrganizationByClerkIdRef, args as never);
+}
+
+export async function getIdentityMembershipByClerkId(args: { clerkMembershipId: string }) {
+  const client = getClient();
+  return client.query(getMembershipByClerkIdRef, args as never);
 }

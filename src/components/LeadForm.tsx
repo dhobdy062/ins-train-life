@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
+import { DEFAULT_BILLING_SELECTION } from "@/lib/billing";
 
 const policyOptions = [
   "Term Life",
@@ -43,36 +45,13 @@ export default function LeadForm() {
     }
   }
 
-  async function handleCheckout() {
-    setLoading(true);
-    setStatus(null);
-
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data?.url) {
-        throw new Error("Checkout failed.");
-      }
-
-      window.location.href = data.url;
-    } catch {
-      setStatus("Unable to start checkout. Please try again later.");
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="glass panel">
       <div className="demo-logo-wrap">
         <Image className="demo-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={220} height={220} priority />
       </div>
-      <div className="tag">Start with a 2-minute demo</div>
-      <h3>Take it for a spin</h3>
+      <div className="tag">Try it for yourself</div>
+      <h3>No credit card needed to try a call. Sign up and get sent a verification link.</h3>
       <form className="form" onSubmit={handleSubmit}>
         <label className="field">
           Full name
@@ -104,12 +83,15 @@ export default function LeadForm() {
         </button>
       </form>
       <div className="hero-actions">
-        <button className="button secondary" type="button" onClick={handleCheckout} disabled={loading}>
+        <Link
+          className="button secondary"
+          href={`/checkout/start?plan=${DEFAULT_BILLING_SELECTION.planId}&interval=${DEFAULT_BILLING_SELECTION.interval}`}
+        >
           Start paid training
-        </button>
+        </Link>
       </div>
       {status ? <p className="disclaimer">{status}</p> : null}
-      <p className="disclaimer">
+      <p className="disclaimer disclaimer-highlight">
         Verification email unlocks the demo. Paid plans unlock full call library, scoring, and team analytics.
       </p>
     </div>

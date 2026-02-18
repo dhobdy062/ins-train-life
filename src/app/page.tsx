@@ -38,19 +38,19 @@ export default async function Home({ searchParams }: HomePageProps) {
                 Instead of spending hours roleplaying in 1-1, you can upskill your entire downline at the same time.
               </p>
               <div className="hero-actions">
-                <a className="button" href="#demo">
+                <a className="button secondary" href="#demo">
                   Start a sample call
                 </a>
                 <SignedOut>
                   <SignUpButton mode="modal">
-                    <button className="button secondary" type="button">
-                      Create trainer account
+                    <button className="button" type="button">
+                      Setup trainer account
                     </button>
                   </SignUpButton>
                 </SignedOut>
                 <SignedIn>
                   <a className="button secondary" href="/dashboard/trainer">
-                    Launch authenticated widget
+                    Go to Dashboard
                   </a>
                 </SignedIn>
               </div>
