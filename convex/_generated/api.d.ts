@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as identity from "../identity.js";
 import type * as sessions from "../sessions.js";
+import type * as storage from "../storage.js";
 import type * as webhooks from "../webhooks.js";
 
 import type {
@@ -18,7 +20,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  identity: typeof identity;
   sessions: typeof sessions;
+  storage: typeof storage;
   webhooks: typeof webhooks;
 }>;
 

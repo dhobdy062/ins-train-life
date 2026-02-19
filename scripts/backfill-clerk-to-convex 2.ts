@@ -38,9 +38,9 @@ type ClerkMembership = {
   updated_at?: number;
 };
 
-const upsertUserRef = makeFunctionReference<"mutation">("identity.upsertUser");
-const upsertOrganizationRef = makeFunctionReference<"mutation">("identity.upsertOrganization");
-const upsertOrganizationMembershipRef = makeFunctionReference<"mutation">("identity.upsertOrganizationMembership");
+const upsertUserRef = makeFunctionReference<"mutation">("identity:upsertUser");
+const upsertOrganizationRef = makeFunctionReference<"mutation">("identity:upsertOrganization");
+const upsertOrganizationMembershipRef = makeFunctionReference<"mutation">("identity:upsertOrganizationMembership");
 
 const CLERK_API_BASE = process.env.CLERK_API_URL ?? "https://api.clerk.com";
 
