@@ -26,6 +26,83 @@ export const getUserByClerkId = query({
   },
 });
 
+export const syncUserRoleFromClerk = mutation({
+  args: {
+    clerkUserId: v.string(),
+    clerkOrgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // This is a backup sync mechanism when webhooks fail
+    // It fetches the user's role directly from Clerk and updates our local membership
+    
+    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+    if (!clerkSecretKey) {
+      throw new Error("CLERK_SECRET_KEY not configured");
+    }
+
+    try {
+      // Fetch organization memberships for this user from Clerk
+      const response = await fetch(
+        `https://api.clerk.com/v1/organizations/${args.clerkOrgId}/memberships`,
+        {
+          headers: {
+            Authorization: `Bearer ${clerkSecretKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Clerk API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const memberships = Array.isArray(data.data) ? data.data : [];
+      
+      // Find this user's membership
+      const userMembership = memberships.find(
+        (m: any) => (m.user_id === args.clerkUserId || m.public_user_data?.user_id === args.clerkUserId)
+      );
+
+      if (!userMembership) {
+        return { success: false, reason: "membership_not_found" };
+      }
+
+      const role = userMembership.role || "member";
+      const status = userMembership.status || "active";
+
+      // Update the local membership record
+      const existingMembership = await ctx.db
+        .query("organizationMemberships")
+        .withIndex("by_org_user", (q) => 
+          q.eq("clerkOrgId", args.clerkOrgId).eq("clerkUserId", args.clerkUserId)
+        )
+        .first();
+
+      if (!existingMembership) {
+        return { success: false, reason: "local_membership_not_found" };
+      }
+
+      await ctx.db.patch(existingMembership._id, {
+        role,
+        status,
+        lastSyncedAt: Date.now(),
+      });
+
+      return { 
+        success: true, 
+        role, 
+        status,
+        clerkMembershipId: userMembership.id 
+      };
+
+    } catch (error) {
+      console.error("Failed to sync user role from Clerk:", error);
+      return { success: false, reason: "api_error", error: String(error) };
+    }
+  },
+});
+
 export const getOrganizationByClerkId = query({
   args: { clerkOrgId: v.string() },
   handler: async (ctx, args) => {

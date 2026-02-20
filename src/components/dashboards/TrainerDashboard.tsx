@@ -1,7 +1,19 @@
 import React from 'react';
-import styles from './Cream_No_Sugar_Trainer_Dashboard.module.css';
+import styles from './TrainerDashboard.module.css';
 
-const TrainerDashboard = () => {
+const TrainerDashboard = ({ 
+    teamSnapshot,
+    selectedAgent,
+    accessLabel,
+    isPaid,
+    isBlocked,
+    minutesUsed,
+    minutesLimit,
+    minutesRemaining,
+    canOpenDashboard,
+    defaultTab,
+    entitlement
+}) => {
     return (
         <div className={styles.container}>
             <aside className={styles.sidebar}>
@@ -20,15 +32,15 @@ const TrainerDashboard = () => {
             <main className={styles.main}>
                 <header className={styles.header}>
                     <div className={styles.headerTitle}>
-                        <h1>Welcome Back, Sarah!</h1>
+                        <h1>Welcome Back, {selectedAgent?.name}!</h1>
                         <p>Here's your team's performance overview.</p>
                     </div>
                     <div className={styles.headerActions}>
                         <div className={styles.userInfo}>
-                            <div className={styles.name}>Sarah Johnson</div>
-                            <div className={styles.plan}>Pro Plan</div>
+                            <div className={styles.name}>{selectedAgent?.name}</div>
+                            <div className={styles.plan}>{accessLabel}</div>
                         </div>
-                        <div className={styles.avatar}>SJ</div>
+                        <div className={styles.avatar}>{selectedAgent?.name?.charAt(0)}</div>
                     </div>
                 </header>
 
@@ -39,11 +51,8 @@ const TrainerDashboard = () => {
                                 <span className={styles.statLabel}>Active Trainees</span>
                                 <span className={styles.statIcon}>👥</span>
                             </div>
-                            <div className={styles.statValue}>18</div>
-                            <div className={styles.statChange} >
-                                +2 this month
-                            </div>
-                            <div className={styles.statMeta}>vs. last month</div>
+                            <div className={styles.statValue}>{teamSnapshot.totalAgents}</div>
+                            <div className={styles.statMeta}></div>
                         </div>
 
                         <div className={`${styles.statCard} ${styles.warning}`}>
@@ -51,23 +60,17 @@ const TrainerDashboard = () => {
                                 <span className={styles.statLabel}>Avg. Score</span>
                                 <span className={styles.statIcon}>🎯</span>
                             </div>
-                            <div className={styles.statValue}>82%</div>
-                            <div className={styles.statChange} >
-                                -3% this week
-                            </div>
-                            <div className={styles.statMeta}>vs. last week</div>
+                            <div className={styles.statValue}>{teamSnapshot.avgScore}%</div>
+                             <div className={styles.statMeta}></div>
                         </div>
 
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
-                                <span className={styles.statLabel}>Calls Reviewed</span>
-                                <span className={styles.statIcon}>🎧</span>
+                                <span className={styles.statLabel}>Hard Stop Rate</span>
+                                <span className={styles.statIcon}>🚫</span>
                             </div>
-                            <div className={styles.statValue}>124</div>
-                            <div className={styles.statProgress}>
-                                <div className={styles.statProgressFill} style={{width: '78%'}}></div>
-                            </div>
-                            <div className={styles.statMeta}>78% of weekly goal</div>
+                            <div className={styles.statValue}>{teamSnapshot.hardStopRate}%</div>
+                            <div className={styles.statMeta}></div>
                         </div>
                     </div>
 
@@ -81,33 +84,17 @@ const TrainerDashboard = () => {
                     </div>
 
                     <div className={styles.leaderboard}>
-                        <div className={styles.leaderboardItem}>
-                            <div className={`${styles.rank} ${styles.gold}`}>1</div>
-                            <div className={styles.leaderboardAvatar}>MJ</div>
-                            <div className={styles.leaderboardInfo}>
-                                <div className={styles.leaderboardName}>Michael Johnson</div>
-                                <div className={styles.leaderboardStat}>Avg. Score: 94%</div>
+                        {teamSnapshot.trainees.map((trainee, index) => (
+                            <div className={styles.leaderboardItem} key={trainee.id}>
+                                <div className={`${styles.rank} ${index === 0 ? styles.gold : index === 1 ? styles.silver : index === 2 ? styles.bronze : ''}`}>{index + 1}</div>
+                                <div className={styles.leaderboardAvatar}>{trainee.name.charAt(0)}</div>
+                                <div className={styles.leaderboardInfo}>
+                                    <div className={styles.leaderboardName}>{trainee.name}</div>
+                                    <div className={styles.leaderboardStat}>Avg. Score: {trainee.avgScore}%</div>
+                                </div>
+                                <div className={styles.leaderboardScore}>{trainee.callsThisLevel} <span className={styles.scoreUnit}>calls</span></div>
                             </div>
-                            <div className={styles.leaderboardScore}>1,240 <span className={styles.scoreUnit}>pts</span></div>
-                        </div>
-                        <div className={styles.leaderboardItem}>
-                            <div className={`${styles.rank} ${styles.silver}`}>2</div>
-                            <div className={styles.leaderboardAvatar}>ED</div>
-                            <div className={styles.leaderboardInfo}>
-                                <div className={styles.leaderboardName}>Emily Davis</div>
-                                <div className={styles.leaderboardStat}>Avg. Score: 91%</div>
-                            </div>
-                            <div className={styles.leaderboardScore}>1,180 <span className={styles.scoreUnit}>pts</span></div>
-                        </div>
-                        <div className={styles.leaderboardItem}>
-                            <div className={`${styles.rank} ${styles.bronze}`}>3</div>
-                            <div className={styles.leaderboardAvatar}>RW</div>
-                            <div className={styles.leaderboardInfo}>
-                                <div className={styles.leaderboardName}>Robert Williams</div>
-                                <div className={styles.leaderboardStat}>Avg. Score: 89%</div>
-                            </div>
-                            <div className={styles.leaderboardScore}>1,150 <span className={styles.scoreUnit}>pts</span></div>
-                        </div>
+                        ))}
                     </div>
 
                     <div className={styles.sectionHeader}>
