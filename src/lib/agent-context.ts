@@ -12,11 +12,12 @@ export function buildAgentVariableValues(args: {
   difficulty: string;
   objectionsRequired: number;
   rebuttals: Record<string, string>;
-  role: "trainer" | "trainee";
+  orgRole: string | undefined | null;
   activeSequence: EmailSequenceStage;
   extraVariables?: Record<string, string>;
 }) {
   const appUrl = getAppUrl();
+  const role = args.orgRole === "admin" ? "trainer" : "trainee";
 
   return {
     difficulty: args.difficulty,
@@ -27,7 +28,7 @@ export function buildAgentVariableValues(args: {
     app_url: appUrl,
     trainer_dashboard_url: `${appUrl}${TRAINER_DASHBOARD_PATH}`,
     trainee_dashboard_url: `${appUrl}${TRAINEE_DASHBOARD_PATH}`,
-    dashboard_role: args.role,
+    dashboard_role: role,
     email_sequence_stage: args.activeSequence,
     email_sequence_order: JSON.stringify(EMAIL_SEQUENCE_ORDER),
     ...(args.extraVariables ?? {}),

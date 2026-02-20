@@ -27,7 +27,7 @@ export const preferredRegion = "iad1";
 export const maxDuration = 10;
 
 export async function POST(request: Request) {
-  const { userId, orgId } = await auth();
+  const { userId, orgId, sessionClaims } = await auth();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       difficulty,
       objectionsRequired,
       rebuttals,
-      role: "trainer",
+      orgRole: sessionClaims?.org_role,
       activeSequence: "session_summary",
       extraVariables: {
         org_id: orgId,

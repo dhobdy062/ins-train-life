@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       difficulty: "D2",
       objectionsRequired: 2,
       rebuttals: DEFAULT_REBUTTALS,
-      role: "trainee",
+      orgRole: null, // Trial users are always trainees
       activeSequence: "trainee_invitation",
       extraVariables: {
         trial_mode: "true",

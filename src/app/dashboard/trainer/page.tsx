@@ -5,9 +5,10 @@ import DemoConsole from "@/components/DemoConsole";
 import SequencePlannerCard from "@/components/SequencePlannerCard";
 import DashboardTabs, { DashboardTabPanel } from "@/components/dashboard/DashboardTabs";
 import { getOrgEntitlement } from "@/lib/convex";
+import { redirect } from "next/navigation";
 
 export default async function TrainerDashboardPage() {
-  const { userId, orgId } = await auth();
+  const { userId, orgId, sessionClaims } = await auth();
   const entitlement = orgId ? await getOrgEntitlement({ orgId }).catch(() => null) : null;
   const canOpenDashboard = Boolean(userId && orgId);
   const isPaid = entitlement?.mode === "paid";
@@ -17,6 +18,13 @@ export default async function TrainerDashboardPage() {
   const minutesLimit = entitlement?.minutesLimit;
   const minutesRemaining = entitlement?.minutesRemaining;
   const accessLabel = isPaid ? "Paid plan" : isBlocked ? "Upgrade needed" : "Trial";
+
+  const orgRole = sessionClaims?.org_role;
+  const role = orgRole === "admin" ? "Trainer" : "Trainee";
+
+  if (role === "Trainee") {
+    redirect("/dashboard/trainee");
+  }
 
   return (
     <div className="page">
@@ -57,7 +65,7 @@ export default async function TrainerDashboardPage() {
                       </div>
                       <div className="metric">
                         <span>Role</span>
-                        <strong>Trainer</strong>
+                        <strong>{role}</strong>
                       </div>
                       <div className="metric">
                         <span>Access</span>
