@@ -5,6 +5,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
 const ORG_TRIAL_MINUTES_LIMIT = 15;
+const CHECKOUT_PROVISIONAL_ACCESS_MS = 15 * 60 * 1000;
 
 export const enqueueWebhookEvent = mutation({
   args: {
@@ -87,6 +88,27 @@ export const recordAlert = mutation({
   },
   handler: async (ctx, args) => {
     return ctx.db.insert("alertEvents", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const logEmailEvent = mutation({
+  args: {
+    provider: v.literal("resend"),
+    eventType: v.string(),
+    sequence: v.optional(v.string()),
+    orgId: v.optional(v.string()),
+    recipient: v.optional(v.string()),
+    recipientHash: v.optional(v.string()),
+    status: v.union(v.literal("sent"), v.literal("failed")),
+    providerMessageId: v.optional(v.string()),
+    error: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.insert("emailEvents", {
       ...args,
       createdAt: Date.now(),
     });
@@ -218,17 +240,41 @@ async function persistStripeEvent(
     return;
   }
 
-  const orgId =
+  const eventType = asString(payload?.type) || "unknown";
+  const stripeCustomerId = extractStripeCustomerId(payload);
+  const stripeSubscriptionId = extractStripeSubscriptionId(payload);
+
+  let orgId =
     asString(payload?.data?.object?.metadata?.orgId) ||
     asString(payload?.data?.object?.client_reference_id) ||
-    "unscoped";
+    asString(payload?.data?.object?.clientReferenceId);
+
+  if (!orgId && stripeCustomerId) {
+    const mapped = await ctx.db
+      .query("stripeCustomerOrgMap")
+      .withIndex("by_stripeCustomerId", (q: any) => q.eq("stripeCustomerId", stripeCustomerId))
+      .first();
+
+    if (mapped?.orgId) {
+      orgId = mapped.orgId;
+    }
+  }
+
+  if (eventType === "checkout.session.completed" && stripeCustomerId && orgId) {
+    await upsertStripeCustomerOrgMap(ctx, {
+      stripeCustomerId,
+      orgId,
+    });
+  }
+
+  const finalOrgId = orgId || "unscoped";
 
   await ctx.db.insert("billingEvents", {
     providerEventId,
-    orgId,
-    stripeCustomerId: asString(payload?.data?.object?.customer),
-    stripeSubscriptionId: asString(payload?.data?.object?.subscription),
-    eventType: asString(payload?.type) || "unknown",
+    orgId: finalOrgId,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    eventType,
     amount: asNumber(payload?.data?.object?.amount_total),
     currency: asString(payload?.data?.object?.currency),
     status: asString(payload?.data?.object?.status),
@@ -237,11 +283,43 @@ async function persistStripeEvent(
   });
 
   await incrementUsageRollup(ctx, {
-    orgId,
+    orgId: finalOrgId,
     day: dayKey(Date.now()),
     provider: "stripe",
     minutesToAdd: 0,
     sessionsToAdd: 0,
+  });
+}
+
+async function upsertStripeCustomerOrgMap(
+  ctx: any,
+  args: {
+    stripeCustomerId: string;
+    orgId: string;
+  },
+) {
+  const existing = await ctx.db
+    .query("stripeCustomerOrgMap")
+    .withIndex("by_stripeCustomerId", (q: any) => q.eq("stripeCustomerId", args.stripeCustomerId))
+    .first();
+
+  const now = Date.now();
+
+  if (!existing) {
+    await ctx.db.insert("stripeCustomerOrgMap", {
+      stripeCustomerId: args.stripeCustomerId,
+      orgId: args.orgId,
+      firstSeenAt: now,
+      lastSeenAt: now,
+      updatedAt: now,
+    });
+    return;
+  }
+
+  await ctx.db.patch(existing._id, {
+    orgId: args.orgId,
+    lastSeenAt: now,
+    updatedAt: now,
   });
 }
 
@@ -251,11 +329,19 @@ async function persistVapiEvent(
 ) {
   const call = payload?.call ?? payload?.message?.call ?? {};
   const message = payload?.message ?? payload;
+  const metadata = call?.metadata ?? payload?.metadata ?? message?.metadata ?? {};
 
   const sessionKey =
-    asString(call?.id) || asString(payload?.callId) || asString(payload?.sessionId) || asString(payload?.id) || "unknown";
+    asString(metadata?.sessionKey) ||
+    asString(metadata?.session_key) ||
+    asString(payload?.sessionKey) ||
+    asString(payload?.session_key) ||
+    asString(call?.id) ||
+    asString(payload?.callId) ||
+    asString(payload?.sessionId) ||
+    asString(payload?.id) ||
+    "unknown";
 
-  const metadata = call?.metadata ?? payload?.metadata ?? message?.metadata ?? {};
   const orgId =
     asString(metadata?.orgId) ||
     asString(metadata?.org_id) ||
@@ -273,12 +359,14 @@ async function persistVapiEvent(
     asString(payload?.event) ||
     "unknown";
 
+  const durationSeconds = asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds) || 0;
+
   await ctx.db.insert("sessionMetrics", {
     sessionKey,
     orgId,
     providerEventId: asString(payload?.id) || asString(message?.id),
     eventType,
-    durationSeconds: asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds),
+    durationSeconds: durationSeconds > 0 ? durationSeconds : undefined,
     toneStrikeCount: asNumber(message?.analysis?.toneStrikeCount),
     rebuttalScore: asNumber(message?.analysis?.similarityScore),
     appointmentSet: asBoolean(message?.analysis?.appointmentSet),
@@ -287,7 +375,6 @@ async function persistVapiEvent(
   });
 
   const isEndEvent = /end|completed|report/i.test(eventType);
-  const durationSeconds = asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds) || 0;
 
   await incrementUsageRollup(ctx, {
     orgId,
@@ -296,6 +383,261 @@ async function persistVapiEvent(
     minutesToAdd: isEndEvent ? Math.ceil(durationSeconds / 60) : 0,
     sessionsToAdd: isEndEvent ? 1 : 0,
   });
+
+  if (!isEndEvent || sessionKey === "unknown") {
+    return;
+  }
+
+  const endedAt = extractTimestampMs(payload) ?? Date.now();
+
+  try {
+    const completion = await ctx.runMutation(internal.sessions.markSessionCompletedFromWebhook, {
+      sessionKey,
+      endedAt,
+      sourceEventType: eventType,
+    });
+
+    if (!completion?.found) {
+      await ctx.db.insert("alertEvents", {
+        source: "webhooks.persistVapiEvent",
+        severity: "warning",
+        message: "VAPI end event could not be matched to an existing training session",
+        context: {
+          sessionKey,
+          eventType,
+        },
+        createdAt: Date.now(),
+      });
+      return;
+    }
+  } catch (error) {
+    await ctx.db.insert("alertEvents", {
+      source: "webhooks.persistVapiEvent",
+      severity: "warning",
+      message: `Failed to mark session complete from webhook: ${error instanceof Error ? error.message : "unknown"}`,
+      context: {
+        sessionKey,
+        eventType,
+      },
+      createdAt: Date.now(),
+    });
+  }
+
+  await persistWebhookSessionArtifacts(ctx, {
+    sessionKey,
+    eventType,
+    payload,
+  });
+}
+
+async function persistWebhookSessionArtifacts(
+  ctx: any,
+  args: {
+    sessionKey: string;
+    eventType: string;
+    payload: any;
+  },
+) {
+  const session = await ctx.db
+    .query("trainingSessions")
+    .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", args.sessionKey))
+    .first();
+
+  if (!session) {
+    return;
+  }
+
+  const recordingAsset = extractRecordingAsset(args.payload);
+  const transcriptAsset = extractTranscriptAsset(args.payload);
+
+  if (!recordingAsset && !transcriptAsset) {
+    await ctx.db.insert("alertEvents", {
+      source: "webhooks.persistWebhookSessionArtifacts",
+      severity: "warning",
+      message: "VAPI end event had no recording or transcript artifacts to persist",
+      context: {
+        sessionKey: args.sessionKey,
+        eventType: args.eventType,
+      },
+      createdAt: Date.now(),
+    });
+    return;
+  }
+
+  const patch: {
+    recordingStorageId?: string;
+    transcriptStorageId?: string;
+    updatedAt: number;
+  } = {
+    updatedAt: Date.now(),
+  };
+
+  if (recordingAsset) {
+    try {
+      const recordingBlob = await materializeRecordingBlob(recordingAsset);
+      patch.recordingStorageId = await ctx.storage.store(recordingBlob);
+    } catch (error) {
+      await ctx.db.insert("alertEvents", {
+        source: "webhooks.persistWebhookSessionArtifacts",
+        severity: "warning",
+        message: `Unable to persist recording artifact: ${error instanceof Error ? error.message : "unknown"}`,
+        context: {
+          sessionKey: args.sessionKey,
+          eventType: args.eventType,
+        },
+        createdAt: Date.now(),
+      });
+    }
+  }
+
+  if (transcriptAsset) {
+    try {
+      const transcriptBlob = await materializeTranscriptBlob(transcriptAsset);
+      patch.transcriptStorageId = await ctx.storage.store(transcriptBlob);
+    } catch (error) {
+      await ctx.db.insert("alertEvents", {
+        source: "webhooks.persistWebhookSessionArtifacts",
+        severity: "warning",
+        message: `Unable to persist transcript artifact: ${error instanceof Error ? error.message : "unknown"}`,
+        context: {
+          sessionKey: args.sessionKey,
+          eventType: args.eventType,
+        },
+        createdAt: Date.now(),
+      });
+    }
+  }
+
+  if (patch.recordingStorageId || patch.transcriptStorageId) {
+    await ctx.db.patch(session._id, patch);
+  }
+}
+
+function extractRecordingAsset(payload: any): { kind: "base64" | "url"; value: string; mimeType?: string } | null {
+  const call = payload?.call ?? payload?.message?.call ?? {};
+  const message = payload?.message ?? payload;
+
+  const url =
+    asString(call?.recordingUrl) ||
+    asString(call?.recording?.url) ||
+    asString(message?.recordingUrl) ||
+    asString(message?.recording?.url) ||
+    asString(payload?.recordingUrl);
+
+  if (url) {
+    return {
+      kind: "url",
+      value: url,
+      mimeType:
+        asString(call?.recording?.mimeType) ||
+        asString(message?.recording?.mimeType) ||
+        asString(payload?.recordingMimeType),
+    };
+  }
+
+  const candidate = asString(call?.recording) || asString(message?.recording) || asString(payload?.recording);
+  if (!candidate) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(candidate)) {
+    return {
+      kind: "url",
+      value: candidate,
+      mimeType: asString(payload?.recordingMimeType),
+    };
+  }
+
+  return {
+    kind: "base64",
+    value: candidate,
+    mimeType: asString(payload?.recordingMimeType) || "audio/wav",
+  };
+}
+
+function extractTranscriptAsset(payload: any): { kind: "text" | "url"; value: string } | null {
+  const call = payload?.call ?? payload?.message?.call ?? {};
+  const message = payload?.message ?? payload;
+
+  const url =
+    asString(call?.transcriptUrl) ||
+    asString(message?.transcriptUrl) ||
+    asString(payload?.transcriptUrl);
+
+  if (url) {
+    return {
+      kind: "url",
+      value: url,
+    };
+  }
+
+  const transcriptValue = message?.transcript ?? payload?.transcript ?? call?.transcript;
+  if (typeof transcriptValue === "string" && transcriptValue.trim().length > 0) {
+    return {
+      kind: "text",
+      value: transcriptValue,
+    };
+  }
+
+  if (typeof transcriptValue === "object" && transcriptValue !== null) {
+    const maybeText = asString((transcriptValue as { text?: unknown }).text);
+    if (maybeText) {
+      return {
+        kind: "text",
+        value: maybeText,
+      };
+    }
+
+    const serialized = JSON.stringify(transcriptValue);
+    if (serialized && serialized !== "{}") {
+      return {
+        kind: "text",
+        value: serialized,
+      };
+    }
+  }
+
+  return null;
+}
+
+async function materializeRecordingBlob(asset: { kind: "base64" | "url"; value: string; mimeType?: string }) {
+  if (asset.kind === "url") {
+    const response = await fetch(asset.value);
+    if (!response.ok) {
+      throw new Error(`Recording download failed with status ${response.status}`);
+    }
+
+    const bytes = await response.arrayBuffer();
+    const contentType = asset.mimeType || response.headers.get("content-type") || "audio/wav";
+    return new Blob([bytes], { type: contentType });
+  }
+
+  const bytes = decodeBase64(asset.value);
+  return new Blob([bytes], { type: asset.mimeType || "audio/wav" });
+}
+
+async function materializeTranscriptBlob(asset: { kind: "text" | "url"; value: string }) {
+  if (asset.kind === "url") {
+    const response = await fetch(asset.value);
+    if (!response.ok) {
+      throw new Error(`Transcript download failed with status ${response.status}`);
+    }
+
+    const text = await response.text();
+    return new Blob([text], { type: "text/plain" });
+  }
+
+  return new Blob([asset.value], { type: "text/plain" });
+}
+
+function decodeBase64(input: string) {
+  const normalized = input.includes(",") ? input.slice(input.indexOf(",") + 1) : input;
+  const binary = atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 async function incrementUsageRollup(
@@ -347,6 +689,7 @@ function resolveBillingAccess(
     stripeSubscriptionId?: string;
     status?: string;
     eventType: string;
+    createdAt: number;
   }>,
 ) {
   if (events.length === 0) {
@@ -385,12 +728,71 @@ function resolveBillingAccess(
     return { hasAccess: false, reason: "subscription_status_unknown" as const };
   }
 
-  const hasCompletedCheckout = events.some((event) => event.eventType === "checkout.session.completed");
-  if (hasCompletedCheckout) {
-    return { hasAccess: true, reason: "checkout_completed" as const };
+  const latestCheckoutCompleted = events.find((event) => event.eventType === "checkout.session.completed");
+
+  if (!latestCheckoutCompleted) {
+    return { hasAccess: false, reason: "no_active_subscription" as const };
   }
 
-  return { hasAccess: false, reason: "no_active_subscription" as const };
+  if (Date.now() - latestCheckoutCompleted.createdAt <= CHECKOUT_PROVISIONAL_ACCESS_MS) {
+    return { hasAccess: true, reason: "checkout_provisional" as const };
+  }
+
+  return { hasAccess: false, reason: "checkout_provisional_expired" as const };
+}
+
+function extractStripeCustomerId(payload: any): string | undefined {
+  return asString(payload?.data?.object?.customer) || asString(payload?.data?.object?.customer?.id);
+}
+
+function extractStripeSubscriptionId(payload: any): string | undefined {
+  return asString(payload?.data?.object?.subscription) || asString(payload?.data?.object?.subscription?.id);
+}
+
+function extractTimestampMs(payload: any): number | undefined {
+  const candidates: unknown[] = [
+    payload?.message?.endedAt,
+    payload?.message?.timestamp,
+    payload?.endedAt,
+    payload?.timestamp,
+    payload?.call?.endedAt,
+    payload?.call?.endTime,
+    payload?.created,
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = normalizeTimestamp(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeTimestamp(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 1_000_000_000_000) {
+      return value;
+    }
+    if (value > 1_000_000_000) {
+      return value * 1000;
+    }
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return normalizeTimestamp(numeric);
+    }
+
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return undefined;
 }
 
 function asString(value: unknown): string | undefined {

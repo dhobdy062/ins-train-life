@@ -6,6 +6,7 @@ import {
   type ReactElement,
   type ReactNode,
   isValidElement,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -49,6 +50,10 @@ export default function DashboardTabs({ defaultTab, children }: DashboardTabsPro
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   function focusTab(tabId: string) {
     tabRefs.current[tabId]?.focus();

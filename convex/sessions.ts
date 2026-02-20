@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const createTrainingSession = mutation({
@@ -107,6 +107,48 @@ export const deleteSessionWithArtifacts = mutation({
     return {
       success: true,
       deletedResponses: responses.length,
+    };
+  },
+});
+
+export const markSessionCompletedFromWebhook = internalMutation({
+  args: {
+    sessionKey: v.string(),
+    endedAt: v.optional(v.number()),
+    sourceEventType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session) {
+      return { found: false as const, updated: false as const };
+    }
+
+    const patch: {
+      status?: "completed";
+      endedAt?: number;
+      updatedAt: number;
+    } = {
+      updatedAt: Date.now(),
+    };
+
+    if (session.status !== "completed") {
+      patch.status = "completed";
+    }
+
+    if (!session.endedAt) {
+      patch.endedAt = args.endedAt ?? Date.now();
+    }
+
+    await ctx.db.patch(session._id, patch);
+
+    return {
+      found: true as const,
+      updated: true as const,
+      sourceEventType: args.sourceEventType ?? null,
     };
   },
 });

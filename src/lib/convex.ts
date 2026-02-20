@@ -6,7 +6,9 @@ type AdminConvexHttpClient = ConvexHttpClient & { setAdminAuth?: (token: string)
 
 const enqueueWebhookEventRef = makeFunctionReference<"mutation">("webhooks:enqueueWebhookEvent");
 const recordAlertRef = makeFunctionReference<"mutation">("webhooks:recordAlert");
+const logEmailEventRef = makeFunctionReference<"mutation">("webhooks:logEmailEvent");
 const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions:createTrainingSession");
+const getTrainerDashboardSnapshotRef = makeFunctionReference<"query">("sessions:getTrainerDashboardSnapshot");
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions:reserveTrialSession");
 const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("sessions:deleteSessionWithArtifacts");
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
@@ -81,6 +83,31 @@ export async function createTrainingSession(args: {
   return client.mutation(createTrainingSessionRef, args as never) as Promise<{ sessionKey: string }>;
 }
 
+export async function getTrainerDashboardSnapshot(args: { orgId: string; trainerId?: string }) {
+  const client = getClient();
+  return client.query(getTrainerDashboardSnapshotRef, args as never) as Promise<{
+    hasData: boolean;
+    totalAgents: number;
+    avgScore: number;
+    atD3Plus: number;
+    hardStopRate: number;
+    trainees: Array<{
+      id: string;
+      name: string;
+      email: string;
+      level: string;
+      avgScore: number;
+      callsThisLevel: number;
+      hardStops: number;
+      hardStopRate: number;
+      objectionSuccessRate: number;
+      appointmentSetRate: number;
+      recommendation: string;
+      focusArea: string;
+    }>;
+  }>;
+}
+
 export async function reserveTrialSession(args: { emailHash: string; sessionKey: string }) {
   const client = getClient();
   return client.mutation(reserveTrialSessionRef, args as never) as Promise<{ allowed: boolean; remaining: number }>;
@@ -149,6 +176,22 @@ export async function recordAlert(args: {
 }) {
   const client = getClient();
   return client.mutation(recordAlertRef, args as never);
+}
+
+export async function logEmailEvent(args: {
+  provider: "resend";
+  eventType: string;
+  sequence?: string;
+  orgId?: string;
+  recipient?: string;
+  recipientHash?: string;
+  status: "sent" | "failed";
+  providerMessageId?: string;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const client = getClient();
+  return client.mutation(logEmailEventRef, args as never);
 }
 
 export async function checkLaggingWebhooks(args: { maxLagMs: number; limit?: number }) {
