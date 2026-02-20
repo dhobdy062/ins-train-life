@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import TrialConsole from "@/components/TrialConsole";
+import TraineePracticeConsole from "@/components/TraineePracticeConsole";
 import DashboardTabs, { DashboardTabPanel } from "@/components/dashboard/DashboardTabs";
 import { verifyToken } from "@/lib/token";
 
@@ -72,7 +72,7 @@ export default async function TraineeDashboardPage() {
             </DashboardTabPanel>
 
             <DashboardTabPanel id="practice" label="Practice">
-              <TrialConsole />
+              <TraineePracticeConsole />
             </DashboardTabPanel>
 
             <DashboardTabPanel id="call-options" label="Call Options">

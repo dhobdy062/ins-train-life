@@ -1,4 +1,3 @@
-'''
 import React from 'react';
 import styles from './Cream_No_Sugar_Trainee_Dashboard.module.css';
 
@@ -212,4 +211,3 @@ const TraineeDashboard = () => {
 };
 
 export default TraineeDashboard;
-'''
