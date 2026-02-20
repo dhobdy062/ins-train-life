@@ -117,12 +117,25 @@ export default async function TrainerDashboardPage() {
             </>
           ) : (
             <div className="glass panel">
-              <div className="tag">Authentication required</div>
-              <h3>Sign in and choose an organization to open the trainer dashboard.</h3>
-              <p className="disclaimer">Sign-in keeps your organization&apos;s coaching progress secure.</p>
-              <Link className="button" href="/sign-in?redirect_url=/dashboard/trainer">
-                Sign in
-              </Link>
+              {userId ? (
+                <>
+                  <div className="tag">Organization required</div>
+                  <h3>One last step: choose your organization workspace.</h3>
+                  <p className="disclaimer">Training sessions and billing access are connected to that workspace.</p>
+                  <Link className="button" href="/workspace/select-organization?redirect_url=%2Fdashboard%2Ftrainer">
+                    Choose organization
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="tag">Authentication required</div>
+                  <h3>Sign in and choose an organization to open the trainer dashboard.</h3>
+                  <p className="disclaimer">Sign-in keeps your organization&apos;s coaching progress secure.</p>
+                  <Link className="button" href="/sign-in?redirect_url=/dashboard/trainer">
+                    Sign in
+                  </Link>
+                </>
+              )}
             </div>
           )}
         </main>

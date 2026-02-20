@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/email";
 import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
+import { normalizeRelativeRedirect } from "@/lib/redirect";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -47,6 +48,10 @@ function getCheckoutHint(error: unknown) {
 
   if (message.includes("Invalid API Version")) {
     return "Configured Stripe API version is invalid for this Stripe account.";
+  }
+
+  if (message && message !== "Unknown checkout error") {
+    return `Checkout setup error: ${message}`;
   }
 
   return "Unable to create checkout session with current Stripe configuration.";
@@ -115,16 +120,15 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
   const { userId, orgId } = await auth();
   const selection = normalizeBillingSelection({ planId: params.plan, interval: params.interval });
   const returnTarget = `/checkout/start?plan=${selection.planId}&interval=${selection.interval}`;
+  const orgSetupTarget = `/workspace/select-organization?redirect_url=${encodeURIComponent(returnTarget)}`;
   let checkoutHint =
     "Please retry your plan selection. If this keeps happening, verify Stripe price environment variables are configured for each plan interval.";
 
   if (!userId) {
-    redirect(
-      `/sign-in?plan=${selection.planId}&interval=${selection.interval}&redirect_url=${encodeURIComponent(returnTarget)}`,
-    );
+    redirect(`/sign-up?plan=${selection.planId}&interval=${selection.interval}&redirect_url=${encodeURIComponent(returnTarget)}`);
   }
   if (!orgId) {
-    redirect("/demo");
+    redirect(orgSetupTarget);
   }
 
   try {
@@ -151,15 +155,19 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
       <div className="shell">
         <main>
           <section className="glass panel">
-            <div className="tag">Checkout unavailable</div>
-            <h3>We could not start checkout for that plan right now.</h3>
+            <div className="tag">Checkout needs attention</div>
+            <h3>We couldn&apos;t open secure checkout yet.</h3>
             <p className="disclaimer">{checkoutHint}</p>
+            <p className="disclaimer">Use the actions below to retry or confirm your workspace context.</p>
             <div className="hero-actions">
               <Link className="button" href="/#pricing">
-                Back to pricing
+                Back to plans
               </Link>
               <Link className="button secondary" href={returnTarget}>
-                Retry checkout
+                Try again
+              </Link>
+              <Link className="button secondary" href={normalizeRelativeRedirect(orgSetupTarget, "/dashboard/trainer")}>
+                Choose workspace
               </Link>
             </div>
           </section>

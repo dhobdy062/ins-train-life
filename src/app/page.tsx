@@ -1,6 +1,7 @@
 import LeadForm from "@/components/LeadForm";
 import PricingCards from "@/components/PricingCards";
 import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { normalizeBillingSelection } from "@/lib/billing";
 
 const objectionNodes = [
@@ -25,6 +26,7 @@ type HomePageProps = {
 export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const selection = normalizeBillingSelection({ planId: params.plan, interval: params.interval });
+  const { userId } = await auth();
 
   return (
     <div className="page">
@@ -44,13 +46,13 @@ export default async function Home({ searchParams }: HomePageProps) {
                 <SignedOut>
                   <SignUpButton mode="modal">
                     <button className="button" type="button">
-                      Setup trainer account
+                      Create trainer account
                     </button>
                   </SignUpButton>
                 </SignedOut>
                 <SignedIn>
                   <a className="button secondary" href="/dashboard/trainer">
-                    Go to Dashboard
+                    Open workspace
                   </a>
                 </SignedIn>
               </div>
@@ -126,8 +128,17 @@ export default async function Home({ searchParams }: HomePageProps) {
 
           <section className="glass panel" id="pricing">
             <div className="tag">Pricing</div>
-            <h3>Choose the plan, then continue directly to secure checkout.</h3>
-            <PricingCards selectedPlanId={selection.planId} selectedInterval={selection.interval} />
+            <h3>Pick your plan and we&apos;ll guide you through secure checkout.</h3>
+            <p className="disclaimer">
+              {userId
+                ? "Choose monthly or annual billing to continue."
+                : "Choose monthly or annual billing, then create your account to continue."}
+            </p>
+            <PricingCards
+              selectedPlanId={selection.planId}
+              selectedInterval={selection.interval}
+              signedIn={Boolean(userId)}
+            />
           </section>
         </main>
 

@@ -12,15 +12,23 @@ import {
 type PricingCardsProps = {
   selectedPlanId?: BillingPlanId;
   selectedInterval?: BillingInterval;
+  signedIn?: boolean;
 };
 
-function buildCheckoutHref(planId: BillingPlanId, interval: BillingInterval) {
+function buildCheckoutHref(planId: BillingPlanId, interval: BillingInterval, signedIn: boolean) {
+  if (!signedIn) {
+    const redirectTarget = `/checkout/start?plan=${planId}&interval=${interval}`;
+    return `/sign-up?plan=${planId}&interval=${interval}&redirect_url=${encodeURIComponent(redirectTarget)}`;
+  }
+
   return `/checkout/start?plan=${planId}&interval=${interval}`;
 }
 
-export default function PricingCards({ selectedPlanId, selectedInterval }: PricingCardsProps) {
+export default function PricingCards({ selectedPlanId, selectedInterval, signedIn = true }: PricingCardsProps) {
   const activePlanId = selectedPlanId ?? DEFAULT_BILLING_SELECTION.planId;
   const activeInterval = selectedInterval ?? DEFAULT_BILLING_SELECTION.interval;
+  const monthlyLabel = signedIn ? "Start monthly" : "Choose monthly";
+  const annualLabel = signedIn ? "Start annual" : "Choose annual";
 
   return (
     <div className="price-grid">
@@ -49,20 +57,24 @@ export default function PricingCards({ selectedPlanId, selectedInterval }: Prici
               <span>/year</span>
             </p>
             <span className={`selected-pill${isSelectedPlan ? " active" : ""}`}>
-              {isSelectedPlan ? `Selected interval: ${activeInterval}` : "Select an interval"}
+              {isSelectedPlan
+                ? signedIn
+                  ? `Selected: ${activeInterval}`
+                  : `Selected: ${activeInterval} (account setup next)`
+                : "Select monthly or annual"}
             </span>
             <div className="hero-actions">
               <Link
                 className={`button secondary${monthlySelected ? " plan-cta-selected" : ""}`}
-                href={buildCheckoutHref(plan.id, "monthly")}
+                href={buildCheckoutHref(plan.id, "monthly", signedIn)}
               >
-                Choose monthly
+                {monthlyLabel}
               </Link>
               <Link
                 className={`button secondary${annualSelected ? " plan-cta-selected" : ""}`}
-                href={buildCheckoutHref(plan.id, "annual")}
+                href={buildCheckoutHref(plan.id, "annual", signedIn)}
               >
-                Choose annual
+                {annualLabel}
               </Link>
             </div>
             <ul className="plan-features">

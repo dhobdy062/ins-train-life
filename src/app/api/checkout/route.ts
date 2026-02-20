@@ -16,7 +16,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!orgId) {
-      return NextResponse.json({ error: "Organization context is required before checkout." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Organization context is required before checkout.",
+          next: "/workspace/select-organization?redirect_url=%2Fcheckout%2Fstart",
+        },
+        { status: 400 },
+      );
     }
 
     await syncIdentityForRequest({

@@ -31,7 +31,7 @@ export default function SiteNav() {
               </Link>
             </SignedOut>
             <SignedIn>
-              <Link className="button secondary" href="/dashboard/trainer">
+              <Link className="button secondary" href="/workspace/select-organization?redirect_url=%2Fdashboard%2Ftrainer">
                 Open workspace
               </Link>
               <UserButton />

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default async function DemoPage() {
-  redirect("/dashboard/trainer");
+  redirect("/workspace/select-organization?redirect_url=%2Fdashboard%2Ftrainer");
 }
