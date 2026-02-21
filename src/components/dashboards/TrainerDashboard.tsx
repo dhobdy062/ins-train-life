@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './TrainerDashboard.module.css';
+import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 interface Trainee {
   id: string;
@@ -92,10 +93,20 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
           </div>
           <div className={styles.headerActions}>
             <div className={styles.userInfo}>
-              <div className={styles.name}>Sarah Johnson</div>
-              <div className={styles.plan}>{accessLabel}</div>
+              <SignedIn>
+                <div className={styles.plan}>{accessLabel}</div>
+              </SignedIn>
             </div>
-            <div className={styles.avatar}>SJ</div>
+            <div className={styles.authWrapper}>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className={styles.btn}>Sign In</button>
+                </SignInButton>
+              </SignedOut>
+            </div>
           </div>
         </header>
 

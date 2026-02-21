@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styles from './TraineeDashboard.module.css';
+import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 const TraineeDashboard = () => {
     return (
@@ -29,15 +30,21 @@ const TraineeDashboard = () => {
                 {/* Header */}
                 <header className={styles.header}>
                     <div className={styles.headerLeft}>
-                        <h1 className={styles.pageTitle}>Welcome Back, Alex!</h1>
-                        <p className={styles.pageSubtitle}>Here's your performance summary. Keep up the great work!</p>
+                        <h1 className={styles.pageTitle}>Welcome Back!</h1>
+                        <p className={styles.pageSubtitle}>Here&apos;s your performance summary. Keep up the great work!</p>
                     </div>
                     <div className={styles.headerProfile}>
-                        <div className={styles.profileInfo}>
-                            <span className={styles.profileName}>Alex Thompson</span>
-                            <span className={styles.profileStats}>2,450 Points | Tier 4</span>
-                        </div>
-                        <img src="https://i.pravatar.cc/60?u=alex" alt="Alex Thompson" className={styles.profileAvatar} />
+                        <SignedIn>
+                            <div className={styles.profileInfo}>
+                                <span className={styles.profileStats}>2,450 Points | Tier 4</span>
+                            </div>
+                            <UserButton afterSignOutUrl="/" />
+                        </SignedIn>
+                        <SignedOut>
+                            <SignInButton mode="modal">
+                                <button className={styles.ctaButton} style={{ padding: '8px 16px', fontSize: '14px' }}>Sign In</button>
+                            </SignInButton>
+                        </SignedOut>
                     </div>
                 </header>
 
