@@ -272,12 +272,12 @@
     border: 1px solid var(--border);
 }
 
-table {
+.tableContainer table {
     width: 100%;
     border-collapse: collapse;
 }
 
-th {
+.tableContainer th {
     padding: 16px;
     text-align: left;
     background: #F5F5F5;
@@ -287,7 +287,7 @@ th {
     border-bottom: 2px solid var(--border);
 }
 
-td {
+.tableContainer td {
     padding: 16px;
     border-bottom: 1px solid var(--border);
 }
