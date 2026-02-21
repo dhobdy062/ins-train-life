@@ -1,139 +1,222 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import styles from './TrainerDashboard.module.css';
 
-const TrainerDashboard = ({ 
-    teamSnapshot,
-    selectedAgent,
-    accessLabel,
-    isPaid,
-    isBlocked,
-    minutesUsed,
-    minutesLimit,
-    minutesRemaining,
-    canOpenDashboard,
-    defaultTab,
-    entitlement
+interface Trainee {
+  id: string;
+  name: string;
+  email: string;
+  level: string;
+  avgScore: number;
+  callsThisLevel: number;
+  hardStops: number;
+  hardStopRate: number;
+  objectionSuccessRate: number;
+  appointmentSetRate: number;
+  recommendation: string;
+  focusArea: string;
+}
+
+interface TrainerDashboardProps {
+  teamSnapshot: {
+    hasData: boolean;
+    totalAgents: number;
+    avgScore: number;
+    atD3Plus: number;
+    hardStopRate: number;
+    trainees: Array<Trainee>;
+  };
+  selectedAgent: Trainee | null;
+  accessLabel: string;
+  isPaid: boolean;
+  isBlocked: boolean;
+  minutesUsed: number;
+  minutesLimit?: number | null;
+  minutesRemaining?: number;
+  canOpenDashboard: boolean;
+  defaultTab: string;
+  entitlement?: Record<string, unknown> | null;
+}
+
+const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
+  teamSnapshot,
+  selectedAgent,
+  accessLabel,
+  isBlocked,
+  minutesUsed,
+  minutesLimit,
+  minutesRemaining,
+  defaultTab,
 }) => {
-    return (
-        <div className={styles.container}>
-            <aside className={styles.sidebar}>
-                <div className={styles.sidebarLogo}>
-                    Cream No Sugar
-                </div>
-                <ul className={styles.sidebarNav}>
-                    <li><a href="#" className={styles.active}>Dashboard</a></li>
-                    <li><a href="#">Trainees</a></li>
-                    <li><a href="#">Training Plans</a></li>
-                    <li><a href="#">Analytics</a></li>
-                    <li><a href="#">Settings</a></li>
-                </ul>
-            </aside>
+  const [activeTab, setActiveTab] = useState(defaultTab || 'team');
 
-            <main className={styles.main}>
-                <header className={styles.header}>
-                    <div className={styles.headerTitle}>
-                        <h1>Welcome Back, {selectedAgent?.name}!</h1>
-                        <p>Here's your team's performance overview.</p>
-                    </div>
-                    <div className={styles.headerActions}>
-                        <div className={styles.userInfo}>
-                            <div className={styles.name}>{selectedAgent?.name}</div>
-                            <div className={styles.plan}>{accessLabel}</div>
-                        </div>
-                        <div className={styles.avatar}>{selectedAgent?.name?.charAt(0)}</div>
-                    </div>
-                </header>
-
-                <div className={styles.content}>
-                    <div className={styles.statsGrid}>
-                        <div className={`${styles.statCard} ${styles.success}`}>
-                            <div className={styles.statHeader}>
-                                <span className={styles.statLabel}>Active Trainees</span>
-                                <span className={styles.statIcon}>👥</span>
-                            </div>
-                            <div className={styles.statValue}>{teamSnapshot.totalAgents}</div>
-                            <div className={styles.statMeta}></div>
-                        </div>
-
-                        <div className={`${styles.statCard} ${styles.warning}`}>
-                            <div className={styles.statHeader}>
-                                <span className={styles.statLabel}>Avg. Score</span>
-                                <span className={styles.statIcon}>🎯</span>
-                            </div>
-                            <div className={styles.statValue}>{teamSnapshot.avgScore}%</div>
-                             <div className={styles.statMeta}></div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <span className={styles.statLabel}>Hard Stop Rate</span>
-                                <span className={styles.statIcon}>🚫</span>
-                            </div>
-                            <div className={styles.statValue}>{teamSnapshot.hardStopRate}%</div>
-                            <div className={styles.statMeta}></div>
-                        </div>
-                    </div>
-
-                    <div className={styles.sectionHeader}>
-                        <h2>Trainee Leaderboard</h2>
-                        <div className={styles.tabs}>
-                            <button className={`${styles.tab} ${styles.active}`}>This Week</button>
-                            <button className={styles.tab}>This Month</button>
-                            <button className={styles.tab}>All Time</button>
-                        </div>
-                    </div>
-
-                    <div className={styles.leaderboard}>
-                        {teamSnapshot.trainees.map((trainee, index) => (
-                            <div className={styles.leaderboardItem} key={trainee.id}>
-                                <div className={`${styles.rank} ${index === 0 ? styles.gold : index === 1 ? styles.silver : index === 2 ? styles.bronze : ''}`}>{index + 1}</div>
-                                <div className={styles.leaderboardAvatar}>{trainee.name.charAt(0)}</div>
-                                <div className={styles.leaderboardInfo}>
-                                    <div className={styles.leaderboardName}>{trainee.name}</div>
-                                    <div className={styles.leaderboardStat}>Avg. Score: {trainee.avgScore}%</div>
-                                </div>
-                                <div className={styles.leaderboardScore}>{trainee.callsThisLevel} <span className={styles.scoreUnit}>calls</span></div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className={styles.sectionHeader}>
-                        <h2>Achievements Unlocked</h2>
-                        <button className={styles.btn}>View All Badges</button>
-                    </div>
-
-                    <div className={styles.badgeGrid}>
-                        <div className={`${styles.badgeItem} ${styles.unlocked}`}>
-                            <span className={styles.badgeIcon}>🔥</span>
-                            <div className={styles.badgeName}>Hot Streak</div>
-                            <div className={styles.badgeDesc}>5 wins in a row</div>
-                            <div className={styles.badgeTooltip}>Unlocked by 8 trainees</div>
-                        </div>
-                        <div className={styles.badgeItem}>
-                            <span className={styles.badgeIcon}>🎯</span>
-                            <div className={styles.badgeName}>Bullseye</div>
-                            <div className={styles.badgeDesc}>Score 95%+</div>
-                            <div className={styles.badgeProgress}><div className={styles.badgeProgressFill} style={{width: '60%'}}></div></div>
-                            <div className={styles.badgeTooltip}>6/10 trainees have this</div>
-                        </div>
-                        <div className={`${styles.badgeItem} ${styles.locked}`}>
-                            <span className={styles.badgeIcon}>🔒</span>
-                            <div className={styles.badgeName}>Master</div>
-                            <div className={styles.badgeDesc}>Master a level</div>
-                            <div className={styles.badgeTooltip}>Locked</div>
-                        </div>
-                        <div className={styles.badgeItem}>
-                            <span className={styles.badgeIcon}>⭐</span>
-                            <div className={styles.badgeName}>Rising Star</div>
-                            <div className={styles.badgeDesc}>Top of leaderboard</div>
-                            <div className={styles.badgeProgress}><div className={styles.badgeProgressFill} style={{width: '80%'}}></div></div>
-                            <div className={styles.badgeTooltip}>Michael Johnson currently holds this</div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+  return (
+    <div className={styles.container}>
+      {/* Sidebar */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarLogo}>
+          <span>CREAM</span>
         </div>
-    );
+        <nav className={styles.sidebarNav}>
+          <ul>
+            <li>
+              <a 
+                href="#" 
+                className={activeTab === 'team' ? styles.active : ''} 
+                onClick={(e) => { e.preventDefault(); setActiveTab('team'); }}
+              >
+                Team Overview
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#" 
+                className={activeTab === 'practice' ? styles.active : ''} 
+                onClick={(e) => { e.preventDefault(); setActiveTab('practice'); }}
+              >
+                Practice Console
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className={styles.main}>
+        {/* Header */}
+        <header className={styles.header}>
+          <div className={styles.headerTitle}>
+            <h1>Trainer Dashboard</h1>
+            <p>Monitor your team&apos;s progress and performance metrics.</p>
+          </div>
+          <div className={styles.headerActions}>
+            <div className={styles.userInfo}>
+              <div className={styles.name}>Sarah Johnson</div>
+              <div className={styles.plan}>{accessLabel}</div>
+            </div>
+            <div className={styles.avatar}>SJ</div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <div className={styles.content}>
+          {isBlocked && (
+            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #ef4444', padding: '16px', borderRadius: '8px', marginBottom: '24px', color: '#991b1b' }}>
+              <strong>Upgrade Needed:</strong> Your team has reached the trial limit. Please upgrade to continue training.
+            </div>
+          )}
+
+          {/* Stats Grid */}
+          <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
+              <div className={styles.statHeader}>
+                <span className={styles.statLabel}>Avg Team Score</span>
+                <span className={styles.statIcon}>📊</span>
+              </div>
+              <div className={styles.statValue}>{teamSnapshot.avgScore}%</div>
+              <div className={styles.statProgress}>
+                <div className={styles.statProgressFill} style={{ width: `${teamSnapshot.avgScore}%` }}></div>
+              </div>
+              <div className={styles.statMeta}>Across all trainees</div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statHeader}>
+                <span className={styles.statLabel}>At D3+ Level</span>
+                <span className={styles.statIcon}>🏆</span>
+              </div>
+              <div className={styles.statValue}>{teamSnapshot.atD3Plus}</div>
+              <div className={styles.statMeta}>Agents at advanced level</div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statHeader}>
+                <span className={styles.statLabel}>Minutes Remaining</span>
+                <span className={styles.statIcon}>⏱️</span>
+              </div>
+              <div className={styles.statValue}>{minutesRemaining ?? 'Unlimited'}</div>
+              <div className={styles.statMeta}>{minutesUsed} minutes used {minutesLimit ? `/ ${minutesLimit}` : ''}</div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statHeader}>
+                <span className={styles.statLabel}>Hard Stop Rate</span>
+                <span className={styles.statIcon}>⚠️</span>
+              </div>
+              <div className={styles.statValue}>{teamSnapshot.hardStopRate}%</div>
+              <div className={styles.statMeta}>Target: &lt; 5%</div>
+            </div>
+          </div>
+
+          {selectedAgent && (
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '2px solid var(--border)', marginBottom: '40px' }}>
+               <h3 style={{ color: 'var(--primary-dark)', marginBottom: '16px' }}>Focus: {selectedAgent.name}</h3>
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#999' }}>Recommendation</div>
+                    <div style={{ fontWeight: '600' }}>{selectedAgent.recommendation}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#999' }}>Focus Area</div>
+                    <div style={{ fontWeight: '600' }}>{selectedAgent.focusArea}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#999' }}>Appt. Rate</div>
+                    <div style={{ fontWeight: '600' }}>{selectedAgent.appointmentSetRate}%</div>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {/* Agent Table */}
+          <div className={styles.sectionHeader}>
+            <h2>Team Roster</h2>
+          </div>
+          <div className={styles.tableContainer}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Agent Name</th>
+                  <th>Level</th>
+                  <th>Avg Score</th>
+                  <th>Appt. Rate</th>
+                  <th>Hard Stops</th>
+                  <th>Recommendation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamSnapshot.trainees.map((member) => (
+                  <tr key={member.id} style={selectedAgent?.id === member.id ? { backgroundColor: '#fffaf0' } : {}}>
+                    <td>
+                      <div className={styles.agentName}>{member.name}</div>
+                      <div style={{fontSize: '11px', color: '#999'}}>{member.email}</div>
+                    </td>
+                    <td>{member.level}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>{member.avgScore}%</span>
+                        <div className={styles.scoreBar}>
+                          <div className={styles.scoreBarFill} style={{ width: `${member.avgScore}%` }}></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{member.appointmentSetRate}%</td>
+                    <td>
+                      <span className={`${styles.badge} ${member.hardStopRate > 10 ? styles.inactive : styles.active}`}>
+                        {member.hardStopRate}%
+                      </span>
+                    </td>
+                    <td style={{fontSize: '12px'}}>{member.recommendation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default TrainerDashboard;

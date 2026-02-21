@@ -213,11 +213,11 @@ export const getOrgEntitlement = query({
     }
 
     return {
-      mode: "trial" as const,
+      mode: "paid" as const,
       minutesUsed,
       minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
       minutesRemaining,
-      reason: "trial_available" as const,
+      reason: "provisional_access" as const,
     };
   },
 });
@@ -233,7 +233,7 @@ async function persistStripeEvent(
 
   const existing = await ctx.db
     .query("billingEvents")
-    .withIndex("by_providerEventId", (q) => q.eq("providerEventId", providerEventId))
+    .withIndex("by_providerEventId", (q: any) => q.eq("providerEventId", providerEventId))
     .first();
 
   if (existing) {

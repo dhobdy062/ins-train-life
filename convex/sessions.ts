@@ -1,4 +1,4 @@
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const createTrainingSession = mutation({
@@ -149,6 +149,102 @@ export const markSessionCompletedFromWebhook = internalMutation({
       found: true as const,
       updated: true as const,
       sourceEventType: args.sourceEventType ?? null,
+    };
+  },
+});
+
+export const getTrainerDashboardSnapshot = query({
+  args: { orgId: v.string(), trainerId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    // 1. Get all members of the organization
+    const memberships = await ctx.db
+      .query("organizationMemberships")
+      .withIndex("by_clerkOrgId", (q) => q.eq("clerkOrgId", args.orgId))
+      .collect();
+
+    const userIds = memberships.map((m) => m.clerkUserId);
+    
+    // 2. Fetch user profiles
+    const users = await Promise.all(
+      userIds.map(async (clerkUserId) => {
+        return ctx.db
+          .query("users")
+          .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+          .first();
+      })
+    );
+
+    const activeUsers = users.filter((u) => u !== null && u.status !== "deleted");
+
+    // 3. Fetch recent metadata/sessions for the org
+    const sessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    const metrics = await ctx.db
+      .query("sessionMetrics")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .collect();
+
+    // 4. Calculate aggregate stats
+    const totalAgents = activeUsers.length;
+    const completedSessions = sessions.filter((s) => s.status === "completed");
+    
+    const allScores = metrics
+      .map((m) => m.rebuttalScore)
+      .filter((s): s is number => s !== undefined);
+    
+    const avgScore = allScores.length > 0 
+      ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+      : 0;
+
+    const atD3Plus = activeUsers.filter((u) => {
+      const userSessions = sessions.filter(s => s.traineeId === u?.clerkUserId);
+      return userSessions.length >= 15; // Simple heuristic for D3
+    }).length;
+
+    const hardStops = metrics.filter(m => m.toneStrikeCount && m.toneStrikeCount > 0).length;
+    const hardStopRate = sessions.length > 0 ? Math.round((hardStops / sessions.length) * 100) : 0;
+
+    // 5. Prepare trainee list
+    const trainees = await Promise.all(activeUsers.map(async (u) => {
+      const userSessions = sessions.filter(s => s.traineeId === u?.clerkUserId);
+      const userMetrics = metrics.filter(m => userSessions.some(s => s.sessionKey === m.sessionKey));
+      
+      const userScores = userMetrics
+        .map(m => m.rebuttalScore)
+        .filter((s): s is number => s !== undefined);
+      
+      const userAvgScore = userScores.length > 0
+        ? Math.round(userScores.reduce((a, b) => a + b, 0) / userScores.length)
+        : 0;
+
+      const userHardStops = userMetrics.filter(m => m.toneStrikeCount && m.toneStrikeCount > 0).length;
+      
+      return {
+        id: u?.clerkUserId || "",
+        name: u?.fullName || u?.firstName || "Unknown",
+        email: u?.primaryEmail || "",
+        level: userSessions.length >= 30 ? "D4" : userSessions.length >= 15 ? "D3" : userSessions.length >= 8 ? "D2" : "D1",
+        avgScore: userAvgScore,
+        callsThisLevel: userSessions.length,
+        hardStops: userHardStops,
+        hardStopRate: userSessions.length > 0 ? Math.round((userHardStops / userSessions.length) * 100) : 0,
+        objectionSuccessRate: userAvgScore, // Placeholder
+        appointmentSetRate: Math.round(userMetrics.filter(m => m.appointmentSet).length / (userSessions.length || 1) * 100),
+        recommendation: userAvgScore > 85 ? "Promote to next level" : "Focus on objection handling",
+        focusArea: userAvgScore < 70 ? "Tone & Pacing" : "Spouse Decision Objection",
+      };
+    }));
+
+    return {
+      hasData: sessions.length > 0,
+      totalAgents,
+      avgScore,
+      atD3Plus,
+      hardStopRate,
+      trainees: trainees.sort((a, b) => b.avgScore - a.avgScore),
     };
   },
 });

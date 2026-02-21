@@ -1,0 +1,499 @@
+:root {
+  --primary: #8b4513;
+  --primary-dark: #6b3410;
+  --primary-light: #a0522d;
+  --accent: #d2b48c;
+  --accent-dark: #a0826d;
+  --cream: #fff8dc;
+  --dark: #2c1810;
+  --text: #3e2723;
+  --success: #4caf50;
+  --warning: #ffa500;
+  --danger: #e74c3c;
+  --border: #d7ccc8;
+  --bg-light: #fafaf8;
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  background: var(--bg-light);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 280px;
+  background: var(--dark);
+  color: white;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarLogo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.sidebarLogo::before {
+  content: "☕";
+  font-size: 24px;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.navItem {
+  display: block;
+  padding: 12px 16px;
+  color: #d7ccc8;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.navItem:hover,
+.navItem.active {
+  background: var(--primary);
+  color: var(--cream);
+}
+
+.sidebarFooter {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* MAIN CONTENT */
+.mainContent {
+  margin-left: 280px;
+  padding: 0;
+  width: calc(100% - 280px);
+}
+
+.header {
+  background: white;
+  border-bottom: 2px solid var(--border);
+  padding: 24px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerLeft h1 {
+  font-size: 28px;
+  color: var(--primary-dark);
+  margin: 0 0 4px 0;
+}
+
+.headerLeft p {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
+}
+
+.headerProfile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileInfo {
+  text-align: right;
+}
+
+.profileName {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.profileStats {
+  font-size: 12px;
+  color: var(--primary);
+}
+
+.profileAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+}
+
+/* CALL TO ACTION */
+.ctaCard {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-radius: 16px;
+  padding: 32px;
+  margin: 24px 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(139, 69, 19, 0.2);
+}
+
+.ctaTitle {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.ctaSubtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  margin-bottom: 24px;
+}
+
+.ctaButton {
+  background: var(--accent);
+  color: var(--primary-dark);
+  border: none;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ctaButton:hover {
+  background: var(--cream);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* STREAK BANNER */
+.streakBanner {
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: white;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin: 0 40px 24px 40px;
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+}
+
+.streakContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.streakEmoji {
+  font-size: 24px;
+}
+
+.streakText {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.streakScores {
+  display: flex;
+  gap: 8px;
+}
+
+.streakScore {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* STAT CARDS */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 0 40px 24px 40px;
+}
+
+.statCard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.statHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.statTitle {
+  font-size: 14px;
+  color: #6d4c41;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  margin: 0 0 8px 0;
+}
+
+.statProgress {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+
+.statProgressBar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+.statMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.statChange.positive {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.statContext {
+  color: #999;
+}
+
+/* PROGRESS SECTION */
+.progressSection {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 0 40px 24px 40px;
+  border: 1px solid var(--border);
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 20px;
+}
+
+.progressItem {
+  margin-bottom: 20px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.progressLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.progressValue {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.progressBar {
+  background: var(--border);
+  height: 8px;
+  border-radius: 4px;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.progressContext {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* CALLS TABLE */
+.recentCallsSection {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 0 40px 24px 40px;
+  border: 1px solid var(--border);
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr 1.5fr 1fr 1fr;
+  padding: 12px;
+  background: var(--bg-light);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+  margin-bottom: 8px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr 1.5fr 1fr 1fr;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: 14px;
+}
+
+.scoreExcellent {
+  color: var(--success);
+  font-weight: 700;
+}
+.scoreGood {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.resultExcellent {
+  background: var(--success);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.resultGood {
+  background: var(--warning);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* COACH FEEDBACK */
+.coachFeedbackSection {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 0 40px 40px 40px;
+  border: 1px solid var(--border);
+}
+
+.feedbackCard {
+  background: var(--bg-light);
+  border-radius: 12px;
+  padding: 24px;
+  border-left: 4px solid var(--primary);
+}
+
+.feedbackMeta {
+  margin-bottom: 16px;
+}
+
+.feedbackFrom {
+  display: block;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.feedbackDate {
+  font-size: 12px;
+  color: #999;
+}
+
+.feedbackContent {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.feedbackActions {
+  display: flex;
+  gap: 12px;
+}
+
+.feedbackButton {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 80px;
+    padding: 20px 10px;
+  }
+  .sidebarLogo {
+    justify-content: center;
+  }
+  .sidebarLogo::before {
+    margin: 0;
+  }
+  .navItem span {
+    display: none;
+  }
+  .mainContent {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .mainContent {
+    margin-left: 0;
+    width: 100%;
+  }
+  .header {
+    padding: 20px;
+  }
+  .ctaCard,
+  .streakBanner,
+  .statsGrid,
+  .progressSection,
+  .recentCallsSection,
+  .coachFeedbackSection {
+    margin: 20px;
+  }
+}
