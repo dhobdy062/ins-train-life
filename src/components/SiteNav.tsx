@@ -13,6 +13,10 @@ export default function SiteNav() {
       ? "/dashboard/trainee"
       : "/";
 
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <header className="site-nav-wrap">
       <div className="site-nav-shell">
