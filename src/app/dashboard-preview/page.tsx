@@ -15,7 +15,7 @@ const SAMPLE_TEAM_SNAPSHOT = {
     {
       id: "sample-sarah-johnson",
       name: "Sarah Johnson",
-      email: "sarah.johnson@example.com",
+      email: "cream@support.retrospxt.com",
       level: "D2",
       avgScore: 83,
       callsThisLevel: 14,
@@ -29,7 +29,7 @@ const SAMPLE_TEAM_SNAPSHOT = {
     {
       id: "sample-mike-chen",
       name: "Mike Chen",
-      email: "mike.chen@example.com",
+      email: "cream@support.retrospxt.com",
       level: "D3",
       avgScore: 77,
       callsThisLevel: 8,
@@ -43,7 +43,7 @@ const SAMPLE_TEAM_SNAPSHOT = {
     {
       id: "sample-jessica-davis",
       name: "Jessica Davis",
-      email: "jessica.davis@example.com",
+      email: "cream@support.retrospxt.com",
       level: "D1",
       avgScore: 92,
       callsThisLevel: 25,
@@ -57,7 +57,7 @@ const SAMPLE_TEAM_SNAPSHOT = {
     {
       id: "sample-david-lee",
       name: "David Lee",
-      email: "david.lee@example.com",
+      email: "cream@support.retrospxt.com",
       level: "D4",
       avgScore: 72,
       callsThisLevel: 5,

@@ -1,4 +1,5 @@
 # CREAM NO SUGAR TRAINEE DASHBOARD
+
 ## Complete Page Breakdown
 
 **Mobile-Friendly Agent/Trainee Dashboard**
@@ -10,29 +11,33 @@
 ### **What You See When You Log In**
 
 #### TOP SECTION: Header
+
 - **Greeting:** "Your Training Dashboard"
 - **Subtitle:** "Keep improving. Keep winning."
 - **Your Profile:** Shows your name (Mike Chen), Level (D3 Level), Total Calls (18), Avatar
 
 #### CALL-TO-ACTION CARD (Prominent)
+
 ```
 🎯 READY TO GET SHARP?
 
-You have 34 minutes remaining this week. 
+You have 34 minutes remaining this week.
 Start your next training call and level up.
 
 [START TRAINING CALL] ← Big, inviting button
 ```
 
 #### STREAK BANNER (If active)
+
 ```
 🔥 5-WIN STREAK!
 
-You're on fire! Keep this momentum going. 
+You're on fire! Keep this momentum going.
 Last 5 calls: 92%, 88%, 87%, 91%, 89%
 ```
 
 #### STAT CARDS (4 cards)
+
 ```
 📊 TOTAL CALLS
    18
@@ -52,6 +57,7 @@ Last 5 calls: 92%, 88%, 87%, 91%, 89%
 ```
 
 #### DIFFICULTY LEVEL SELECTOR
+
 ```
 Choose which difficulty to practice:
 
@@ -66,6 +72,7 @@ D5 - BRICK WALL
 ```
 
 #### PROGRESS THIS MONTH
+
 ```
 📈 OVERALL SCORE
    [████████░] 89%
@@ -84,6 +91,7 @@ D5 - BRICK WALL
 ```
 
 #### YOUR BADGES
+
 ```
 🎯 CREDIBILITY MASTER    ⭐ PERFECT WEEK    🏅 D3 LEVEL UNLOCKED
    Unlocked Feb 8          Unlocked Feb 5       Unlocked Feb 10
@@ -96,6 +104,7 @@ D5 - BRICK WALL
 ```
 
 #### RECENT TRAINING CALLS TABLE
+
 ```
 DATE              | LEVEL | OBJECTION        | SCORE | RESULT
 ──────────────────────────────────────────────────────────
@@ -107,11 +116,12 @@ Feb 11, 3:30 PM  | D2    | Don't Remember   | 90%   | Excellent
 ```
 
 #### LATEST COACH FEEDBACK
+
 ```
 From: Sarah Johnson (Your Trainer)
 Date: Feb 13, 8:45 AM
 
-"Mike, fantastic work on your last D3 call! That 92% score 
+"Mike, fantastic work on your last D3 call! That 92% score
 on the "Already Covered" objection was masterful..."
 
 [Full feedback message with coaching notes]
@@ -120,6 +130,7 @@ on the "Already Covered" objection was masterful..."
 ```
 
 #### YOUR NEXT GOALS
+
 ```
 🎯 GOALS FOR THIS WEEK:
 
@@ -143,6 +154,7 @@ on the "Already Covered" objection was masterful..."
 ### **The Actual Training Experience**
 
 #### SECTION: Select Your Challenge
+
 ```
 WHAT DO YOU WANT TO PRACTICE TODAY?
 
@@ -164,6 +176,7 @@ SPECIFIC OBJECTION (Optional):
 ```
 
 #### SECTION: Before You Start
+
 ```
 ⏱️ TIMER: 7 minutes remaining this week
 📊 YOUR STATS: 89% average | 18 total calls
@@ -173,11 +186,12 @@ READY?
 
 [START CALL →]
 
-Note: You'll be connected to a realistic AI prospect 
+Note: You'll be connected to a realistic AI prospect
 who won't go easy on you. Stay sharp!
 ```
 
 #### SECTION: During Call (Screen)
+
 ```
 [AI PROSPECT ON SCREEN]
 Audio playing: "Hi Mike, yeah I got your message..."
@@ -196,6 +210,7 @@ NEXT OBJECTION COMING IN 5 SECONDS...
 ```
 
 #### SECTION: After Call (Results)
+
 ```
 📊 CALL COMPLETE
 
@@ -213,9 +228,9 @@ SCORE BREAKDOWN:
    Overall Communication: 92%
 
 AI COACH FEEDBACK:
-"That was excellent. You didn't try to convince them. 
-You invited them. You said 'let's loop them in now' 
-instead of 'you need to ask them.' Big difference. 
+"That was excellent. You didn't try to convince them.
+You invited them. You said 'let's loop them in now'
+instead of 'you need to ask them.' Big difference.
 That's a professional move."
 
 BADGE PROGRESS:
@@ -236,6 +251,7 @@ BADGE PROGRESS:
 ### **All Your Training Calls**
 
 #### SECTION: Filter & Search
+
 ```
 FILTER BY:
 - Date Range [Last 7 days / 30 days / All Time]
@@ -248,6 +264,7 @@ SEARCH: [Search by date...]
 ```
 
 #### SECTION: Call List (Chronological)
+
 ```
 📞 CALL #487 - Feb 13, 8:34 AM
    Level: D3 | Objection: Already Covered | Score: 92%
@@ -283,6 +300,7 @@ SEARCH: [Search by date...]
 ```
 
 #### WHEN YOU CLICK A CALL
+
 ```
 🔍 CALL DETAILS #487
 
@@ -307,12 +325,12 @@ DURATION: 4 minutes 23 seconds
    Overall Communication: 92%
 
 🤖 AI COACH FEEDBACK
-   "Masterful. You acknowledged their position, 
+   "Masterful. You acknowledged their position,
    validated it, then reframed to the gap. Professional."
 
 💬 COACH NOTES FROM SARAH
-   "This is exactly what I was talking about. 
-   You're nailing the D3 objections now. 
+   "This is exactly what I was talking about.
+   You're nailing the D3 objections now.
    Ready for D4 soon!"
 
 ACTIONS:
@@ -328,6 +346,7 @@ ACTIONS:
 ### **Detailed Performance Analytics**
 
 #### SECTION: Score Trends
+
 ```
 YOUR SCORE OVER TIME:
 
@@ -340,6 +359,7 @@ Week 4    | Avg: 89%  | 4 calls (Current)
 ```
 
 #### SECTION: Objection Mastery Breakdown
+
 ```
 OBJECTION            | SUCCESS RATE | CALLS | STATUS
 ────────────────────────────────────────────────────
@@ -356,24 +376,26 @@ WEAKEST: Spouse Decision (68%) ← FOCUS HERE
 ```
 
 #### SECTION: Difficulty Level Progress
+
 ```
 D1 - BUSY SCHEDULE
    ████████████████████ 95% (Mastered - 8 calls)
-   
+
 D2 - DOESN'T REMEMBER
    ███████████████████░ 89% (Mastered - 5 calls)
-   
+
 D3 - NEEDS SPOUSE (CURRENT)
    ██████████░░░░░░░░░░ 72% (6 more calls to master)
-   
+
 D4 - ALREADY COVERED (LOCKED)
    ░░░░░░░░░░░░░░░░░░░░ 0% (Unlock when D3 = 80%)
-   
+
 D5 - BRICK WALL (LOCKED)
    ░░░░░░░░░░░░░░░░░░░░ 0% (Ultra-rare - top 5%)
 ```
 
 #### SECTION: Achievements & Milestones
+
 ```
 MILESTONES REACHED:
 
@@ -387,13 +409,14 @@ STREAKS:
 
 🔥 CURRENT STREAK: 5 wins
    Last 5 calls: 92%, 88%, 87%, 91%, 89%
-   
+
 📊 PERSONAL BEST STREAK: 8 wins (Last week)
 
 ⏱️ CONSISTENCY: 4 calls this week (On track!)
 ```
 
 #### SECTION: Time Spent
+
 ```
 TOTAL TIME INVESTED: 1 hour 18 minutes
 
@@ -418,22 +441,23 @@ LONGEST CALL: 5:47 (Jan 31)
 ### **All Badges & Progress Toward Unlocking**
 
 #### SECTION: Earned Badges (With Share Option)
+
 ```
 🎯 CREDIBILITY MASTER
    Unlocked: February 8, 2026
    Description: Handle "How got number?" objection with 85%+ score
    Difficulty: Medium
-   
+
    Your stats: 87% on this objection (across 2 calls)
    [Share on Social] ← Instagram/LinkedIn/Twitter
-   
+
 ────────────────────────────────────
 
 ⭐ PERFECT WEEK
    Unlocked: February 5, 2026
    Description: Score 75%+ on all calls in one week
    Difficulty: Hard
-   
+
    Your stats: Achieved on Week 1 (all 5 calls: 75%+)
    [Share on Social]
 
@@ -443,7 +467,7 @@ LONGEST CALL: 5:47 (Jan 31)
    Unlocked: February 10, 2026
    Description: Master D2 difficulty level
    Difficulty: Hard
-   
+
    Your stats: Averaged 89% on D3 level
    [Share on Social]
 
@@ -453,19 +477,20 @@ LONGEST CALL: 5:47 (Jan 31)
    Unlocked: Currently Active
    Description: 5+ consecutive calls with 80%+ score
    Status: Active Streak (5 calls)
-   
+
    Last 5: 92%, 88%, 87%, 91%, 89%
    Streak started: 4 days ago
    [Share on Social]
 ```
 
 #### SECTION: Badges You're Close To
+
 ```
 📅 APPOINTMENT SETTER
    Progress: 8/10 calls setting appointment needed
    Current: 62% appointment rate
    Goal: 70% appointment rate
-   
+
    You need: 2 more appointments in next 8 calls
    [Track Progress]
 
@@ -473,26 +498,27 @@ LONGEST CALL: 5:47 (Jan 31)
    Progress: 5/10 consecutive wins needed
    Current: 5-win streak active!
    Goal: 10+ consecutive wins with 82%+ average
-   
+
    You're halfway there! Keep the streak alive!
    [View Streak Details]
 
 🚀 SPEED DEMON
    Progress: Calls averaging 6+ minutes
    Goal: Average call time under 6 minutes
-   
+
    Your average: 4:23 (You're already faster!)
    Unlock requires: 5+ calls under 6 min
    [Check Eligible Calls]
 ```
 
 #### SECTION: Locked Badges (Future Goals)
+
 ```
 👑 D4 LEVEL UNLOCKED
    How to unlock: Complete 10 calls at D3 with 80%+ average
    Current progress: 6/10 calls done (6 more needed)
    Why it matters: Access to harder objections
-   
+
    You're close! 6 more D3 calls → D4 unlocked
 
 ────────────────────────────────────
@@ -501,7 +527,7 @@ LONGEST CALL: 5:47 (Jan 31)
    How to unlock: Help 3+ teammates improve
    Current progress: Not started
    Why it matters: Show your team how you got good
-   
+
    [Invite Teammate] [View Team]
 
 ────────────────────────────────────
@@ -510,11 +536,12 @@ LONGEST CALL: 5:47 (Jan 31)
    How to unlock: Share 10 achievements on social
    Current progress: 3/10 shares
    Why it matters: Build your personal brand
-   
+
    [Share Now] [View Sharing History]
 ```
 
 #### SECTION: Badge Statistics
+
 ```
 TOTAL BADGES EARNED: 4
 BADGES IN PROGRESS: 2
@@ -534,6 +561,7 @@ RAREST BADGE YOU HAVE: D3 Level Unlocked (only 3 on team)
 ### **See How You Stack Up**
 
 #### TAB 1: THIS WEEK (Currently Selected)
+
 ```
 🥇 MIKE CHEN (YOU)
    8 calls this week | 89% average
@@ -563,6 +591,7 @@ RAREST BADGE YOU HAVE: D3 Level Unlocked (only 3 on team)
 ```
 
 #### TAB 2: THIS MONTH
+
 ```
 🥇 JENNIFER LEE
    15 calls | 86% average
@@ -581,6 +610,7 @@ RAREST BADGE YOU HAVE: D3 Level Unlocked (only 3 on team)
 ```
 
 #### TAB 3: ALL TIME
+
 ```
 🥇 JENNIFER LEE
    47 calls all-time
@@ -600,6 +630,7 @@ RAREST BADGE YOU HAVE: D3 Level Unlocked (only 3 on team)
 ```
 
 #### TAB 4: BY STREAK
+
 ```
 LONGEST ACTIVE STREAKS:
 
@@ -617,6 +648,7 @@ LONGEST ACTIVE STREAKS:
 ```
 
 #### TAB 5: BY OBJECTION MASTERY
+
 ```
 BEST AT NOT INTERESTED: Jennifer Lee (95%)
 BEST AT SPOUSE DECISION: Mike Chen (89%)
@@ -636,6 +668,7 @@ YOU'RE BEST AT:
 ### **Messages From Your Trainer**
 
 #### SECTION: New Messages
+
 ```
 FROM: Sarah Johnson (Your Coach)
 DATE: Feb 13, 8:45 AM
@@ -643,7 +676,7 @@ STATUS: Unread
 
 📧 SUBJECT: Excellent D3 Work!
 
-Message preview: "Mike, fantastic work on your last 
+Message preview: "Mike, fantastic work on your last
 D3 call! That 92% score on the..."
 
 [Open] [Mark Read] [Reply]
@@ -666,11 +699,12 @@ STATUS: Read
 
 📧 SUBJECT: Credibility Master Badge!
 
-"You just earned the Credibility Master badge! 
+"You just earned the Credibility Master badge!
 Here's what that means for your sales..."
 ```
 
 #### WHEN YOU OPEN A MESSAGE
+
 ```
 📬 FULL MESSAGE
 
@@ -680,9 +714,9 @@ SUBJECT: Excellent D3 Work!
 
 ────────────────────────────────────
 
-Mike, fantastic work on your last D3 call! That 92% 
-score on the "Already Covered" objection was masterful. 
-You acknowledged their concern, validated their 
+Mike, fantastic work on your last D3 call! That 92%
+score on the "Already Covered" objection was masterful.
+You acknowledged their concern, validated their
 position, and smoothly pivoted to the gap.
 
 WHAT WENT WELL:
@@ -691,20 +725,20 @@ WHAT WENT WELL:
 ✓ You reframed it as a discovery question
 
 COACHING POINT:
-The "Spouse Decision" objection is your 68% - let's 
-focus there. You're trying to convince them instead of 
-inviting them. 
+The "Spouse Decision" objection is your 68% - let's
+focus there. You're trying to convince them instead of
+inviting them.
 
 Try this:
-"Perfect, why don't we loop them in now while you 
-have me? That way you're both hearing the same thing 
+"Perfect, why don't we loop them in now while you
+have me? That way you're both hearing the same thing
 and can decide together."
 
 Your version: "Ask your spouse"
 Better version: "Invite your spouse to decide WITH you"
 
 NEXT STEPS:
-Practice this objection 10 times this week and get it 
+Practice this objection 10 times this week and get it
 to 75%+. You'll unlock the "Appointment Setter" badge.
 
 Keep crushing it!
@@ -716,6 +750,7 @@ Sarah
 ```
 
 #### SECTION: Reply to Coach
+
 ```
 COMPOSE REPLY:
 
@@ -728,6 +763,7 @@ Message: [Your reply text box]
 ```
 
 #### SECTION: Feedback History
+
 ```
 RECENT FEEDBACK RECEIVED:
 
@@ -747,15 +783,16 @@ RECENT FEEDBACK RECEIVED:
 ### **Your Profile & Preferences**
 
 #### SECTION: Account Settings
+
 ```
 PROFILE INFORMATION
    Name: Mike Chen
-   Email: mike.chen@abcinsurance.com
+   Email: cream@support.retrospxt.com
    Phone: (555) 123-4567
    Company: ABC Insurance Group
    Trainer: Sarah Johnson
    Joined: January 5, 2026
-   
+
    [Edit Profile] [Change Password]
 
 PREFERRED TRAINING SETTINGS
@@ -763,11 +800,12 @@ PREFERRED TRAINING SETTINGS
    Preferred Objection: Spouse Decision (weakest)
    Call Duration Goal: 4-5 minutes
    Training Time: Morning (7-9 AM)
-   
+
    [Update Preferences]
 ```
 
 #### SECTION: Notification Settings
+
 ```
 EMAIL NOTIFICATIONS
    ☑ Coach sends feedback message
@@ -776,7 +814,7 @@ EMAIL NOTIFICATIONS
    ☑ My streak is at risk (drop below 75%)
    ☑ Weekly progress summary
    ☐ Team leaderboard updates
-   
+
    [Save Preferences]
 
 PUSH NOTIFICATIONS (Mobile)
@@ -784,33 +822,35 @@ PUSH NOTIFICATIONS (Mobile)
    ☑ New badge unlocked
    ☑ Time to practice reminder
    ☐ Leaderboard changes
-   
+
    [Save Preferences]
 ```
 
 #### SECTION: Social & Sharing
+
 ```
 SHARE ACHIEVEMENTS
    When you earn a badge, automatically:
    ○ Ask me first (Default)
    ● Always share
    ○ Never share
-   
+
    CONNECT SOCIAL ACCOUNTS:
    ☐ Instagram [@mikchen87]
    ☐ LinkedIn [Mike Chen - Insurance Pro]
    ☐ Twitter [@MikClosesDeals]
-   
+
    [Connect] [Disconnect] [View Shared Posts]
 ```
 
 #### SECTION: Privacy & Data
+
 ```
 CALL RECORDING PREFERENCE
    ☑ Allow my trainer to listen to calls
    ☑ Allow my company to review calls
    ☑ Allow Cream No Sugar to use calls for feedback AI
-   
+
    [Save Preferences]
 
 DATA & PRIVACY
@@ -830,25 +870,25 @@ MAIN MENU (Click any to navigate):
 📊 Dashboard
    ← You are here
    Quick overview, stats, goals
-   
+
 📞 Start Training Call
    Get into a practice call immediately
-   
+
 📋 Call History
    Review all your past calls
-   
+
 📈 My Progress
    Detailed analytics and trends
-   
+
 🏆 Badges & Achievements
    See all badges you've earned
-   
+
 🏅 Leaderboard
    Compare with teammates
-   
+
 💬 Coach Feedback
    Messages from your trainer
-   
+
 ⚙️ Settings
    Profile and preferences
 ```
@@ -864,7 +904,7 @@ MAIN MENU (Click any to navigate):
 **Badges:** Visual motivation, shareable achievements  
 **Leaderboard:** Friendly competition with teammates  
 **Coach Feedback:** Direct coaching from trainer  
-**Settings:** Customize experience and preferences  
+**Settings:** Customize experience and preferences
 
 ---
 
@@ -876,7 +916,7 @@ MAIN MENU (Click any to navigate):
 ✅ **Coaching** — Direct feedback from trainer  
 ✅ **Transparency** — Know exactly what to work on  
 ✅ **Celebration** — Share wins on social  
-✅ **Clear Goals** — Next steps always visible  
+✅ **Clear Goals** — Next steps always visible
 
 ---
 

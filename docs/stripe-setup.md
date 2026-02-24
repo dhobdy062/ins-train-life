@@ -20,9 +20,11 @@ We provide a script to automatically create the necessary Products and Prices in
 To handle subscription updates locally, you need the Stripe CLI to forward events to your local server.
 
 ### Installation
+
 Follow the instructions in the [official documentation](https://docs.stripe.com/stripe-cli/install.md) for your OS.
 
 ### Forwarding Webhooks
+
 1.  Log in to the CLI:
     ```bash
     stripe login
@@ -46,7 +48,7 @@ Follow the instructions in the [official documentation](https://docs.stripe.com/
   ```
 - **Create a test customer:**
   ```bash
-  stripe customers create --email="test@example.com" --name="Test User"
+  stripe customers create --email="cream@support.retrospxt.com" --name="Test User"
   ```
 
 ## 4. Production Webhook Setup (Vercel)
