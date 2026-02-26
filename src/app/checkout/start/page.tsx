@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/email";
 import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
@@ -137,6 +137,7 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
       redirect(result.url);
     }
   } catch (error) {
+    unstable_rethrow(error);
     checkoutHint = getCheckoutHint(error);
     const message = error instanceof Error ? error.message : "Unknown checkout error";
     const errorDetails = getCheckoutErrorDetails(error);
