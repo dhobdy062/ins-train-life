@@ -165,6 +165,31 @@ export const getOrgBillingAccess = query({
   },
 });
 
+
+export const getStripeCustomerForOrg = query({
+  args: {
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const directMap = await ctx.db
+      .query("stripeCustomerOrgMap")
+      .withIndex("by_orgId", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .first();
+
+    if (directMap?.stripeCustomerId) {
+      return { stripeCustomerId: directMap.stripeCustomerId };
+    }
+
+    const latestEvent = await ctx.db
+      .query("billingEvents")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .first();
+
+    return { stripeCustomerId: latestEvent?.stripeCustomerId ?? null };
+  },
+});
 export const getOrgEntitlement = query({
   args: {
     orgId: v.string(),
@@ -213,7 +238,7 @@ export const getOrgEntitlement = query({
     }
 
     return {
-      mode: "paid" as const,
+      mode: "trial" as const,
       minutesUsed,
       minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
       minutesRemaining,
