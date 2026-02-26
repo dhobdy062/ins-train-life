@@ -15,7 +15,7 @@ type TeamSnapshot = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>> & {
   source: "live" | "sample";
 };
 
-const VALID_TABS = new Set(["home", "practice", "team"]);
+const VALID_TABS = new Set(["home", "practice", "team", "settings"]);
 
 const SAMPLE_TEAM_SNAPSHOT: TeamSnapshot = {
   source: "sample",
@@ -120,14 +120,12 @@ export default async function TrainerDashboardPage({ searchParams }: TrainerDash
       teamSnapshot={teamSnapshot}
       selectedAgent={selectedAgent}
       accessLabel={accessLabel}
-      isPaid={isPaid}
       isBlocked={isBlocked}
       minutesUsed={minutesUsed}
       minutesLimit={minutesLimit}
       minutesRemaining={minutesRemaining}
-      canOpenDashboard={canOpenDashboard}
       defaultTab={defaultTab}
-      entitlement={entitlement}
+      entitlementMode={entitlement?.mode ?? "trial"}
     />
   );
 }

@@ -389,3 +389,29 @@
     .sidebar { display: none; }
     .main { margin-left: 0; width: 100%; }
 }
+
+
+.billingSection {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.billingNote {
+    margin: 8px 0;
+    color: #6B3410;
+}
+
+.billingActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.billingError {
+    margin-top: 12px;
+    color: var(--danger);
+    font-weight: 600;
+}
