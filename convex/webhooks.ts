@@ -6,6 +6,17 @@ const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
 const ORG_TRIAL_MINUTES_LIMIT = 15;
 const CHECKOUT_PROVISIONAL_ACCESS_MS = 15 * 60 * 1000;
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+type BillingPlanId = "starter" | "pro" | "agency";
+type BillingInterval = "monthly" | "annual";
+type CurrentPlanSource = "subscription_price" | "checkout_metadata" | "event_fallback";
+type CurrentPlan = {
+  planId: BillingPlanId;
+  interval: BillingInterval | null;
+  stripeStatus: string | null;
+  source: CurrentPlanSource;
+};
 
 export const enqueueWebhookEvent = mutation({
   args: {
@@ -204,6 +215,7 @@ export const getOrgEntitlement = query({
       .take(limit);
 
     const billingAccess = resolveBillingAccess(billingEvents);
+    const currentPlan = resolveCurrentPlan(billingEvents);
     const usageRecords = await ctx.db
       .query("usageRollups")
       .withIndex("by_org_day_provider", (q) => q.eq("orgId", args.orgId))
@@ -224,6 +236,7 @@ export const getOrgEntitlement = query({
         minutesLimit: null,
         minutesRemaining,
         reason: billingAccess.reason,
+        currentPlan,
       };
     }
 
@@ -234,6 +247,7 @@ export const getOrgEntitlement = query({
         minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
         minutesRemaining,
         reason: "trial_limit_reached" as const,
+        currentPlan,
       };
     }
 
@@ -243,6 +257,7 @@ export const getOrgEntitlement = query({
       minutesLimit: ORG_TRIAL_MINUTES_LIMIT,
       minutesRemaining,
       reason: "provisional_access" as const,
+      currentPlan,
     };
   },
 });
@@ -764,6 +779,211 @@ function resolveBillingAccess(
   }
 
   return { hasAccess: false, reason: "checkout_provisional_expired" as const };
+}
+
+function resolveCurrentPlan(
+  events: Array<{
+    eventType: string;
+    status?: string;
+    payload?: any;
+  }>,
+): CurrentPlan | null {
+  if (events.length === 0) {
+    return null;
+  }
+
+  const priceIdPlanMap = getStripePriceIdPlanMap();
+
+  for (const event of events) {
+    const stripeStatus = normalizeStripeStatus(event.status);
+    if (!stripeStatus || !ACTIVE_SUBSCRIPTION_STATUSES.has(stripeStatus)) {
+      continue;
+    }
+
+    const fromPrice = resolvePlanFromPriceIds(extractStripePriceIds(event.payload), priceIdPlanMap);
+    if (fromPrice) {
+      return {
+        ...fromPrice,
+        stripeStatus,
+        source: "subscription_price",
+      };
+    }
+  }
+
+  for (const event of events) {
+    if (event.eventType !== "checkout.session.completed") {
+      continue;
+    }
+
+    const fromCheckoutMetadata = resolvePlanFromMetadata(event.payload);
+    if (fromCheckoutMetadata) {
+      return {
+        ...fromCheckoutMetadata,
+        stripeStatus: normalizeStripeStatus(event.status) ?? null,
+        source: "checkout_metadata",
+      };
+    }
+  }
+
+  for (const event of events) {
+    const fromPrice = resolvePlanFromPriceIds(extractStripePriceIds(event.payload), priceIdPlanMap);
+    if (fromPrice) {
+      return {
+        ...fromPrice,
+        stripeStatus: normalizeStripeStatus(event.status) ?? null,
+        source: "event_fallback",
+      };
+    }
+  }
+
+  for (const event of events) {
+    const fromMetadata = resolvePlanFromMetadata(event.payload);
+    if (fromMetadata) {
+      return {
+        ...fromMetadata,
+        stripeStatus: normalizeStripeStatus(event.status) ?? null,
+        source: "event_fallback",
+      };
+    }
+  }
+
+  return null;
+}
+
+function getStripePriceIdPlanMap() {
+  const priceIdPlanMap = new Map<string, { planId: BillingPlanId; interval: BillingInterval }>();
+
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_STARTER_MONTHLY_ID", "starter", "monthly");
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_STARTER_ANNUAL_ID", "starter", "annual");
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_PRO_MONTHLY_ID", "pro", "monthly");
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_PRO_ANNUAL_ID", "pro", "annual");
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_AGENCY_MONTHLY_ID", "agency", "monthly");
+  addStripePriceMapping(priceIdPlanMap, "STRIPE_PRICE_AGENCY_ANNUAL_ID", "agency", "annual");
+
+  return priceIdPlanMap;
+}
+
+function addStripePriceMapping(
+  map: Map<string, { planId: BillingPlanId; interval: BillingInterval }>,
+  envKey: string,
+  planId: BillingPlanId,
+  interval: BillingInterval,
+) {
+  const priceId = readEnvString(envKey);
+  if (!priceId) {
+    return;
+  }
+
+  map.set(priceId, {
+    planId,
+    interval,
+  });
+}
+
+function readEnvString(name: string): string | undefined {
+  const value = process.env[name];
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function extractStripePriceIds(payload: any) {
+  const object = payload?.data?.object ?? {};
+  const candidates: unknown[] = [
+    object?.price?.id,
+    object?.price,
+    object?.plan?.id,
+    object?.plan,
+  ];
+
+  const collections = [object?.items?.data, object?.lines?.data];
+  for (const collection of collections) {
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    for (const item of collection) {
+      candidates.push(item?.price?.id, item?.price, item?.plan?.id, item?.plan);
+    }
+  }
+
+  const seen = new Set<string>();
+  const priceIds: string[] = [];
+  for (const candidate of candidates) {
+    const value = asString(candidate);
+    if (!value || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    priceIds.push(value);
+  }
+
+  return priceIds;
+}
+
+function resolvePlanFromPriceIds(
+  priceIds: string[],
+  map: Map<string, { planId: BillingPlanId; interval: BillingInterval }>,
+) {
+  for (const priceId of priceIds) {
+    const mapped = map.get(priceId);
+    if (mapped) {
+      return mapped;
+    }
+  }
+
+  return null;
+}
+
+function resolvePlanFromMetadata(payload: any): { planId: BillingPlanId; interval: BillingInterval | null } | null {
+  const metadata = payload?.data?.object?.metadata;
+  const planId = normalizePlanId(metadata?.planId ?? metadata?.plan_id);
+  if (!planId) {
+    return null;
+  }
+
+  return {
+    planId,
+    interval: normalizeBillingInterval(metadata?.interval) ?? null,
+  };
+}
+
+function normalizePlanId(value: unknown): BillingPlanId | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "starter" || normalized === "pro" || normalized === "agency") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+function normalizeBillingInterval(value: unknown): BillingInterval | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "monthly" || normalized === "annual") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+function normalizeStripeStatus(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function extractStripeCustomerId(payload: any): string | undefined {

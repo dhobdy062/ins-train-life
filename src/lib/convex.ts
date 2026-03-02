@@ -219,6 +219,12 @@ export async function getOrgEntitlement(args: { orgId: string; limit?: number })
     minutesLimit: number | null;
     minutesRemaining: number;
     reason: string;
+    currentPlan: {
+      planId: "starter" | "pro" | "agency";
+      interval: "monthly" | "annual" | null;
+      stripeStatus: string | null;
+      source: "subscription_price" | "checkout_metadata" | "event_fallback";
+    } | null;
   }>;
 }
 

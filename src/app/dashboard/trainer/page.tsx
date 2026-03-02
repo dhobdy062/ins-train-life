@@ -14,6 +14,7 @@ type SnapshotTrainee = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>>["
 type TeamSnapshot = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>> & {
   source: "live" | "sample";
 };
+type CurrentPlan = NonNullable<Awaited<ReturnType<typeof getOrgEntitlement>>["currentPlan"]>;
 
 const VALID_TABS = new Set(["home", "practice", "team", "settings"]);
 
@@ -84,6 +85,25 @@ const SAMPLE_TEAM_SNAPSHOT: TeamSnapshot = {
   ],
 };
 
+function formatPlanDisplayLabel(plan: CurrentPlan | null | undefined) {
+  if (!plan) {
+    return "Plan unavailable";
+  }
+
+  const planName = plan.planId === "starter" ? "Starter" : plan.planId === "pro" ? "Pro" : "Agency";
+  const interval = plan.interval === "monthly" ? "Monthly" : plan.interval === "annual" ? "Annual" : null;
+
+  return interval ? `${planName} (${interval})` : planName;
+}
+
+function formatStripeStatus(status: string) {
+  return status
+    .split("_")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => segment[0].toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
 export default async function TrainerDashboardPage({ searchParams }: TrainerDashboardPageProps) {
   const params = await searchParams;
   const requestedTab = typeof params.tab === "string" ? params.tab : "";
@@ -103,6 +123,10 @@ export default async function TrainerDashboardPage({ searchParams }: TrainerDash
   const minutesLimit = entitlement?.minutesLimit;
   const minutesRemaining = entitlement?.minutesRemaining;
   const accessLabel = isPaid ? "Paid plan" : isBlocked ? "Upgrade needed" : "Trial";
+  const planDisplayLabel = formatPlanDisplayLabel(entitlement?.currentPlan);
+  const planStatusLabel = entitlement?.currentPlan?.stripeStatus
+    ? `${accessLabel} | ${formatStripeStatus(entitlement.currentPlan.stripeStatus)}`
+    : accessLabel;
 
   const usingSampleSnapshot = !liveSnapshot?.hasData;
   const teamSnapshot: TeamSnapshot = usingSampleSnapshot
@@ -120,6 +144,8 @@ export default async function TrainerDashboardPage({ searchParams }: TrainerDash
       teamSnapshot={teamSnapshot}
       selectedAgent={selectedAgent}
       accessLabel={accessLabel}
+      planDisplayLabel={planDisplayLabel}
+      planStatusLabel={planStatusLabel}
       isBlocked={isBlocked}
       minutesUsed={minutesUsed}
       minutesLimit={minutesLimit}

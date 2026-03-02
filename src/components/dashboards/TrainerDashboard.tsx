@@ -32,6 +32,8 @@ interface TrainerDashboardProps {
   };
   selectedAgent: Trainee | null;
   accessLabel: string;
+  planDisplayLabel: string;
+  planStatusLabel?: string;
   isBlocked: boolean;
   minutesUsed: number;
   minutesLimit?: number | null;
@@ -44,6 +46,8 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   teamSnapshot,
   selectedAgent,
   accessLabel,
+  planDisplayLabel,
+  planStatusLabel,
   isBlocked,
   minutesUsed,
   minutesLimit,
@@ -138,7 +142,8 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
           <div className={styles.headerActions}>
             <div className={styles.userInfo}>
               <SignedIn>
-                <div className={styles.plan}>{accessLabel}</div>
+                <div className={styles.plan}>{planDisplayLabel}</div>
+                <div className={styles.planSub}>{planStatusLabel ?? accessLabel}</div>
               </SignedIn>
             </div>
             <div className={styles.authWrapper}>
@@ -212,6 +217,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   <div className={styles.statMeta}>
                     {minutesUsed} minutes used {minutesLimit ? `/ ${minutesLimit}` : ""}
                   </div>
+                  <div className={styles.planMeta}>Current plan: {planDisplayLabel}</div>
                 </div>
 
                 <div className={styles.statCard}>
