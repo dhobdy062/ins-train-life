@@ -8,9 +8,19 @@ const enqueueWebhookEventRef = makeFunctionReference<"mutation">("webhooks:enque
 const recordAlertRef = makeFunctionReference<"mutation">("webhooks:recordAlert");
 const logEmailEventRef = makeFunctionReference<"mutation">("webhooks:logEmailEvent");
 const createTrainingSessionRef = makeFunctionReference<"mutation">("sessions:createTrainingSession");
+const markSessionCompletedRef = makeFunctionReference<"mutation">("sessions:markSessionCompleted");
+const recordRebuttalScoreRef = makeFunctionReference<"mutation">("sessions:recordRebuttalScore");
 const getTrainerDashboardSnapshotRef = makeFunctionReference<"query">("sessions:getTrainerDashboardSnapshot");
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions:reserveTrialSession");
 const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("sessions:deleteSessionWithArtifacts");
+const createTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:createTraineeProfile");
+const getTraineeByInviteTokenHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByInviteTokenHash");
+const listTraineesByOrgRef = makeFunctionReference<"query">("traineeProfiles:listTraineesByOrg");
+const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
+  "traineeProfiles:linkTraineeIpByInviteTokenHash",
+);
+const getTraineeProfileByIpHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeProfileByIpHash");
+const markTraineeActiveRef = makeFunctionReference<"mutation">("traineeProfiles:markTraineeActive");
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
@@ -82,6 +92,138 @@ export async function createTrainingSession(args: {
 }) {
   const client = getClient();
   return client.mutation(createTrainingSessionRef, args as never) as Promise<{ sessionKey: string }>;
+}
+
+export async function markSessionCompleted(args: {
+  sessionKey: string;
+  endedAt?: number;
+  sourceEventType?: string;
+  durationSeconds?: number;
+  finalScore?: number;
+  toneStrikeCount?: number;
+  appointmentSet?: boolean;
+}) {
+  const client = getClient();
+  return client.mutation(markSessionCompletedRef, args as never) as Promise<{
+    success: boolean;
+    sessionKey: string;
+    orgId: string;
+    status: "completed";
+    endedAt: number;
+  }>;
+}
+
+export async function recordRebuttalScore(args: {
+  sessionKey: string;
+  objectionId?: string;
+  rebuttalTypeExpected?: string;
+  agentResponse: string;
+  toneAnalysis?: string;
+  score: number;
+  grade: string;
+  feedback?: string;
+}) {
+  const client = getClient();
+  return client.mutation(recordRebuttalScoreRef, args as never) as Promise<{
+    responseId: string;
+    sessionKey: string;
+    orgId: string;
+    traineeId: string | null;
+  }>;
+}
+
+export async function createTraineeProfile(args: {
+  orgId: string;
+  trainerId: string;
+  name: string;
+  email: string;
+  difficultyLevel: string;
+  numObjections: number;
+  expectedRebuttals: string[];
+  inviteTokenHash: string;
+}) {
+  const client = getClient();
+  return client.mutation(createTraineeProfileRef, args as never) as Promise<{
+    traineeId: string;
+    created: boolean;
+  }>;
+}
+
+export async function getTraineeByInviteTokenHash(args: { inviteTokenHash: string }) {
+  const client = getClient();
+  return client.query(getTraineeByInviteTokenHashRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
+  } | null>;
+}
+
+export async function listTraineesByOrg(args: { orgId: string; limit?: number }) {
+  const client = getClient();
+  return client.query(listTraineesByOrgRef, args as never) as Promise<
+    Array<{
+      traineeId: string;
+      name: string;
+      email: string;
+      difficultyLevel: string;
+      numObjections: number;
+      expectedRebuttals: string[];
+      status: string;
+      updatedAt: number;
+      lastActiveAt: number | null;
+    }>
+  >;
+}
+
+export async function linkTraineeIpByInviteTokenHash(args: {
+  inviteTokenHash: string;
+  ipHash: string;
+  ipAddressMasked?: string;
+}) {
+  const client = getClient();
+  return client.mutation(linkTraineeIpByInviteTokenHashRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    consentedAt: number;
+  }>;
+}
+
+export async function getTraineeProfileByIpHash(args: { ipHash: string }) {
+  const client = getClient();
+  return client.query(getTraineeProfileByIpHashRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
+  } | null>;
+}
+
+export async function markTraineeActive(args: { traineeId: string }) {
+  const client = getClient();
+  return client.mutation(markTraineeActiveRef, args as never) as Promise<{
+    traineeId: string;
+    status: string;
+    lastActiveAt: number;
+  }>;
 }
 
 export async function getTrainerDashboardSnapshot(args: { orgId: string; trainerId?: string }) {

@@ -153,6 +153,109 @@ export const markSessionCompletedFromWebhook = internalMutation({
   },
 });
 
+export const markSessionCompleted = mutation({
+  args: {
+    sessionKey: v.string(),
+    endedAt: v.optional(v.number()),
+    sourceEventType: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    finalScore: v.optional(v.number()),
+    toneStrikeCount: v.optional(v.number()),
+    appointmentSet: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(session._id, {
+      status: "completed",
+      endedAt: args.endedAt ?? now,
+      updatedAt: now,
+    });
+
+    if (
+      args.durationSeconds !== undefined ||
+      args.finalScore !== undefined ||
+      args.toneStrikeCount !== undefined ||
+      args.appointmentSet !== undefined
+    ) {
+      await ctx.db.insert("sessionMetrics", {
+        sessionKey: session.sessionKey,
+        orgId: session.orgId,
+        eventType: args.sourceEventType ?? "manual.end",
+        durationSeconds: args.durationSeconds,
+        toneStrikeCount: args.toneStrikeCount,
+        rebuttalScore: args.finalScore,
+        appointmentSet: args.appointmentSet,
+        rawPayload: {
+          source: "api/sessions/[sessionKey]/end",
+          sourceEventType: args.sourceEventType ?? null,
+        },
+        createdAt: now,
+      });
+    }
+
+    return {
+      success: true,
+      sessionKey: session.sessionKey,
+      orgId: session.orgId,
+      status: "completed" as const,
+      endedAt: args.endedAt ?? now,
+    };
+  },
+});
+
+export const recordRebuttalScore = mutation({
+  args: {
+    sessionKey: v.string(),
+    objectionId: v.optional(v.string()),
+    rebuttalTypeExpected: v.optional(v.string()),
+    agentResponse: v.string(),
+    toneAnalysis: v.optional(v.string()),
+    score: v.number(),
+    grade: v.string(),
+    feedback: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    const responseId = await ctx.db.insert("rebuttalResponses", {
+      sessionKey: session.sessionKey,
+      orgId: session.orgId,
+      traineeId: session.traineeId,
+      objectionId: args.objectionId,
+      rebuttalTypeExpected: args.rebuttalTypeExpected,
+      agentResponse: args.agentResponse,
+      toneAnalysis: args.toneAnalysis,
+      score: args.score,
+      grade: args.grade,
+      feedback: args.feedback,
+      createdAt: Date.now(),
+    });
+
+    return {
+      responseId,
+      sessionKey: session.sessionKey,
+      orgId: session.orgId,
+      traineeId: session.traineeId ?? null,
+    };
+  },
+});
+
 export const getTrainerDashboardSnapshot = query({
   args: { orgId: v.string(), trainerId: v.optional(v.string()) },
   handler: async (ctx, args) => {

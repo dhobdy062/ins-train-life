@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from "next/link";
 import styles from './TraineeDashboard.module.css';
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
@@ -53,7 +54,9 @@ const TraineeDashboard = () => {
                     <div className={styles.ctaContent}>
                         <h2 className={styles.ctaTitle}>Ready for Your Next Challenge?</h2>
                         <p className={styles.ctaSubtitle}>Start a new training call to sharpen your skills and climb the leaderboard.</p>
-                        <button className={styles.ctaButton}>START TRAINING CALL</button>
+                        <Link className={styles.ctaButton} href="/training/start">
+                            START TRAINING CALL
+                        </Link>
                     </div>
                 </div>
 
