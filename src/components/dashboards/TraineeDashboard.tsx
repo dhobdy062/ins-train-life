@@ -61,7 +61,7 @@ const TraineeDashboard = () => {
                 <div className={styles.streakBanner}>
                     <div className={styles.streakContent}>
                         <span className={styles.streakEmoji}>🔥</span>
-                        <span className={styles.streakText}>You're on a <strong>5-day win streak!</strong> Your recent scores:</span>
+                        <span className={styles.streakText}>You&apos;re on a <strong>5-day win streak!</strong> Your recent scores:</span>
                         <div className={styles.streakScores}>
                             <span className={styles.streakScore}>92</span>
                             <span className={styles.streakScore}>88</span>
@@ -189,7 +189,7 @@ const TraineeDashboard = () => {
                             </div>
                         </div>
                         <div className={styles.feedbackContent}>
-                            <p>Alex, fantastic work on your last D3 call! That 92% score on the "Already Covered" objection was masterful. Your confidence and clarity really showed through. Keep focusing on that same energy for the "Spouse Decision" objection - you're close to mastering it!</p>
+                            <p>Alex, fantastic work on your last D3 call! That 92% score on the &quot;Already Covered&quot; objection was masterful. Your confidence and clarity really showed through. Keep focusing on that same energy for the &quot;Spouse Decision&quot; objection - you&apos;re close to mastering it!</p>
                         </div>
                         <div className={styles.feedbackActions}>
                             <button className={styles.feedbackButton}>Reply to Feedback</button>

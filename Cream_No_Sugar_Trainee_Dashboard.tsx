@@ -28,7 +28,7 @@ const TraineeDashboard = () => {
                 <header className={styles.header}>
                     <div className={styles.headerLeft}>
                         <h1 className={styles.pageTitle}>Welcome Back, Alex!</h1>
-                        <p className={styles.pageSubtitle}>Here's your performance summary. Keep up the great work!</p>
+                        <p className={styles.pageSubtitle}>Here&apos;s your performance summary. Keep up the great work!</p>
                     </div>
                     <div className={styles.headerProfile}>
                         <div className={styles.profileInfo}>
@@ -52,7 +52,7 @@ const TraineeDashboard = () => {
                 <div className={styles.streakBanner}>
                     <div className={styles.streakContent}>
                         <span className={styles.streakEmoji}>🔥</span>
-                        <span className={styles.streakText}>You're on a <strong>5-day win streak!</strong> Your recent scores:</span>
+                        <span className={styles.streakText}>You&apos;re on a <strong>5-day win streak!</strong> Your recent scores:</span>
                         <div className={styles.streakScores}>
                             <span className={styles.streakScore}>92</span>
                             <span className={styles.streakScore}>88</span>
@@ -141,7 +141,7 @@ const TraineeDashboard = () => {
                         <div className={styles.tableRow}>
                             <span>Feb 11, 3:30 PM</span>
                             <span>D2</span>
-                            <span>Don't Remember</span>
+                            <span>Don&apos;t Remember</span>
                             <span className={styles.scoreExcellent}>90%</span>
                             <span className={styles.resultExcellent}>Excellent</span>
                         </div>
@@ -159,7 +159,7 @@ const TraineeDashboard = () => {
                             </div>
                         </div>
                         <div className={styles.feedbackContent}>
-                            <p>Mike, fantastic work on your last D3 call! That 92% score on the "Already Covered" objection was masterful. Your confidence and clarity really showed through. Keep focusing on that same energy for the "Spouse Decision" objection - you're close to mastering it!</p>
+                            <p>Mike, fantastic work on your last D3 call! That 92% score on the &quot;Already Covered&quot; objection was masterful. Your confidence and clarity really showed through. Keep focusing on that same energy for the &quot;Spouse Decision&quot; objection - you&apos;re close to mastering it!</p>
                         </div>
                         <div className={styles.feedbackActions}>
                             <button className={styles.feedbackButton}>Reply to Feedback</button>
@@ -177,7 +177,7 @@ const TraineeDashboard = () => {
                                 <span className={styles.goalNumber}>1</span>
                                 <span className={styles.goalTitle}>Master D3 Completely</span>
                             </div>
-                            <p className={styles.goalDescription}>(6 more calls needed) You're at 72%. Get to 80% to unlock D4.</p>
+                            <p className={styles.goalDescription}>(6 more calls needed) You&apos;re at 72%. Get to 80% to unlock D4.</p>
                             <div className={styles.goalProgress}>
                                 <div className={styles.goalProgressBar} style={{width: '72%'}}></div>
                             </div>
@@ -185,7 +185,7 @@ const TraineeDashboard = () => {
                         <div className={styles.goalItem}>
                             <div className={styles.goalHeader}>
                                 <span className={styles.goalNumber}>2</span>
-                                <span className={styles.goalTitle}>Fix "Spouse Decision" Objection</span>
+                                <span className={styles.goalTitle}>Fix &quot;Spouse Decision&quot; Objection</span>
                             </div>
                             <p className={styles.goalDescription}>(Currently 68%) This is holding you back. Practice 10 times this week.</p>
                             <div className={styles.goalProgress}>
