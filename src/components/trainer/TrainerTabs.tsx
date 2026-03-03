@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import styles from "./TrainerTabs.module.css";
 
 const TABS = [
-  { href: "/dashboard/trainer/overview", label: "Overview" },
-  { href: "/dashboard/trainer/trainees", label: "Trainees" },
-  { href: "/dashboard/trainer/session-builder", label: "Session Builder" },
-  { href: "/dashboard/trainer/objections", label: "Objection Library" },
+  { href: "/dashboard/trainer/overview", label: "Dashboard" },
+  { href: "/dashboard/trainer/trainees", label: "Team Members" },
+  { href: "/dashboard/trainer/session-builder", label: "Training Calls" },
+  { href: "/dashboard/trainer/objections", label: "Objections + Rebuttals" },
   { href: "/dashboard/trainer/scoring", label: "Scoring" },
   { href: "/dashboard/trainer/help", label: "Help" },
 ];

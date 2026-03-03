@@ -1,0 +1,330 @@
+.pageStack {
+  display: grid;
+  gap: 28px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #fff;
+  border: 1px solid #d8cec5;
+  border-radius: 18px;
+  padding: 26px 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.kpiCardSuccess {
+  border-color: #40ad4e;
+}
+
+.kpiCardWarn {
+  border-color: #d48a24;
+}
+
+.kpiLabel {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9c6a43;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.kpiValue {
+  margin: 0;
+  color: #6b3410;
+  font-size: clamp(2.1rem, 1.7vw + 1.2rem, 3.15rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.kpiValueSub {
+  margin-left: 6px;
+  font-size: 0.62em;
+  color: #8f8e89;
+  font-weight: 700;
+}
+
+.kpiMeta {
+  margin: 0;
+  color: #5f965f;
+  font-size: 1rem;
+}
+
+.progressTrack {
+  width: 100%;
+  border-radius: 999px;
+  height: 8px;
+  background: #dfd8d2;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #8b4513;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d8cec5;
+  border-radius: 20px;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #6b3410;
+  font-size: 2.15rem;
+  line-height: 1.05;
+}
+
+.actionButton {
+  border-radius: 10px;
+  background: #8b4513;
+  color: #fff;
+  padding: 11px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.performerList {
+  display: grid;
+  gap: 10px;
+}
+
+.performerRow {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 36px 58px minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e7ddd4;
+  background: #fbfaf8;
+}
+
+.rankBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6b3410;
+  background: #edd7be;
+}
+
+.avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid #b18254;
+  display: grid;
+  place-items: center;
+  background: #d5bb95;
+  color: #fff;
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+
+.performerInfo {
+  display: grid;
+  gap: 4px;
+}
+
+.performerName {
+  margin: 0;
+  color: #55290f;
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.performerMeta {
+  margin: 0;
+  color: #7e6d60;
+  font-size: 1rem;
+}
+
+.performerScore {
+  margin: 0;
+  color: #6b3410;
+  font-size: 2.35rem;
+  font-weight: 800;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 24px;
+  font-size: 1.15rem;
+  color: #8b8e94;
+  border-bottom: 1px solid #dfd3c8;
+  padding-bottom: 12px;
+}
+
+.filterTabActive {
+  color: #8b4513;
+  border-bottom: 2px solid #8b4513;
+  padding-bottom: 10px;
+  margin-bottom: -11px;
+  font-weight: 700;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #dfd5cc;
+  border-radius: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table thead th {
+  text-align: left;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5e3518;
+  padding: 16px;
+  background: #f5f3ef;
+  border-bottom: 1px solid #ded5cc;
+}
+
+.table tbody td {
+  padding: 17px 16px;
+  border-bottom: 1px solid #ece4dd;
+  color: #3d2518;
+  font-size: 1.07rem;
+}
+
+.nameCell {
+  display: grid;
+  gap: 3px;
+}
+
+.nameCell strong {
+  font-size: 1.9rem;
+  color: #5f2d10;
+}
+
+.nameCell span {
+  font-size: 0.94rem;
+  color: #8f8176;
+}
+
+.statusPill {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.statusActive {
+  background: #e4efe6;
+  color: #33953d;
+}
+
+.statusInactive {
+  background: #ececec;
+  color: #8e8e8e;
+}
+
+.scoreCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scoreTrack {
+  width: 110px;
+  height: 10px;
+  border-radius: 999px;
+  background: #dadada;
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #8b4513;
+}
+
+.scoreStrong {
+  background: #7d3d11;
+}
+
+.scoreGood {
+  background: #a05a25;
+}
+
+.scoreRisk {
+  background: #bf6b2e;
+}
+
+.levelCell {
+  font-weight: 800;
+  color: #2e1c2f;
+}
+
+.emptyText {
+  margin: 0;
+  color: #7f6f64;
+}
+
+.emptyCell {
+  text-align: center;
+  color: #7f6f64;
+  padding: 20px;
+}
+
+@media (max-width: 1300px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .panelHead h2 {
+    font-size: 1.45rem;
+  }
+
+  .performerName {
+    font-size: 1.24rem;
+  }
+
+  .performerMeta {
+    font-size: 0.92rem;
+  }
+
+  .performerScore {
+    font-size: 1.7rem;
+  }
+
+  .filterTabs {
+    gap: 14px;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+  }
+}

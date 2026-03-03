@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createTrainingSession,
+  getOrgTrainerObjectionConfig,
   getTraineeByInviteTokenHash,
   getTraineeProfileByIpHash,
   markTraineeActive,
@@ -10,7 +11,7 @@ import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { getRequestIpAddress, hashInviteToken, hashIpAddress } from "@/lib/identity-link";
 import { setTraineeSessionCookie } from "@/lib/trainee-session-cookie";
-import { DEFAULT_REBUTTAL_GUIDES } from "@/lib/training-profile";
+import { buildGuideMapForExpected, DEFAULT_REBUTTAL_GUIDES } from "@/lib/trainer-objections";
 
 type TraineeSessionStartPayload = {
   inviteToken?: string;
@@ -74,10 +75,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const rebuttals = trainee.expectedRebuttals.reduce<Record<string, string>>((acc, rebuttalType) => {
-    acc[rebuttalType] = DEFAULT_REBUTTAL_GUIDES[rebuttalType] ?? "Acknowledge concern and guide to a short next step.";
-    return acc;
-  }, {});
+  const orgConfig = await getOrgTrainerObjectionConfig({ orgId: trainee.orgId }).catch(() => null);
+  const rebuttals = buildGuideMapForExpected(
+    trainee.expectedRebuttals,
+    orgConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES,
+  );
 
   const session = await createTrainingSession({
     orgId: trainee.orgId,

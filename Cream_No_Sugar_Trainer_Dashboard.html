@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Dashboard - Cream No Sugar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8B4513;
+            --primary-dark: #6B3410;
+            --primary-light: #A0522D;
+            --accent: #D2B48C;
+            --accent-dark: #A0826D;
+            --cream: #FFF8DC;
+            --dark: #2C1810;
+            --text: #3E2723;
+            --success: #4CAF50;
+            --warning: #FFA500;
+            --danger: #E74C3C;
+            --border: #D7CCC8;
+            --bg-light: #FAFAF8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--bg-light);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .sidebar-logo::before {
+            content: "☕";
+            font-size: 24px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 12px 16px;
+            color: #D7CCC8;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: var(--primary);
+            color: var(--cream);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            margin-left: 280px;
+            padding: 0;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 2px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .user-info .plan {
+            color: var(--primary);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* CONTENT AREA */
+        .content {
+            padding: 40px;
+        }
+
+        /* STATS CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px 24px;
+            border: 2px solid var(--border);
+            box-shadow: 0 4px 16px rgba(139, 69, 19, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.12);
+            border-color: var(--primary-light);
+        }
+
+        .stat-card.success {
+            border-color: var(--success);
+        }
+
+        .stat-card.success::before {
+            background: linear-gradient(90deg, var(--success), #66BB6A);
+        }
+
+        .stat-card.warning {
+            border-color: var(--warning);
+        }
+
+        .stat-card.warning::before {
+            background: linear-gradient(90deg, var(--warning), #FFB74D);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #8B4513;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            opacity: 0.6;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover .stat-icon {
+            transform: scale(1.1);
+        }
+
+        .stat-value {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+
+        .stat-progress {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .stat-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        .stat-change::before {
+            content: '↑';
+            font-size: 14px;
+        }
+
+        .stat-change.negative::before {
+            content: '↓';
+        }
+
+        .stat-meta {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* BADGE GRID */
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .badge-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 2px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .badge-item:hover::before {
+            opacity: 0.1;
+        }
+
+        .badge-item:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15);
+            border-color: var(--primary-light);
+        }
+
+        .badge-item.unlocked {
+            border-color: var(--success);
+            background: linear-gradient(135deg, #F1F8E9, #E8F5E8);
+        }
+
+        .badge-item.locked {
+            opacity: 0.6;
+            filter: grayscale(1);
+        }
+
+        .badge-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge-item:hover .badge-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .badge-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge-desc {
+            font-size: 10px;
+            color: #6D4C41;
+            opacity: 0.8;
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), #66BB6A);
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .badge-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: var(--dark);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .badge-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--dark);
+        }
+
+        .badge-item:hover .badge-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-12px);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+            color: var(--primary-dark);
+        }
+
+        .section-header .btn {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .section-header .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* TABLE */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #F5F5F5;
+            border-bottom: 2px solid var(--border);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:hover {
+            background: #FAFAF8;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.active {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+        }
+
+        .badge.inactive {
+            background: rgba(153, 153, 153, 0.1);
+            color: #999;
+        }
+
+        .score-bar {
+            width: 100%;
+            max-width: 120px;
+            height: 8px;
+            background: #E0E0E0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        /* LEADERBOARD */
+        .leaderboard {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 16px rgba(139, 69, 19, 0.08);
+            border: 2px solid var(--border);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border-bottom: none;
+        }
+
+        .leaderboard-item:not(:last-child) {
+            margin-bottom: 8px;
+        }
+
+        .leaderboard-item:hover {
+            background: var(--bg-light);
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .rank {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-light);
+            min-width: 48px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .leaderboard-item:hover .rank {
+            transform: scale(1.2);
+        }
+
+        .rank.gold {
+            color: #FFC107;
+        }
+
+        .rank.silver {
+            color: #9E9E9E;
+        }
+
+        .rank.bronze {
+            color: #BF8753;
+        }
+
+        .leaderboard-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 18px;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .leaderboard-info {
+            flex: 1;
+        }
+
+        .leaderboard-name {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .leaderboard-stat {
+            font-size: 13px;
+            color: #6D4C41;
+            opacity: 0.9;
+        }
+
+        .leaderboard-score {
+            text-align: right;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .leaderboard-score .score-unit {
+            font-size: 16px;
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* BADGES DISPLAY */
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .badge-item {
+            background: var(--cream);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .badge-item:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+        }
+
+        .badge-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .badge-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+        }
+
+        /* RESPONSIVE DESIGN */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--primary);
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: var(--bg-light);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+
+            .header-left {
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .nav-tabs {
+                display: none;
+                flex-direction: column;
+                background: white;
+                border-radius: 12px;
+                padding: 8px;
+                border: 2px solid var(--border);
+                margin-top: 16px;
+            }
+
+            .nav-tabs.active {
+                display: flex;
+            }
+
+            .nav-tab {
+                padding: 12px 16px;
+                border-radius: 8px;
+                margin-bottom: 4px;
+                justify-content: flex-start;
+            }
+
+            .nav-tab:last-child {
+                margin-bottom: 0;
+            }
+
+            .nav-tab.active {
+                background: var(--primary);
+                color: white;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .stat-card {
+                padding: 24px 16px;
+            }
+
+            .stat-value {
+                font-size: 36px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .leaderboard-item {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .rank {
+                font-size: 24px;
+                min-width: 40px;
+            }
+
+            .leaderboard-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .leaderboard-score {
+                font-size: 24px;
+            }
+
+            .leaderboard-name {
+                font-size: 14px;
+            }
+
+            .leaderboard-stat {
+                font-size: 12px;
+            }
+
+            .badge-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .badge-item {
+                padding: 12px;
+            }
+
+            .badge-icon {
+                font-size: 28px;
+            }
+
+            .badge-name {
+                font-size: 11px;
+            }
+
+            .badge-desc {
+                font-size: 9px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .badge-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 20px 16px;
+            }
+
+            .stat-value {
+                font-size: 32px;
+            }
+
+            .leaderboard-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 16px;
+            }
+
+            .leaderboard-info {
+                order: 2;
+            }
+
+            .leaderboard-score {
+                order: 1;
+                margin-bottom: 8px;
+            }
+
+            .rank {
+                order: 3;
+                margin-top: 8px;
+            }
+        }
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+
+            .main {
+                margin-left: 240px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                margin-bottom: 20px;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">Cream No Sugar</div>
+        <ul class="sidebar-nav">
+            <li><a href="#" class="active">Dashboard</a></li>
+            <li><a href="#">Team Performance</a></li>
+            <li><a href="#">Leaderboards</a></li>
+            <li><a href="#">Reports</a></li>
+            <li><a href="#">Training Calls</a></li>
+            <li><a href="#">Team Members</a></li>
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Billing</a></li>
+        </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-title">
+                <h1>Team Dashboard</h1>
+                <p>ABC Insurance Group</p>
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+            </div>
+            <div class="header-actions">
+                <div class="user-info">
+                    <div class="name">Sarah Johnson</div>
+                    <div class="plan">Pro Team Plan • 5 Seats</div>
+                </div>
+                <div class="avatar">SJ</div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <!-- STATS GRID -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-label">Team Close Rate</div>
+                        <div class="stat-icon">🎯</div>
+                    </div>
+                    <div class="stat-value">58%</div>
+                    <div class="stat-change positive">12% from last month</div>
+                </div>
+
+                <div class="stat-card success">
+                    <div class="stat-header">
+                        <div class="stat-label">Total Training Calls</div>
+                        <div class="stat-icon">📞</div>
+                    </div>
+                    <div class="stat-value">487</div>
+                    <div class="stat-change positive">87 this week</div>
+                </div>
+
+                <div class="stat-card warning">
+                    <div class="stat-header">
+                        <div class="stat-label">Avg Call Score</div>
+                        <div class="stat-icon">📈</div>
+                    </div>
+                    <div class="stat-value">81%</div>
+                    <div class="stat-change positive">4% from week 1</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-label">Team Minutes Used</div>
+                        <div class="stat-icon">⏱️</div>
+                    </div>
+                    <div class="stat-value">642<span style="font-size: 24px; color: #999;">/900</span></div>
+                    <div class="stat-progress">
+                        <div class="stat-progress-fill" style="width: 71%;"></div>
+                    </div>
+                    <div class="stat-meta">71% of monthly allocation</div>
+                </div>
+            </div>
+
+            <!-- TOP PERFORMERS -->
+            <div class="section-header">
+                <h2>🏆 Top Performers This Week</h2>
+                <button class="btn">View All</button>
+            </div>
+
+            <div class="leaderboard">
+                <div class="leaderboard-item">
+                    <div class="rank gold">🥇</div>
+                    <div class="leaderboard-avatar">MC</div>
+                    <div class="leaderboard-info">
+                        <div class="leaderboard-name">Mike Chen</div>
+                        <div class="leaderboard-stat">18 calls • Credibility Master • D3 Unlocked</div>
+                    </div>
+                    <div class="leaderboard-score">89<span class="score-unit">%</span></div>
+                </div>
+
+                <div class="leaderboard-item">
+                    <div class="rank silver">🥈</div>
+                    <div class="leaderboard-avatar">JL</div>
+                    <div class="leaderboard-info">
+                        <div class="leaderboard-name">Jennifer Lee</div>
+                        <div class="leaderboard-stat">15 calls • On Fire (5-call streak) • Perfect Week</div>
+                    </div>
+                    <div class="leaderboard-score">86<span class="score-unit">%</span></div>
+                </div>
+
+                <div class="leaderboard-item">
+                    <div class="rank bronze">🥉</div>
+                    <div class="leaderboard-avatar">DM</div>
+                    <div class="leaderboard-info">
+                        <div class="leaderboard-name">David Martinez</div>
+                        <div class="leaderboard-stat">12 calls • Appointment Setter • D2 Active</div>
+                    </div>
+                    <div class="leaderboard-score">79<span class="score-unit">%</span></div>
+                </div>
+            </div>
+
+            <!-- TEAM PROGRESS TABLE -->
+            <div style="margin-top: 40px;">
+                <div class="section-header">
+                    <h2>Team Member Performance</h2>
+                    <button class="btn">Export Report</button>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active">All Members</button>
+                    <button class="tab">Active This Week</button>
+                    <button class="tab">Needs Attention</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Agent Name</th>
+                                <th>Status</th>
+                                <th>Calls</th>
+                                <th>Avg Score</th>
+                                <th>Badges</th>
+                                <th>Level</th>
+                                <th>This Week</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="agent-name">Mike Chen</span></td>
+                                <td><span class="badge active">Active</span></td>
+                                <td>18</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="score-bar">
+                                            <div class="score-bar-fill" style="width: 89%;"></div>
+                                        </div>
+                                        <span style="font-weight: 600;">89%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                        <span style="font-size: 16px;">🎯</span>
+                                        <span style="font-size: 16px;">⭐</span>
+                                        <span style="font-size: 16px;">🏅</span>
+                                    </div>
+                                </td>
+                                <td><strong>D3</strong></td>
+                                <td>8 calls</td>
+                            </tr>
+                            <tr>
+                                <td><span class="agent-name">Jennifer Lee</span></td>
+                                <td><span class="badge active">Active</span></td>
+                                <td>15</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="score-bar">
+                                            <div class="score-bar-fill" style="width: 86%;"></div>
+                                        </div>
+                                        <span style="font-weight: 600;">86%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px;">
+                                        <span style="font-size: 16px;">📅</span>
+                                        <span style="font-size: 16px;">🔥</span>
+                                    </div>
+                                </td>
+                                <td><strong>D3</strong></td>
+                                <td>6 calls</td>
+                            </tr>
+                            <tr>
+                                <td><span class="agent-name">David Martinez</span></td>
+                                <td><span class="badge active">Active</span></td>
+                                <td>12</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="score-bar">
+                                            <div class="score-bar-fill" style="width: 79%;"></div>
+                                        </div>
+                                        <span style="font-weight: 600;">79%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px;">
+                                        <span style="font-size: 16px;">⭐</span>
+                                    </div>
+                                </td>
+                                <td><strong>D2</strong></td>
+                                <td>5 calls</td>
+                            </tr>
+                            <tr>
+                                <td><span class="agent-name">Rachel Thompson</span></td>
+                                <td><span class="badge inactive">Inactive</span></td>
+                                <td>6</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="score-bar">
+                                            <div class="score-bar-fill" style="width: 65%;"></div>
+                                        </div>
+                                        <span style="font-weight: 600;">65%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px;">
+                                    </div>
+                                </td>
+                                <td><strong>D1</strong></td>
+                                <td>0 calls</td>
+                            </tr>
+                            <tr>
+                                <td><span class="agent-name">Alex Rodriguez</span></td>
+                                <td><span class="badge active">Active</span></td>
+                                <td>9</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="score-bar">
+                                            <div class="score-bar-fill" style="width: 72%;"></div>
+                                        </div>
+                                        <span style="font-weight: 600;">72%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px;">
+                                        <span style="font-size: 16px;">🚀</span>
+                                    </div>
+                                </td>
+                                <td><strong>D2</strong></td>
+                                <td>3 calls</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BADGES SECTION -->
+            <div style="margin-top: 40px;">
+                <div class="section-header">
+                    <h2>Team Badges Earned</h2>
+                </div>
+
+                <div class="badge-grid">
+                    <div class="badge-item unlocked">
+                        <div class="badge-icon">🏆</div>
+                        <div class="badge-name">Credibility Master</div>
+                        <div class="badge-desc">Mike Chen</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="badge-tooltip">Earned by maintaining 85%+ credibility score for 30 days</div>
+                    </div>
+
+                    <div class="badge-item unlocked">
+                        <div class="badge-icon">🔥</div>
+                        <div class="badge-name">On Fire</div>
+                        <div class="badge-desc">Jennifer Lee</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="badge-tooltip">5-call winning streak with 80%+ scores</div>
+                    </div>
+
+                    <div class="badge-item unlocked">
+                        <div class="badge-icon">⭐</div>
+                        <div class="badge-name">Perfect Week</div>
+                        <div class="badge-desc">Jennifer Lee</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="badge-tooltip">Completed all training calls with 90%+ scores</div>
+                    </div>
+
+                    <div class="badge-item">
+                        <div class="badge-icon">🎯</div>
+                        <div class="badge-name">Appointment Setter</div>
+                        <div class="badge-desc">David Martinez</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 75%;"></div>
+                        </div>
+                        <div class="badge-tooltip">Set 10 qualified appointments in 30 days</div>
+                    </div>
+
+                    <div class="badge-item locked">
+                        <div class="badge-icon">💎</div>
+                        <div class="badge-name">Diamond Closer</div>
+                        <div class="badge-desc">Locked</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="badge-tooltip">Close 50 deals in a quarter</div>
+                    </div>
+
+                    <div class="badge-item locked">
+                        <div class="badge-icon">🚀</div>
+                        <div class="badge-name">Rookie of the Month</div>
+                        <div class="badge-desc">Locked</div>
+                        <div class="badge-progress">
+                            <div class="badge-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="badge-tooltip">Best performance in first 30 days</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-toggle').addEventListener('click', function() {
+            const navTabs = document.querySelector('.nav-tabs');
+            navTabs.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const navTabs = document.querySelector('.nav-tabs');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            
+            if (!navTabs.contains(event.target) && !mobileToggle.contains(event.target)) {
+                navTabs.classList.remove('active');
+            }
+        });
+
+        // Add smooth animations for stat cards on load
+        window.addEventListener('load', function() {
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+        });
+
+        // Add hover effects for leaderboard items
+        document.querySelectorAll('.leaderboard-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02) translateY(-2px)';
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1) translateY(0)';
+            });
+        });
+
+        // Add click effects for badge items
+        document.querySelectorAll('.badge-item').forEach(badge => {
+            badge.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1.02)';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,14 +1,21 @@
+import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { getOrgEntitlement, getTrainerDashboardSnapshot } from "@/lib/convex";
+import styles from "./overview.module.css";
 
-function metric(value: number | string, label: string, hint?: string) {
-  return (
-    <div className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {hint ? <span className="disclaimer">{hint}</span> : null}
-    </div>
-  );
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function scoreTone(score: number) {
+  if (score >= 85) return styles.scoreStrong;
+  if (score >= 75) return styles.scoreGood;
+  return styles.scoreRisk;
 }
 
 export default async function TrainerOverviewPage() {
@@ -22,47 +29,158 @@ export default async function TrainerOverviewPage() {
     getOrgEntitlement({ orgId }).catch(() => null),
   ]);
 
-  const totalAgents = snapshot?.totalAgents ?? 0;
-  const avgScore = snapshot?.avgScore ?? 0;
-  const atD3Plus = snapshot?.atD3Plus ?? 0;
-  const hardStopRate = snapshot?.hardStopRate ?? 0;
+  const trainees = snapshot?.trainees ?? [];
+  const activeThisWeek = trainees.filter((member) => member.status === "active").length;
+  const totalCalls = trainees.reduce((total, member) => total + member.callsThisLevel, 0);
+  const avgCallScore = snapshot?.avgScore ?? 0;
+  const closeRate = trainees.length
+    ? Math.round(
+        trainees.reduce((total, member) => total + member.appointmentSetRate, 0) / Math.max(trainees.length, 1),
+      )
+    : 0;
 
-  const paidMode = entitlement?.mode === "paid";
-  const blockedMode = entitlement?.mode === "blocked";
-  const usageLabel = entitlement
-    ? `${entitlement.minutesUsed}${entitlement.minutesLimit ? ` / ${entitlement.minutesLimit}` : ""} minutes`
-    : "Unavailable";
-  const remainingLabel = entitlement
-    ? entitlement.minutesLimit
-      ? `${entitlement.minutesRemaining} minutes`
-      : "Unlimited"
-    : "Unavailable";
+  const topPerformers = [...trainees].sort((a, b) => b.avgScore - a.avgScore).slice(0, 3);
+  const minutesLimit = entitlement?.minutesLimit ?? null;
+  const minutesUsed = entitlement?.minutesUsed ?? 0;
+  const minutesPercent = minutesLimit ? Math.min(Math.round((minutesUsed / minutesLimit) * 100), 100) : 0;
 
   return (
-    <>
-      <section className="glass panel">
-        <div className="tag">Team Snapshot</div>
-        <h3>Track trainee progress and coaching priorities at a glance</h3>
-        <div className="grid">
-          {metric(totalAgents, "Active trainees")}
-          {metric(`${avgScore}%`, "Average score")}
-          {metric(atD3Plus, "At D3 or higher")}
-          {metric(`${hardStopRate}%`, "Hard-stop rate", "Target is below 5%")}
-          {metric(paidMode ? "Paid" : blockedMode ? "Upgrade needed" : "Trial", "Access mode")}
-          {metric(usageLabel, "Usage")}
-          {metric(remainingLabel, "Remaining talk time")}
+    <div className={styles.pageStack}>
+      <section className={styles.cardGrid}>
+        <article className={styles.kpiCard}>
+          <p className={styles.kpiLabel}>Team Close Rate</p>
+          <p className={styles.kpiValue}>{closeRate}%</p>
+          <p className={styles.kpiMeta}>{activeThisWeek} active this week</p>
+        </article>
+
+        <article className={`${styles.kpiCard} ${styles.kpiCardSuccess}`}>
+          <p className={styles.kpiLabel}>Total Training Calls</p>
+          <p className={styles.kpiValue}>{totalCalls}</p>
+          <p className={styles.kpiMeta}>{snapshot?.totalAgents ?? 0} team members</p>
+        </article>
+
+        <article className={`${styles.kpiCard} ${styles.kpiCardWarn}`}>
+          <p className={styles.kpiLabel}>Avg Call Score</p>
+          <p className={styles.kpiValue}>{avgCallScore}%</p>
+          <p className={styles.kpiMeta}>Hard-stop rate: {snapshot?.hardStopRate ?? 0}%</p>
+        </article>
+
+        <article className={styles.kpiCard}>
+          <p className={styles.kpiLabel}>Team Minutes Used</p>
+          <p className={styles.kpiValue}>
+            {minutesUsed}
+            <span className={styles.kpiValueSub}>{minutesLimit ? ` / ${minutesLimit}` : " / Unlimited"}</span>
+          </p>
+          {minutesLimit ? (
+            <>
+              <div className={styles.progressTrack}>
+                <div className={styles.progressFill} style={{ width: `${minutesPercent}%` }}></div>
+              </div>
+              <p className={styles.kpiMeta}>{minutesPercent}% of monthly allocation</p>
+            </>
+          ) : (
+            <p className={styles.kpiMeta}>Unlimited minutes on current plan</p>
+          )}
+        </article>
+      </section>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHead}>
+          <h2>Top Performers This Week</h2>
+          <Link className={styles.actionButton} href="/dashboard/trainer/trainees">
+            View All
+          </Link>
+        </div>
+
+        <div className={styles.performerList}>
+          {topPerformers.length === 0 ? (
+            <p className={styles.emptyText}>No completed sessions yet. Run a training call to populate leaderboard data.</p>
+          ) : (
+            topPerformers.map((member, index) => (
+              <article className={styles.performerRow} key={member.id}>
+                <div className={styles.rankBadge}>{index + 1}</div>
+                <div className={styles.avatar}>{initials(member.name)}</div>
+                <div className={styles.performerInfo}>
+                  <p className={styles.performerName}>{member.name}</p>
+                  <p className={styles.performerMeta}>
+                    {member.callsThisLevel} calls • {member.recommendation} • {member.level}
+                  </p>
+                </div>
+                <p className={styles.performerScore}>{member.avgScore}%</p>
+              </article>
+            ))
+          )}
         </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">Quick Actions</div>
-        <h3>Run your core trainer workflow</h3>
-        <div className="grid">
-          {metric("1", "Add trainees", "Use the Trainees tab to invite and configure your team.")}
-          {metric("2", "Launch sessions", "Use Session Builder for practice calls and live scoring.")}
-          {metric("3", "Coach weak areas", "Use Objection Library and Scoring to sharpen performance.")}
+      <section className={styles.panel}>
+        <div className={styles.panelHead}>
+          <h2>Team Member Performance</h2>
+          <Link className={styles.actionButton} href="/dashboard/trainer/scoring">
+            Export Report
+          </Link>
+        </div>
+
+        <div className={styles.filterTabs}>
+          <span className={styles.filterTabActive}>All Members</span>
+          <span>{activeThisWeek} Active This Week</span>
+          <span>{trainees.filter((member) => member.avgScore < 75 || member.hardStopRate > 10).length} Need Attention</span>
+        </div>
+
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Agent Name</th>
+                <th>Status</th>
+                <th>Calls</th>
+                <th>Avg Score</th>
+                <th>Level</th>
+                <th>This Week</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trainees.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className={styles.emptyCell}>
+                    No trainees yet. Add your first team member to start collecting live training data.
+                  </td>
+                </tr>
+              ) : (
+                trainees.map((member) => {
+                  const recent = member.status === "active";
+                  return (
+                    <tr key={member.id}>
+                      <td>
+                        <div className={styles.nameCell}>
+                          <strong>{member.name}</strong>
+                          <span>{member.email}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`${styles.statusPill} ${recent ? styles.statusActive : styles.statusInactive}`}>
+                          {recent ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td>{member.callsThisLevel}</td>
+                      <td>
+                        <div className={styles.scoreCell}>
+                          <div className={styles.scoreTrack}>
+                            <div className={`${styles.scoreFill} ${scoreTone(member.avgScore)}`} style={{ width: `${member.avgScore}%` }}></div>
+                          </div>
+                          <span>{member.avgScore}%</span>
+                        </div>
+                      </td>
+                      <td className={styles.levelCell}>{member.level}</td>
+                      <td>{member.latestSessionAt ? "1+ calls" : "0 calls"}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
-    </>
+    </div>
   );
 }

@@ -1,0 +1,278 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: #f3f2ef;
+  color: #351f12;
+}
+
+.sidebar {
+  background: #12151d;
+  color: #ece9e2;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brandBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.brandTop {
+  display: grid;
+  gap: 8px;
+}
+
+.brandBadge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid rgba(224, 191, 156, 0.3);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e0bf9c;
+}
+
+.brandSubtext {
+  font-size: 0.82rem;
+  color: #b9b8b2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brandOrg {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.homeLink {
+  margin-top: auto;
+  font-size: 0.86rem;
+  color: #d6d4ce;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.homeLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  background: #fcfbf9;
+  border-bottom: 1px solid #d7ccc3;
+  padding: 26px 32px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(1.8rem, 2vw, 2.3rem);
+  line-height: 1.1;
+  color: #6b3410;
+}
+
+.pageSubtitle {
+  margin-top: 8px;
+  color: #7d6d66;
+  font-size: 0.96rem;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.planStack {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.planLabel {
+  font-size: 0.86rem;
+  color: #6b3410;
+  font-weight: 700;
+}
+
+.usageLabel {
+  font-size: 0.76rem;
+  color: #7d6d66;
+}
+
+.contentArea {
+  padding: 26px 32px 40px;
+  display: grid;
+  gap: 20px;
+}
+
+.authCard {
+  width: min(640px, 100%);
+  background: #ffffff;
+  border: 1px solid #d7ccc3;
+  border-radius: 16px;
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.authCard h3 {
+  margin: 0;
+  color: #5f2f11;
+}
+
+.authCard p {
+  margin: 0;
+  color: #6f6258;
+}
+
+.primaryButton {
+  width: fit-content;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: #8b4513;
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.contentArea :global(.glass) {
+  background: #ffffff;
+  border: 1px solid #d7ccc3;
+  border-radius: 16px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.contentArea :global(.panel) {
+  padding: 22px;
+  gap: 14px;
+}
+
+.contentArea :global(.tag) {
+  border-color: #dfd3c8;
+  color: #8a725f;
+}
+
+.contentArea :global(.disclaimer) {
+  color: #7f6f64;
+}
+
+.contentArea :global(.grid) {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.contentArea :global(.metric) {
+  background: #faf8f5;
+  border: 1px solid #e4d9d0;
+}
+
+.contentArea :global(.metric span) {
+  color: #7f6f64;
+}
+
+.contentArea :global(.metric strong) {
+  color: #512913;
+}
+
+.contentArea :global(.table-wrap) {
+  border: 1px solid #ddd1c7;
+  background: #fff;
+}
+
+.contentArea :global(table th) {
+  color: #67320f;
+  border-bottom: 1px solid #e2d8cf;
+}
+
+.contentArea :global(table td) {
+  border-bottom: 1px solid #eee7e0;
+  color: #3f2414;
+}
+
+.contentArea :global(.field input),
+.contentArea :global(.field select),
+.contentArea :global(.field textarea) {
+  border-color: #dbcfc5;
+  background: #ffffff;
+  color: #3f2414;
+}
+
+.contentArea :global(.button) {
+  border-radius: 10px;
+  background: #8b4513;
+  color: #fff;
+  box-shadow: none;
+}
+
+.contentArea :global(.button.secondary) {
+  border-color: #d7ccc3;
+  background: #f8f4ef;
+  color: #6b3410;
+}
+
+@media (max-width: 1024px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    gap: 14px;
+    padding: 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .homeLink {
+    margin-top: 0;
+  }
+
+  .topBar {
+    position: static;
+    padding: 18px 18px 16px;
+  }
+
+  .contentArea {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .topBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .planStack {
+    justify-items: start;
+  }
+}

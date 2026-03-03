@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTrainingSession, getOrgEntitlement, recordAlert } from "@/lib/convex";
+import { createTrainingSession, getOrgEntitlement, getOrgTrainerObjectionConfig, recordAlert } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { syncIdentityForRequest } from "@/lib/identitySync";
@@ -126,8 +126,11 @@ export async function POST(request: Request) {
       ? payload.objectionsRequired
       : 3;
 
+  const orgObjectionConfig = await getOrgTrainerObjectionConfig({ orgId }).catch(() => null);
+
   const rebuttals = {
     ...DEFAULT_REBUTTALS,
+    ...(orgObjectionConfig?.rebuttalGuides ?? {}),
     ...(payload.rebuttals ?? {}),
   };
 

@@ -23,6 +23,12 @@ const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
 const getTraineeProfileByIpHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeProfileByIpHash");
 const markTraineeActiveRef = makeFunctionReference<"mutation">("traineeProfiles:markTraineeActive");
 const getTraineeResultsSnapshotRef = makeFunctionReference<"query">("traineeProfiles:getTraineeResultsSnapshot");
+const getOrgTrainerObjectionConfigRef = makeFunctionReference<"query">(
+  "trainerObjections:getOrgTrainerObjectionConfig",
+);
+const upsertOrgTrainerObjectionConfigRef = makeFunctionReference<"mutation">(
+  "trainerObjections:upsertOrgTrainerObjectionConfig",
+);
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
@@ -301,6 +307,44 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
       } | null;
     }>;
   } | null>;
+}
+
+export async function getOrgTrainerObjectionConfig(args: { orgId: string }) {
+  const client = getClient();
+  return client.query(getOrgTrainerObjectionConfigRef, args as never) as Promise<{
+    orgId: string;
+    objectionLibrary: {
+      D1: Array<{ text: string; rebuttalType: string; frequency: string }>;
+      D2: Array<{ text: string; rebuttalType: string; frequency: string }>;
+      D3: Array<{ text: string; rebuttalType: string; frequency: string }>;
+      D4: Array<{ text: string; rebuttalType: string; frequency: string }>;
+      D5: Array<{ text: string; rebuttalType: string; frequency: string }>;
+    };
+    rebuttalGuides: Record<string, string>;
+    updatedBy: string;
+    createdAt: number;
+    updatedAt: number;
+  } | null>;
+}
+
+export async function upsertOrgTrainerObjectionConfig(args: {
+  orgId: string;
+  updatedBy: string;
+  objectionLibrary: {
+    D1: Array<{ text: string; rebuttalType: string; frequency: string }>;
+    D2: Array<{ text: string; rebuttalType: string; frequency: string }>;
+    D3: Array<{ text: string; rebuttalType: string; frequency: string }>;
+    D4: Array<{ text: string; rebuttalType: string; frequency: string }>;
+    D5: Array<{ text: string; rebuttalType: string; frequency: string }>;
+  };
+  rebuttalGuides: Record<string, string>;
+}) {
+  const client = getClient();
+  return client.mutation(upsertOrgTrainerObjectionConfigRef, args as never) as Promise<{
+    configId: string;
+    created: boolean;
+    updatedAt: number;
+  }>;
 }
 
 export async function getTrainerDashboardSnapshot(args: { orgId: string; trainerId?: string }) {

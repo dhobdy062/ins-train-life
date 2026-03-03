@@ -1,11 +1,12 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTraineeProfile, listTraineesByOrg, logEmailEvent } from "@/lib/convex";
+import { createTraineeProfile, getOrgTrainerObjectionConfig, listTraineesByOrg, logEmailEvent } from "@/lib/convex";
 import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 import { renderEmailSequence } from "@/lib/email-sequences";
 import { hashInviteToken } from "@/lib/identity-link";
 import { buildExpectedRebuttals, isDifficultyLevel, type DifficultyLevel } from "@/lib/training-profile";
+import { buildExpectedRebuttalsFromLibrary } from "@/lib/trainer-objections";
 
 type CreateTraineePayload = {
   name?: string;
@@ -85,7 +86,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
   }
 
-  const expectedRebuttals = buildExpectedRebuttals(difficulty, objectionsRequired);
+  const objectionConfig = await getOrgTrainerObjectionConfig({ orgId }).catch(() => null);
+  const expectedRebuttals = objectionConfig
+    ? buildExpectedRebuttalsFromLibrary(difficulty, objectionsRequired, objectionConfig.objectionLibrary)
+    : buildExpectedRebuttals(difficulty, objectionsRequired);
   const inviteToken = buildInviteToken();
   const inviteTokenHash = hashInviteToken(inviteToken);
 

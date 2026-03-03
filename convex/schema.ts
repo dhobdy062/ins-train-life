@@ -107,6 +107,21 @@ export default defineSchema({
     .index("by_org_email", ["orgId", "email"])
     .index("by_inviteTokenHash", ["inviteTokenHash"]),
 
+  trainerObjectionConfigs: defineTable({
+    orgId: v.string(),
+    objectionLibrary: v.object({
+      D1: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D2: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D3: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D4: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D5: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+    }),
+    rebuttalGuides: v.record(v.string(), v.string()),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_orgId", ["orgId"]),
+
   traineeSessionIps: defineTable({
     orgId: v.string(),
     traineeId: v.id("trainees"),

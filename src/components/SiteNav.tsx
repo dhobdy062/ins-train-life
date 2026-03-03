@@ -7,6 +7,13 @@ import { SignedIn, SignedOut, SignOutButton, UserButton } from "@clerk/nextjs";
 
 export default function SiteNav() {
   const pathname = usePathname();
+  const isDashboardRoute =
+    pathname?.startsWith("/dashboard/trainer") || pathname?.startsWith("/dashboard/trainee");
+
+  if (isDashboardRoute) {
+    return null;
+  }
+
   const homeHref = pathname?.startsWith("/dashboard/trainer")
     ? "/dashboard/trainer"
     : pathname?.startsWith("/dashboard/trainee")

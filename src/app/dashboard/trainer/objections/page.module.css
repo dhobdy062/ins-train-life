@@ -1,0 +1,170 @@
+.stack {
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d8cec5;
+  border-radius: 16px;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.headerRowCompact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerRow h2,
+.headerRowCompact h3 {
+  margin: 0;
+  color: #6b3410;
+}
+
+.sectionTag {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.76rem;
+  color: #9b6b44;
+  font-weight: 700;
+}
+
+.helpText {
+  margin: 10px 0 0;
+  color: #7f6f64;
+}
+
+.status {
+  margin: 0;
+  color: #6b3410;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.removeButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: #8b4513;
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #f7f1ea;
+  color: #6b3410;
+  border: 1px solid #d9cfc6;
+}
+
+.removeButton {
+  width: fit-content;
+  background: #fff5f3;
+  color: #b54439;
+  border: 1px solid #efd4cf;
+}
+
+.guidesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.guideCard {
+  border: 1px solid #e4dbd2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fcfaf7;
+  display: grid;
+  gap: 8px;
+}
+
+.guideCard span {
+  text-transform: lowercase;
+  font-size: 0.86rem;
+  color: #6b3410;
+  font-weight: 700;
+}
+
+.objectionList {
+  display: grid;
+  gap: 12px;
+}
+
+.objectionCard {
+  border: 1px solid #e4dbd2;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fcfaf7;
+  display: grid;
+  gap: 10px;
+}
+
+.rowFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 0.82rem;
+  color: #7f6f64;
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid #dccfc4;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 0.9rem;
+  color: #3f2414;
+  background: #fff;
+  font: inherit;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+@media (max-width: 860px) {
+  .headerRow {
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .rowFields {
+    grid-template-columns: 1fr;
+  }
+}
