@@ -9,11 +9,14 @@
  */
 
 import type * as dashboard from "../dashboard.js";
+import type * as emails from "../emails.js";
 import type * as identity from "../identity.js";
 import type * as mutations from "../mutations.js";
 import type * as sessions from "../sessions.js";
 import type * as storage from "../storage.js";
+import type * as support from "../support.js";
 import type * as trainee from "../trainee.js";
+import type * as traineeProfiles from "../traineeProfiles.js";
 import type * as webhooks from "../webhooks.js";
 
 import type {
@@ -24,11 +27,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
+  emails: typeof emails;
   identity: typeof identity;
   mutations: typeof mutations;
   sessions: typeof sessions;
   storage: typeof storage;
+  support: typeof support;
   trainee: typeof trainee;
+  traineeProfiles: typeof traineeProfiles;
   webhooks: typeof webhooks;
 }>;
 
