@@ -107,17 +107,30 @@ export const listTraineesByOrg = query({
       .order("desc")
       .take(limit);
 
-    return trainees.map((trainee) => ({
-      traineeId: trainee._id,
-      name: trainee.name,
-      email: trainee.email,
-      difficultyLevel: trainee.difficultyLevel,
-      numObjections: trainee.numObjections,
-      expectedRebuttals: trainee.expectedRebuttals,
-      status: trainee.status,
-      updatedAt: trainee.updatedAt,
-      lastActiveAt: trainee.lastActiveAt ?? null,
-    }));
+    const enriched = await Promise.all(
+      trainees.map(async (trainee) => {
+        const ipLink = await ctx.db
+          .query("traineeSessionIps")
+          .withIndex("by_org_trainee", (q) => q.eq("orgId", args.orgId).eq("traineeId", trainee._id))
+          .first();
+
+        return {
+          traineeId: trainee._id,
+          name: trainee.name,
+          email: trainee.email,
+          difficultyLevel: trainee.difficultyLevel,
+          numObjections: trainee.numObjections,
+          expectedRebuttals: trainee.expectedRebuttals,
+          status: trainee.status,
+          updatedAt: trainee.updatedAt,
+          lastActiveAt: trainee.lastActiveAt ?? null,
+          ipAddressMasked: ipLink?.ipAddressMasked ?? null,
+          ipConsentedAt: ipLink?.consentedAt ?? null,
+        };
+      }),
+    );
+
+    return enriched;
   },
 });
 

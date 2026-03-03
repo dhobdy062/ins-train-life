@@ -179,6 +179,8 @@ export async function listTraineesByOrg(args: { orgId: string; limit?: number })
       status: string;
       updatedAt: number;
       lastActiveAt: number | null;
+      ipAddressMasked: string | null;
+      ipConsentedAt: number | null;
     }>
   >;
 }
