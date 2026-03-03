@@ -21,6 +21,7 @@ const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
 );
 const getTraineeProfileByIpHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeProfileByIpHash");
 const markTraineeActiveRef = makeFunctionReference<"mutation">("traineeProfiles:markTraineeActive");
+const getTraineeResultsSnapshotRef = makeFunctionReference<"query">("traineeProfiles:getTraineeResultsSnapshot");
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
@@ -224,6 +225,63 @@ export async function markTraineeActive(args: { traineeId: string }) {
     status: string;
     lastActiveAt: number;
   }>;
+}
+
+export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId: string; limit?: number }) {
+  const client = getClient();
+  return client.query(getTraineeResultsSnapshotRef, args as never) as Promise<{
+    trainee: {
+      id: string;
+      name: string;
+      difficulty: string;
+      numObjections: number;
+      status: string;
+    };
+    latestSession: {
+      sessionKey: string;
+      status: string;
+      assistantId: string;
+      difficulty: string;
+      objectionsRequired: number;
+      startedAt: number;
+      endedAt: number | null;
+    } | null;
+    latestMetrics: {
+      rebuttalScore: number | null;
+      durationSeconds: number | null;
+      toneStrikeCount: number | null;
+      appointmentSet: boolean | null;
+      eventType: string | null;
+      createdAt: number;
+    } | null;
+    latestRebuttals: Array<{
+      objectionId: string | null;
+      rebuttalTypeExpected: string | null;
+      response: string;
+      toneAnalysis: string | null;
+      score: number;
+      grade: string;
+      feedback: string | null;
+      createdAt: number;
+    }>;
+    history: Array<{
+      sessionKey: string;
+      status: string;
+      assistantId: string;
+      difficulty: string;
+      objectionsRequired: number;
+      startedAt: number;
+      endedAt: number | null;
+      metrics: {
+        rebuttalScore: number | null;
+        durationSeconds: number | null;
+        toneStrikeCount: number | null;
+        appointmentSet: boolean | null;
+        eventType: string | null;
+        createdAt: number;
+      } | null;
+    }>;
+  } | null>;
 }
 
 export async function getTrainerDashboardSnapshot(args: { orgId: string; trainerId?: string }) {

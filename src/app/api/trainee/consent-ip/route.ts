@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { linkTraineeIpByInviteTokenHash } from "@/lib/convex";
 import { getRequestIpAddress, hashInviteToken, hashIpAddress, maskIpAddress } from "@/lib/identity-link";
+import { setTraineeSessionCookie } from "@/lib/trainee-session-cookie";
 
 type ConsentPayload = {
   inviteToken?: string;
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       ipAddressMasked: maskIpAddress(ipAddress),
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       traineeId: result.traineeId,
       traineeName: result.name,
@@ -39,6 +40,14 @@ export async function POST(request: Request) {
       expectedRebuttals: result.expectedRebuttals,
       consentedAt: result.consentedAt,
     });
+
+    setTraineeSessionCookie(response, {
+      traineeId: result.traineeId,
+      orgId: result.orgId,
+      trainerId: result.trainerId,
+    });
+
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to link IP.";
     return NextResponse.json({ error: message }, { status: 400 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createTrainingSession, getOrgEntitlement, recordAlert } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
+import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { syncIdentityForRequest } from "@/lib/identitySync";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
@@ -153,6 +154,28 @@ export async function POST(request: Request) {
         session_key: session.sessionKey,
       },
     });
+
+    const contractValidation = validateAssistantVariableContract(variableValues, "trainer");
+    if (!contractValidation.ok) {
+      await recordAlert({
+        source: "api/vapi/session/start.contract",
+        severity: "critical",
+        message: "Assistant variable contract validation failed.",
+        context: {
+          userId,
+          orgId,
+          sessionKey: session.sessionKey,
+          missingKeys: contractValidation.missingKeys,
+        },
+      }).catch(() => null);
+
+      return NextResponse.json(
+        {
+          error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       sessionKey: session.sessionKey,

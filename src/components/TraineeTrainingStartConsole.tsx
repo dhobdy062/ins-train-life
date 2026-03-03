@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ConsentResponse = {
   ok?: boolean;
@@ -55,7 +55,20 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
   const [difficulty, setDifficulty] = useState<string | null>(null);
   const [numObjections, setNumObjections] = useState<number | null>(null);
   const [callState, setCallState] = useState("ready");
+  const [showResultsCta, setShowResultsCta] = useState(false);
   const vapiRef = useRef<VapiClient | null>(null);
+
+  useEffect(() => {
+    if (!inviteToken) {
+      return;
+    }
+
+    void fetch("/api/trainee/session-cookie", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inviteToken }),
+    }).catch(() => null);
+  }, [inviteToken]);
 
   async function ensureClient(publicKey: string) {
     if (vapiRef.current) {
@@ -73,6 +86,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
 
     client.on("call-end", () => {
       setCallState("ended");
+      setShowResultsCta(true);
       setStatus("Call ended. Your score will appear in your dashboard shortly.");
     });
 
@@ -165,6 +179,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
     try {
       await vapiRef.current.stop();
       setCallState("ended");
+      setShowResultsCta(true);
       setStatus("Call stopped.");
     } catch {
       setCallState("error");
@@ -224,6 +239,14 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
         <button className="button secondary" onClick={handleStopTraining} disabled={starting || !vapiRef.current}>
           Stop Call
         </button>
+        {showResultsCta ? (
+          <Link
+            className="button"
+            href={`/dashboard/trainee?refresh=1${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ""}`}
+          >
+            View Results
+          </Link>
+        ) : null}
       </div>
 
       {status ? <p className="disclaimer">{status}</p> : null}

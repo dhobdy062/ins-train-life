@@ -83,7 +83,8 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   })
     .index("by_sessionKey", ["sessionKey"])
-    .index("by_org_createdAt", ["orgId", "createdAt"]),
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_trainee_createdAt", ["traineeId", "createdAt"]),
 
   trainees: defineTable({
     orgId: v.string(),

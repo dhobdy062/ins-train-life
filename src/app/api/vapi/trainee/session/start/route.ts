@@ -4,9 +4,12 @@ import {
   getTraineeByInviteTokenHash,
   getTraineeProfileByIpHash,
   markTraineeActive,
+  recordAlert,
 } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
+import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { getRequestIpAddress, hashInviteToken, hashIpAddress } from "@/lib/identity-link";
+import { setTraineeSessionCookie } from "@/lib/trainee-session-cookie";
 import { DEFAULT_REBUTTAL_GUIDES } from "@/lib/training-profile";
 
 type TraineeSessionStartPayload = {
@@ -112,7 +115,29 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({
+  const contractValidation = validateAssistantVariableContract(variableValues, "trainee");
+  if (!contractValidation.ok) {
+    await recordAlert({
+      source: "api/vapi/trainee/session/start.contract",
+      severity: "critical",
+      message: "Assistant variable contract validation failed.",
+      context: {
+        sessionKey: session.sessionKey,
+        traineeId: trainee.traineeId,
+        orgId: trainee.orgId,
+        missingKeys: contractValidation.missingKeys,
+      },
+    }).catch(() => null);
+
+    return NextResponse.json(
+      {
+        error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+      },
+      { status: 500 },
+    );
+  }
+
+  const response = NextResponse.json({
     sessionKey: session.sessionKey,
     assistantId,
     publicKey,
@@ -125,4 +150,12 @@ export async function POST(request: Request) {
       sequenceStage: variableValues.email_sequence_stage,
     },
   });
+
+  setTraineeSessionCookie(response, {
+    traineeId: trainee.traineeId,
+    orgId: trainee.orgId,
+    trainerId: trainee.trainerId,
+  });
+
+  return response;
 }
