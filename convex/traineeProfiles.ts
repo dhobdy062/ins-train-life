@@ -93,6 +93,36 @@ export const getTraineeByInviteTokenHash = query({
   },
 });
 
+export const getTraineeByOrgAndEmail = query({
+  args: {
+    orgId: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_email", (q) => q.eq("orgId", args.orgId).eq("email", normalizeEmail(args.email)))
+      .first();
+
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
 export const listTraineesByOrg = query({
   args: {
     orgId: v.string(),

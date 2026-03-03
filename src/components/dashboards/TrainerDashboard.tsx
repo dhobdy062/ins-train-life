@@ -50,6 +50,7 @@ interface TrainerDashboardProps {
 type CreateTraineeApiResponse = {
   ok?: boolean;
   error?: string;
+  details?: string;
   trainingUrl?: string;
 };
 
@@ -120,12 +121,15 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
       });
 
       const payload = (await response.json().catch(() => ({}))) as CreateTraineeApiResponse;
+      if (payload.trainingUrl) {
+        setLatestInviteUrl(payload.trainingUrl);
+      }
+
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? "Unable to create trainee.");
+        throw new Error(payload.details ?? payload.error ?? "Unable to create trainee.");
       }
 
       setTraineeStatus("Trainee created and invitation sent.");
-      setLatestInviteUrl(payload.trainingUrl ?? null);
       setTraineeForm({
         name: "",
         email: "",

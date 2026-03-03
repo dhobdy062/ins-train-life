@@ -15,6 +15,7 @@ const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions:reser
 const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("sessions:deleteSessionWithArtifacts");
 const createTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:createTraineeProfile");
 const getTraineeByInviteTokenHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByInviteTokenHash");
+const getTraineeByOrgAndEmailRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByOrgAndEmail");
 const listTraineesByOrgRef = makeFunctionReference<"query">("traineeProfiles:listTraineesByOrg");
 const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
   "traineeProfiles:linkTraineeIpByInviteTokenHash",
@@ -153,6 +154,22 @@ export async function createTraineeProfile(args: {
 export async function getTraineeByInviteTokenHash(args: { inviteTokenHash: string }) {
   const client = getClient();
   return client.query(getTraineeByInviteTokenHashRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
+  } | null>;
+}
+
+export async function getTraineeByOrgAndEmail(args: { orgId: string; email: string }) {
+  const client = getClient();
+  return client.query(getTraineeByOrgAndEmailRef, args as never) as Promise<{
     traineeId: string;
     orgId: string;
     trainerId: string;

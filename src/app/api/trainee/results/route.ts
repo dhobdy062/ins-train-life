@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTraineeByInviteTokenHash, getTraineeResultsSnapshot } from "@/lib/convex";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { getTraineeByInviteTokenHash, getTraineeByOrgAndEmail, getTraineeResultsSnapshot } from "@/lib/convex";
 import { hashInviteToken } from "@/lib/identity-link";
 import {
   TRAINEE_SESSION_COOKIE_NAME,
@@ -14,11 +15,30 @@ function toIso(timestamp: number | null | undefined) {
   return new Date(timestamp).toISOString();
 }
 
+function resolvePrimaryEmailAddress(user: Awaited<ReturnType<typeof currentUser>>) {
+  if (!user) {
+    return null;
+  }
+
+  const primaryId = user.primaryEmailAddressId ?? null;
+  const emailAddresses = Array.isArray(user.emailAddresses) ? user.emailAddresses : [];
+  const primaryMatch = primaryId ? emailAddresses.find((email) => email.id === primaryId) : null;
+  const candidate = primaryMatch?.emailAddress ?? emailAddresses[0]?.emailAddress ?? null;
+
+  if (!candidate) {
+    return null;
+  }
+
+  const normalized = candidate.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const inviteToken = searchParams.get("inviteToken") ?? searchParams.get("invite");
   const limitParam = Number(searchParams.get("limit"));
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 25) : undefined;
+  const { userId, orgId } = await auth();
 
   const rawCookie = request.cookies.get(TRAINEE_SESSION_COOKIE_NAME)?.value;
   const cookieIdentity = verifyTraineeSessionCookie(rawCookie);
@@ -41,6 +61,26 @@ export async function GET(request: NextRequest) {
         orgId: trainee.orgId,
         trainerId: trainee.trainerId,
       };
+    }
+  }
+
+  if (!identity && userId && orgId) {
+    const user = await currentUser().catch(() => null);
+    const primaryEmail = resolvePrimaryEmailAddress(user);
+
+    if (primaryEmail) {
+      const trainee = await getTraineeByOrgAndEmail({
+        orgId,
+        email: primaryEmail,
+      }).catch(() => null);
+
+      if (trainee) {
+        identity = {
+          traineeId: trainee.traineeId,
+          orgId: trainee.orgId,
+          trainerId: trainee.trainerId,
+        };
+      }
     }
   }
 

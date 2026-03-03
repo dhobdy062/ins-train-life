@@ -15,12 +15,26 @@ type CreateTraineePayload = {
   trainerName?: string;
 };
 
+const RESEND_FALLBACK_FROM = "onboarding@resend.dev";
+
 function hashEmail(email: string) {
   return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
 function buildInviteToken() {
   return `${crypto.randomBytes(18).toString("hex")}${Date.now().toString(36)}`;
+}
+
+function isFromAddressVerificationError(error: { name?: string; message?: string } | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.name === "invalid_from_address") {
+    return true;
+  }
+
+  return /domain .* not verified/i.test(error.message ?? "");
 }
 
 export async function GET() {
@@ -100,8 +114,10 @@ export async function POST(request: Request) {
   if (rendered.ok) {
     try {
       const resend = getEmailClient();
-      const sendResult = await resend.emails.send({
-        from: getFromAddress(),
+      const configuredFromAddress = getFromAddress();
+      let fromAddressUsed = configuredFromAddress;
+      let sendResult = await resend.emails.send({
+        from: configuredFromAddress,
         to: email,
         subject: rendered.subject,
         html: rendered.html,
@@ -110,6 +126,28 @@ export async function POST(request: Request) {
           "X-Cream-Sequence": "trainee_invitation",
         },
       });
+
+      if (
+        sendResult.error &&
+        isFromAddressVerificationError(sendResult.error) &&
+        configuredFromAddress !== RESEND_FALLBACK_FROM
+      ) {
+        const fallbackResult = await resend.emails.send({
+          from: RESEND_FALLBACK_FROM,
+          to: email,
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text,
+          headers: {
+            "X-Cream-Sequence": "trainee_invitation",
+          },
+        });
+
+        sendResult = fallbackResult;
+        if (!fallbackResult.error) {
+          fromAddressUsed = RESEND_FALLBACK_FROM;
+        }
+      }
 
       await logEmailEvent({
         provider: "resend",
@@ -124,6 +162,8 @@ export async function POST(request: Request) {
         metadata: {
           source: "api/trainer/trainees",
           traineeId: result.traineeId,
+          fromAddress: fromAddressUsed,
+          configuredFromAddress,
         },
       }).catch(() => null);
 
@@ -131,6 +171,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error: "Trainee created, but invitation email failed to send.",
+            details: sendResult.error.message,
             traineeId: result.traineeId,
             trainingUrl,
           },

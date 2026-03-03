@@ -51,7 +51,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                   </SignUpButton>
                 </SignedOut>
                 <SignedIn>
-                  <a className="button secondary" href="/dashboard/trainer">
+                  <a className="button secondary" href="/workspace/dashboard">
                     Open workspace
                   </a>
                 </SignedIn>

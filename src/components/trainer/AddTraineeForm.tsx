@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 type CreateTraineeApiResponse = {
   ok?: boolean;
   error?: string;
+  details?: string;
   trainingUrl?: string;
 };
 
@@ -35,12 +36,15 @@ export default function AddTraineeForm() {
       });
 
       const payload = (await response.json().catch(() => ({}))) as CreateTraineeApiResponse;
+      if (payload.trainingUrl) {
+        setInviteUrl(payload.trainingUrl);
+      }
+
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? "Unable to create trainee.");
+        throw new Error(payload.details ?? payload.error ?? "Unable to create trainee.");
       }
 
       setStatus("Trainee created and invitation sent.");
-      setInviteUrl(payload.trainingUrl ?? null);
       setForm({
         name: "",
         email: "",

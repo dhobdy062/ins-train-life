@@ -11,7 +11,7 @@ type SelectOrganizationPageProps = {
 export default async function SelectOrganizationPage({ searchParams }: SelectOrganizationPageProps) {
   const params = await searchParams;
   const { userId, orgId } = await auth();
-  const redirectTarget = normalizeRelativeRedirect(params.redirect_url, "/dashboard/trainer");
+  const redirectTarget = normalizeRelativeRedirect(params.redirect_url, "/workspace/dashboard");
 
   if (!userId) {
     redirect(`/sign-up?redirect_url=${encodeURIComponent(redirectTarget)}`);
