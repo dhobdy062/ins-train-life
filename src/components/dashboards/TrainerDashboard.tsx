@@ -148,6 +148,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
     entitlementMode === "paid"
       ? "Paid accounts have an active Stripe subscription and can manage upgrades or downgrades in billing settings."
       : "";
+  const isPaidOrg = entitlementMode === "paid";
 
   return (
     <div className={styles.container}>
@@ -239,14 +240,15 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               <p>
                 Trial vs paid access is determined by subscription status. Trial orgs are capped by trial minutes, while paid orgs have an active Stripe subscription.
               </p>
+              <p className={styles.billingNote}>Billing is organization-wide. Members in the same organization inherit that organization&apos;s paid access.</p>
               {trialDescription ? <p className={styles.billingNote}>{trialDescription}</p> : null}
               {paidDescription ? <p className={styles.billingNote}>{paidDescription}</p> : null}
               <div className={styles.billingActions}>
-                <a className={styles.btn} href="/checkout/start?plan=starter&interval=monthly">Start paid plan (Starter)</a>
-                <a className={styles.btn} href="/checkout/start?plan=pro&interval=monthly">Choose Pro</a>
-                <a className={styles.btn} href="/checkout/start?plan=agency&interval=monthly">Choose Agency</a>
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=starter&interval=monthly">Start paid plan (Starter)</a> : null}
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=pro&interval=monthly">Choose Pro</a> : null}
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=agency&interval=monthly">Choose Agency</a> : null}
                 <button className={styles.btn} type="button" onClick={openBillingPortal} disabled={openingPortal}>
-                  {openingPortal ? "Opening billing..." : "Manage paid plan (upgrade/downgrade)"}
+                  {openingPortal ? "Opening billing..." : isPaidOrg ? "Manage organization billing" : "Manage paid plan (upgrade/downgrade)"}
                 </button>
               </div>
               {billingError ? <p className={styles.billingError}>{billingError}</p> : null}

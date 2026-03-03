@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/email";
 import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
 import { syncIdentityForRequest } from "@/lib/identitySync";
+import { getOrgEntitlement } from "@/lib/convex";
 
 export const runtime = "nodejs";
 export const preferredRegion = "iad1";
@@ -31,6 +32,17 @@ export async function POST(request: Request) {
       source: "api/checkout",
       failClosed: false,
     });
+    const entitlement = await getOrgEntitlement({ orgId }).catch(() => null);
+    if (entitlement?.mode === "paid") {
+      return NextResponse.json(
+        {
+          error: "This organization already has an active paid subscription.",
+          code: "ORG_ALREADY_PAID",
+          next: "/dashboard/trainer?tab=settings",
+        },
+        { status: 409 },
+      );
+    }
 
     const body = await request.json().catch(() => ({}));
     const selection = normalizeBillingSelection(body);
@@ -47,6 +59,13 @@ export async function POST(request: Request) {
       success_url: `${getAppUrl()}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${getAppUrl()}/?canceled=1`,
       allow_promotion_codes: true,
+      subscription_data: {
+        metadata: {
+          orgId,
+          planId: selection.planId,
+          interval: selection.interval,
+        },
+      },
       metadata: {
         orgId,
         userId,

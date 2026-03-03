@@ -284,10 +284,7 @@ async function persistStripeEvent(
   const stripeCustomerId = extractStripeCustomerId(payload);
   const stripeSubscriptionId = extractStripeSubscriptionId(payload);
 
-  let orgId =
-    asString(payload?.data?.object?.metadata?.orgId) ||
-    asString(payload?.data?.object?.client_reference_id) ||
-    asString(payload?.data?.object?.clientReferenceId);
+  let orgId = extractStripeOrgId(payload);
 
   if (!orgId && stripeCustomerId) {
     const mapped = await ctx.db
@@ -749,6 +746,10 @@ function resolveBillingAccess(
       continue;
     }
 
+    if (!allowedStatuses.has(status) && !deniedStatuses.has(status)) {
+      continue;
+    }
+
     if (!latestStatusBySubscription.has(subscriptionId)) {
       latestStatusBySubscription.set(subscriptionId, status);
     }
@@ -778,7 +779,7 @@ function resolveBillingAccess(
     return { hasAccess: true, reason: "checkout_provisional" as const };
   }
 
-  return { hasAccess: false, reason: "checkout_provisional_expired" as const };
+  return { hasAccess: true, reason: "checkout_completed" as const };
 }
 
 function resolveCurrentPlan(
@@ -992,6 +993,27 @@ function extractStripeCustomerId(payload: any): string | undefined {
 
 function extractStripeSubscriptionId(payload: any): string | undefined {
   return asString(payload?.data?.object?.subscription) || asString(payload?.data?.object?.subscription?.id);
+}
+
+function extractStripeOrgId(payload: any): string | undefined {
+  const object = payload?.data?.object;
+  const metadata = object?.metadata;
+  const subscriptionDetailsMetadata = object?.subscription_details?.metadata;
+  const expandedSubscriptionMetadata = object?.subscription?.metadata;
+
+  const direct =
+    asString(metadata?.orgId) ||
+    asString(metadata?.org_id) ||
+    asString(subscriptionDetailsMetadata?.orgId) ||
+    asString(subscriptionDetailsMetadata?.org_id) ||
+    asString(expandedSubscriptionMetadata?.orgId) ||
+    asString(expandedSubscriptionMetadata?.org_id);
+
+  if (direct) {
+    return direct;
+  }
+
+  return asString(object?.client_reference_id) || asString(object?.clientReferenceId);
 }
 
 function extractTimestampMs(payload: any): number | undefined {

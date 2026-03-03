@@ -5,6 +5,7 @@ import { getAppUrl } from "@/lib/email";
 import { normalizeBillingSelection, resolveStripePriceId } from "@/lib/billing";
 import { normalizeRelativeRedirect } from "@/lib/redirect";
 import { getStripe } from "@/lib/stripe";
+import { getOrgEntitlement } from "@/lib/convex";
 
 export const runtime = "nodejs";
 export const preferredRegion = "iad1";
@@ -104,6 +105,13 @@ async function createCheckoutUrl(
     success_url: `${getAppUrl()}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${getAppUrl()}/?canceled=1`,
     allow_promotion_codes: true,
+    subscription_data: {
+      metadata: {
+        orgId,
+        planId: selection.planId,
+        interval: selection.interval,
+      },
+    },
     metadata: {
       orgId,
       userId,
@@ -129,6 +137,10 @@ export default async function CheckoutStartPage({ searchParams }: CheckoutStartP
   }
   if (!orgId) {
     redirect(orgSetupTarget);
+  }
+  const entitlement = await getOrgEntitlement({ orgId }).catch(() => null);
+  if (entitlement?.mode === "paid") {
+    redirect("/dashboard/trainer?tab=settings");
   }
 
   try {
