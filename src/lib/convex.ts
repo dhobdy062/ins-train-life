@@ -305,6 +305,10 @@ export async function getTrainerDashboardSnapshot(args: { orgId: string; trainer
       appointmentSetRate: number;
       recommendation: string;
       focusArea: string;
+      status: string;
+      latestScore: number | null;
+      latestSessionStatus: string | null;
+      latestSessionAt: number | null;
     }>;
   }>;
 }

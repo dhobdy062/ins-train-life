@@ -11,79 +11,10 @@ type TrainerDashboardPageProps = {
 };
 
 type SnapshotTrainee = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>>["trainees"][number];
-type TeamSnapshot = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>> & {
-  source: "live" | "sample";
-};
+type TeamSnapshot = Awaited<ReturnType<typeof getTrainerDashboardSnapshot>>;
 type CurrentPlan = NonNullable<Awaited<ReturnType<typeof getOrgEntitlement>>["currentPlan"]>;
 
 const VALID_TABS = new Set(["home", "practice", "team", "settings"]);
-
-const SAMPLE_TEAM_SNAPSHOT: TeamSnapshot = {
-  source: "sample",
-  hasData: false,
-  totalAgents: 4,
-  avgScore: 79,
-  atD3Plus: 2,
-  hardStopRate: 3,
-  trainees: [
-    {
-      id: "sample-sarah-johnson",
-      name: "Sarah Johnson",
-      email: "cream@support.retrospxt.com",
-      level: "D2",
-      avgScore: 83,
-      callsThisLevel: 14,
-      hardStops: 0,
-      hardStopRate: 0,
-      objectionSuccessRate: 84,
-      appointmentSetRate: 42,
-      recommendation: "Ready to level up",
-      focusArea: "Advance to higher-difficulty scenarios",
-    },
-    {
-      id: "sample-mike-chen",
-      name: "Mike Chen",
-      email: "cream@support.retrospxt.com",
-      level: "D3",
-      avgScore: 77,
-      callsThisLevel: 8,
-      hardStops: 1,
-      hardStopRate: 12.5,
-      objectionSuccessRate: 65,
-      appointmentSetRate: 30,
-      recommendation: "Focus on objection handling",
-      focusArea: "Practice objection scenarios",
-    },
-    {
-      id: "sample-jessica-davis",
-      name: "Jessica Davis",
-      email: "cream@support.retrospxt.com",
-      level: "D1",
-      avgScore: 92,
-      callsThisLevel: 25,
-      hardStops: 0,
-      hardStopRate: 0,
-      objectionSuccessRate: 95,
-      appointmentSetRate: 60,
-      recommendation: "Excellent performance",
-      focusArea: "Maintain consistency",
-    },
-    {
-      id: "sample-david-lee",
-      name: "David Lee",
-      email: "cream@support.retrospxt.com",
-      level: "D4",
-      avgScore: 72,
-      callsThisLevel: 5,
-      hardStops: 2,
-      hardStopRate: 40,
-      objectionSuccessRate: 50,
-      appointmentSetRate: 20,
-      recommendation: "Needs coaching on hard stops",
-      focusArea: "Review calls with high difficulty",
-    },
-  ],
-};
 
 function formatPlanDisplayLabel(plan: CurrentPlan | null | undefined) {
   if (!plan) {
@@ -128,13 +59,14 @@ export default async function TrainerDashboardPage({ searchParams }: TrainerDash
     ? `${accessLabel} | ${formatStripeStatus(entitlement.currentPlan.stripeStatus)}`
     : accessLabel;
 
-  const usingSampleSnapshot = !liveSnapshot?.hasData;
-  const teamSnapshot: TeamSnapshot = usingSampleSnapshot
-    ? SAMPLE_TEAM_SNAPSHOT
-    : {
-        ...liveSnapshot,
-        source: "live",
-      };
+  const teamSnapshot: TeamSnapshot = liveSnapshot ?? {
+    hasData: false,
+    totalAgents: 0,
+    avgScore: 0,
+    atD3Plus: 0,
+    hardStopRate: 0,
+    trainees: [],
+  };
 
   const selectedAgent: SnapshotTrainee | null =
     teamSnapshot.trainees.find((trainee) => trainee.id === selectedAgentParam) ?? teamSnapshot.trainees[0] ?? null;

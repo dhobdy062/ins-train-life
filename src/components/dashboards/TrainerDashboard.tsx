@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./TrainerDashboard.module.css";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
@@ -17,6 +18,10 @@ interface Trainee {
   appointmentSetRate: number;
   recommendation: string;
   focusArea: string;
+  status: string;
+  latestScore: number | null;
+  latestSessionStatus: string | null;
+  latestSessionAt: number | null;
 }
 
 type EntitlementMode = "paid" | "trial" | "blocked";
@@ -48,6 +53,13 @@ type CreateTraineeApiResponse = {
   trainingUrl?: string;
 };
 
+function formatTimestamp(timestamp: number | null) {
+  if (!timestamp) {
+    return "No sessions yet";
+  }
+  return new Date(timestamp).toLocaleString();
+}
+
 const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   teamSnapshot,
   selectedAgent,
@@ -61,6 +73,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   defaultTab,
   entitlementMode,
 }) => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab || "team");
   const [billingError, setBillingError] = useState<string | null>(null);
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -119,6 +132,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
         difficultyLevel: "D2",
         numObjections: 3,
       });
+      router.refresh();
     } catch (error) {
       setTraineeStatus(error instanceof Error ? error.message : "Unable to create trainee.");
     } finally {
@@ -196,6 +210,9 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                 <div className={styles.planSub}>{planStatusLabel ?? accessLabel}</div>
               </SignedIn>
             </div>
+            <button className={styles.btn} type="button" onClick={() => router.refresh()}>
+              Refresh
+            </button>
             <div className={styles.authWrapper}>
               <SignedIn>
                 <UserButton afterSignOutUrl="/" />
@@ -319,6 +336,9 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                     Invite link: <a href={latestInviteUrl}>{latestInviteUrl}</a>
                   </p>
                 ) : null}
+                <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#555" }}>
+                  Dashboard reads live data from trainees, sessions, metrics, and rebuttal responses.
+                </p>
               </div>
 
               <div className={styles.statsGrid}>
@@ -368,7 +388,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               {selectedAgent && (
                 <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "2px solid var(--border)", marginBottom: "40px" }}>
                   <h3 style={{ color: "var(--primary-dark)", marginBottom: "16px" }}>Focus: {selectedAgent.name}</h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px" }}>
                     <div>
                       <div style={{ fontSize: "12px", color: "#999" }}>Recommendation</div>
                       <div style={{ fontWeight: "600" }}>{selectedAgent.recommendation}</div>
@@ -381,6 +401,10 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                       <div style={{ fontSize: "12px", color: "#999" }}>Appt. Rate</div>
                       <div style={{ fontWeight: "600" }}>{selectedAgent.appointmentSetRate}%</div>
                     </div>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#999" }}>Most Recent Session</div>
+                      <div style={{ fontWeight: "600" }}>{formatTimestamp(selectedAgent.latestSessionAt)}</div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -389,12 +413,19 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                 <h2>Team Roster</h2>
               </div>
               <div className={styles.tableContainer}>
+                {teamSnapshot.trainees.length === 0 ? (
+                  <p style={{ padding: "16px 0", color: "#666" }}>
+                    No trainees yet. Add a trainee above to start collecting Vapi training results.
+                  </p>
+                ) : null}
                 <table>
                   <thead>
                     <tr>
                       <th>Agent Name</th>
                       <th>Level</th>
                       <th>Avg Score</th>
+                      <th>Latest Score</th>
+                      <th>Latest Session</th>
                       <th>Appt. Rate</th>
                       <th>Hard Stops</th>
                       <th>Recommendation</th>
@@ -415,6 +446,11 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                               <div className={styles.scoreBarFill} style={{ width: `${member.avgScore}%` }}></div>
                             </div>
                           </div>
+                        </td>
+                        <td>{member.latestScore === null ? "-" : `${member.latestScore}%`}</td>
+                        <td>
+                          <div>{formatTimestamp(member.latestSessionAt)}</div>
+                          <div style={{ fontSize: "11px", color: "#999" }}>{member.latestSessionStatus ?? "no_session"}</div>
                         </td>
                         <td>{member.appointmentSetRate}%</td>
                         <td>

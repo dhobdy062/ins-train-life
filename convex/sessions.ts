@@ -259,95 +259,153 @@ export const recordRebuttalScore = mutation({
 export const getTrainerDashboardSnapshot = query({
   args: { orgId: v.string(), trainerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    // 1. Get all members of the organization
-    const memberships = await ctx.db
-      .query("organizationMemberships")
-      .withIndex("by_clerkOrgId", (q) => q.eq("clerkOrgId", args.orgId))
+    const trainees = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
       .collect();
 
-    const userIds = memberships.map((m) => m.clerkUserId);
-    
-    // 2. Fetch user profiles
-    const users = await Promise.all(
-      userIds.map(async (clerkUserId) => {
-        return ctx.db
-          .query("users")
-          .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-          .first();
-      })
-    );
-
-    const activeUsers = users.filter((u) => u !== null && u.status !== "deleted");
-
-    // 3. Fetch recent metadata/sessions for the org
-    const sessions = await ctx.db
+    const activeTrainees = trainees.filter((trainee) => trainee.status !== "disabled");
+    const allSessions = await ctx.db
       .query("trainingSessions")
       .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
       .collect();
 
-    const metrics = await ctx.db
+    const sessions = args.trainerId ? allSessions.filter((session) => session.trainerId === args.trainerId) : allSessions;
+    const sessionKeySet = new Set(sessions.map((session) => session.sessionKey));
+
+    const allMetrics = await ctx.db
       .query("sessionMetrics")
       .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
       .collect();
 
-    // 4. Calculate aggregate stats
-    const totalAgents = activeUsers.length;
-    const completedSessions = sessions.filter((s) => s.status === "completed");
-    
-    const allScores = metrics
-      .map((m) => m.rebuttalScore)
-      .filter((s): s is number => s !== undefined);
-    
-    const avgScore = allScores.length > 0 
-      ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-      : 0;
+    const latestMetricsBySession = new Map<
+      string,
+      {
+        createdAt: number;
+        rebuttalScore?: number;
+        toneStrikeCount?: number;
+        appointmentSet?: boolean;
+      }
+    >();
+    for (const metric of allMetrics) {
+      if (!sessionKeySet.has(metric.sessionKey)) {
+        continue;
+      }
 
-    const atD3Plus = activeUsers.filter((u) => {
-      const userSessions = sessions.filter(s => s.traineeId === u?.clerkUserId);
-      return userSessions.length >= 15; // Simple heuristic for D3
-    }).length;
+      const current = latestMetricsBySession.get(metric.sessionKey);
+      if (!current || metric.createdAt > current.createdAt) {
+        latestMetricsBySession.set(metric.sessionKey, {
+          createdAt: metric.createdAt,
+          rebuttalScore: metric.rebuttalScore,
+          toneStrikeCount: metric.toneStrikeCount,
+          appointmentSet: metric.appointmentSet,
+        });
+      }
+    }
 
-    const hardStops = metrics.filter(m => m.toneStrikeCount && m.toneStrikeCount > 0).length;
-    const hardStopRate = sessions.length > 0 ? Math.round((hardStops / sessions.length) * 100) : 0;
+    const allResponses = await ctx.db
+      .query("rebuttalResponses")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .collect();
 
-    // 5. Prepare trainee list
-    const trainees = await Promise.all(activeUsers.map(async (u) => {
-      const userSessions = sessions.filter(s => s.traineeId === u?.clerkUserId);
-      const userMetrics = metrics.filter(m => userSessions.some(s => s.sessionKey === m.sessionKey));
-      
-      const userScores = userMetrics
-        .map(m => m.rebuttalScore)
-        .filter((s): s is number => s !== undefined);
-      
-      const userAvgScore = userScores.length > 0
-        ? Math.round(userScores.reduce((a, b) => a + b, 0) / userScores.length)
-        : 0;
+    const responses = allResponses.filter((response) => sessionKeySet.has(response.sessionKey));
 
-      const userHardStops = userMetrics.filter(m => m.toneStrikeCount && m.toneStrikeCount > 0).length;
-      
+    const completedSessions = sessions.filter((session) => session.status === "completed");
+    const latestMetricRows = Array.from(latestMetricsBySession.values());
+    const scores = latestMetricRows
+      .map((metric) => metric.rebuttalScore)
+      .filter((score): score is number => typeof score === "number");
+    const hardStopCount = latestMetricRows.filter((metric) => (metric.toneStrikeCount ?? 0) > 0).length;
+
+    const avgScore =
+      scores.length > 0 ? Math.round(scores.reduce((runningTotal, score) => runningTotal + score, 0) / scores.length) : 0;
+    const hardStopRate =
+      completedSessions.length > 0 ? Math.round((hardStopCount / completedSessions.length) * 100) : 0;
+    const atD3Plus = activeTrainees.filter((trainee) => Number(trainee.difficultyLevel.slice(1)) >= 3).length;
+
+    const traineeRows = activeTrainees.map((trainee) => {
+      const traineeSessions = sessions
+        .filter((session) => session.traineeId === trainee._id)
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      const traineeSessionKeys = new Set(traineeSessions.map((session) => session.sessionKey));
+      const traineeMetrics = traineeSessions
+        .map((session) => latestMetricsBySession.get(session.sessionKey))
+        .filter((metric): metric is NonNullable<typeof metric> => Boolean(metric));
+      const traineeScores = traineeMetrics
+        .map((metric) => metric.rebuttalScore)
+        .filter((score): score is number => typeof score === "number");
+      const traineeResponses = responses.filter((response) => traineeSessionKeys.has(response.sessionKey));
+      const responseScores = traineeResponses.map((response) => response.score);
+      const traineeHardStops = traineeMetrics.filter((metric) => (metric.toneStrikeCount ?? 0) > 0).length;
+      const appointmentSetCount = traineeMetrics.filter((metric) => metric.appointmentSet === true).length;
+
+      const latestSession = traineeSessions[0] ?? null;
+      const latestMetric = latestSession ? latestMetricsBySession.get(latestSession.sessionKey) : null;
+      const avgTraineeScore =
+        traineeScores.length > 0
+          ? Math.round(traineeScores.reduce((runningTotal, score) => runningTotal + score, 0) / traineeScores.length)
+          : 0;
+      const objectionSuccessRate =
+        responseScores.length > 0
+          ? Math.round(responseScores.reduce((runningTotal, score) => runningTotal + score, 0) / responseScores.length)
+          : avgTraineeScore;
+      const hardStopRateForTrainee =
+        traineeSessions.length > 0 ? Math.round((traineeHardStops / traineeSessions.length) * 100) : 0;
+      const appointmentSetRate =
+        traineeSessions.length > 0 ? Math.round((appointmentSetCount / traineeSessions.length) * 100) : 0;
+
+      const recommendation =
+        traineeSessions.length === 0
+          ? "Run first training call"
+          : avgTraineeScore >= 85 && hardStopRateForTrainee <= 5
+            ? "Ready for higher difficulty"
+            : hardStopRateForTrainee > 10
+              ? "Coach tone and pacing"
+              : "Increase objection reps";
+      const focusArea =
+        traineeSessions.length === 0
+          ? "Start with D2 objection drills"
+          : objectionSuccessRate < 75
+            ? "Objection handling quality"
+            : hardStopRateForTrainee > 10
+              ? "Tone and compliance control"
+              : "Consistency under pressure";
+
       return {
-        id: u?.clerkUserId || "",
-        name: u?.fullName || u?.firstName || "Unknown",
-        email: u?.primaryEmail || "",
-        level: userSessions.length >= 30 ? "D4" : userSessions.length >= 15 ? "D3" : userSessions.length >= 8 ? "D2" : "D1",
-        avgScore: userAvgScore,
-        callsThisLevel: userSessions.length,
-        hardStops: userHardStops,
-        hardStopRate: userSessions.length > 0 ? Math.round((userHardStops / userSessions.length) * 100) : 0,
-        objectionSuccessRate: userAvgScore, // Placeholder
-        appointmentSetRate: Math.round(userMetrics.filter(m => m.appointmentSet).length / (userSessions.length || 1) * 100),
-        recommendation: userAvgScore > 85 ? "Promote to next level" : "Focus on objection handling",
-        focusArea: userAvgScore < 70 ? "Tone & Pacing" : "Spouse Decision Objection",
+        id: trainee._id,
+        name: trainee.name,
+        email: trainee.email,
+        level: trainee.difficultyLevel,
+        avgScore: avgTraineeScore,
+        callsThisLevel: traineeSessions.length,
+        hardStops: traineeHardStops,
+        hardStopRate: hardStopRateForTrainee,
+        objectionSuccessRate,
+        appointmentSetRate,
+        recommendation,
+        focusArea,
+        status: trainee.status,
+        latestScore: latestMetric?.rebuttalScore ?? null,
+        latestSessionStatus: latestSession?.status ?? null,
+        latestSessionAt: latestSession?.createdAt ?? null,
       };
-    }));
+    });
 
     return {
-      hasData: sessions.length > 0,
-      totalAgents,
+      hasData: activeTrainees.length > 0,
+      totalAgents: activeTrainees.length,
       avgScore,
       atD3Plus,
       hardStopRate,
-      trainees: trainees.sort((a, b) => b.avgScore - a.avgScore),
+      trainees: traineeRows.sort((a, b) => {
+        const aTime = a.latestSessionAt ?? 0;
+        const bTime = b.latestSessionAt ?? 0;
+        if (bTime !== aTime) {
+          return bTime - aTime;
+        }
+        return b.avgScore - a.avgScore;
+      }),
     };
   },
 });
