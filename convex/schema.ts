@@ -46,6 +46,9 @@ export default defineSchema({
     idempotencyKey: v.string(),
     providerEventId: v.optional(v.string()),
     status: v.union(v.literal("queued"), v.literal("processed"), v.literal("failed")),
+    attemptCount: v.optional(v.number()),
+    lastAttemptAt: v.optional(v.number()),
+    maxAttempts: v.optional(v.number()),
     payload: v.any(),
     headers: v.optional(v.any()),
     receivedAt: v.number(),
@@ -83,7 +86,38 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   })
     .index("by_sessionKey", ["sessionKey"])
-    .index("by_org_createdAt", ["orgId", "createdAt"]),
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_trainee_createdAt", ["traineeId", "createdAt"]),
+
+  trainees: defineTable({
+    orgId: v.string(),
+    trainerId: v.string(),
+    name: v.string(),
+    email: v.string(),
+    difficultyLevel: v.string(),
+    numObjections: v.number(),
+    expectedRebuttals: v.array(v.string()),
+    inviteTokenHash: v.string(),
+    status: v.union(v.literal("invited"), v.literal("active"), v.literal("disabled")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastActiveAt: v.optional(v.number()),
+  })
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_org_email", ["orgId", "email"])
+    .index("by_inviteTokenHash", ["inviteTokenHash"]),
+
+  traineeSessionIps: defineTable({
+    orgId: v.string(),
+    traineeId: v.id("trainees"),
+    ipHash: v.string(),
+    ipAddressMasked: v.optional(v.string()),
+    consentedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_ipHash", ["ipHash"])
+    .index("by_traineeId", ["traineeId"])
+    .index("by_org_trainee", ["orgId", "traineeId"]),
 
   trialSessions: defineTable({
     emailHash: v.string(),

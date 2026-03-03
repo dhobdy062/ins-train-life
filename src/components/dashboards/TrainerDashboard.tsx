@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./TrainerDashboard.module.css";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
@@ -17,6 +18,10 @@ interface Trainee {
   appointmentSetRate: number;
   recommendation: string;
   focusArea: string;
+  status: string;
+  latestScore: number | null;
+  latestSessionStatus: string | null;
+  latestSessionAt: number | null;
 }
 
 type EntitlementMode = "paid" | "trial" | "blocked";
@@ -32,6 +37,8 @@ interface TrainerDashboardProps {
   };
   selectedAgent: Trainee | null;
   accessLabel: string;
+  planDisplayLabel: string;
+  planStatusLabel?: string;
   isBlocked: boolean;
   minutesUsed: number;
   minutesLimit?: number | null;
@@ -40,10 +47,25 @@ interface TrainerDashboardProps {
   entitlementMode: EntitlementMode;
 }
 
+type CreateTraineeApiResponse = {
+  ok?: boolean;
+  error?: string;
+  trainingUrl?: string;
+};
+
+function formatTimestamp(timestamp: number | null) {
+  if (!timestamp) {
+    return "No sessions yet";
+  }
+  return new Date(timestamp).toLocaleString();
+}
+
 const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   teamSnapshot,
   selectedAgent,
   accessLabel,
+  planDisplayLabel,
+  planStatusLabel,
   isBlocked,
   minutesUsed,
   minutesLimit,
@@ -51,9 +73,19 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
   defaultTab,
   entitlementMode,
 }) => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab || "team");
   const [billingError, setBillingError] = useState<string | null>(null);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [isSubmittingTrainee, setIsSubmittingTrainee] = useState(false);
+  const [traineeStatus, setTraineeStatus] = useState<string | null>(null);
+  const [latestInviteUrl, setLatestInviteUrl] = useState<string | null>(null);
+  const [traineeForm, setTraineeForm] = useState({
+    name: "",
+    email: "",
+    difficultyLevel: "D2",
+    numObjections: 3,
+  });
 
   async function openBillingPortal() {
     try {
@@ -69,6 +101,42 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
       setBillingError(error instanceof Error ? error.message : "Unable to open billing settings.");
     } finally {
       setOpeningPortal(false);
+    }
+  }
+
+  async function handleAddTrainee(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmittingTrainee(true);
+    setTraineeStatus(null);
+    setLatestInviteUrl(null);
+
+    try {
+      const response = await fetch("/api/trainer/trainees", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(traineeForm),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as CreateTraineeApiResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to create trainee.");
+      }
+
+      setTraineeStatus("Trainee created and invitation sent.");
+      setLatestInviteUrl(payload.trainingUrl ?? null);
+      setTraineeForm({
+        name: "",
+        email: "",
+        difficultyLevel: "D2",
+        numObjections: 3,
+      });
+      router.refresh();
+    } catch (error) {
+      setTraineeStatus(error instanceof Error ? error.message : "Unable to create trainee.");
+    } finally {
+      setIsSubmittingTrainee(false);
     }
   }
 
@@ -138,9 +206,13 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
           <div className={styles.headerActions}>
             <div className={styles.userInfo}>
               <SignedIn>
-                <div className={styles.plan}>{accessLabel}</div>
+                <div className={styles.plan}>{planDisplayLabel}</div>
+                <div className={styles.planSub}>{planStatusLabel ?? accessLabel}</div>
               </SignedIn>
             </div>
+            <button className={styles.btn} type="button" onClick={() => router.refresh()}>
+              Refresh
+            </button>
             <div className={styles.authWrapper}>
               <SignedIn>
                 <UserButton afterSignOutUrl="/" />
@@ -181,6 +253,94 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
             </section>
           ) : (
             <>
+              <div
+                style={{
+                  background: "white",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  marginBottom: "24px",
+                }}
+              >
+                <h3 style={{ marginTop: 0, color: "var(--primary-dark)" }}>Add Trainee</h3>
+                <form
+                  onSubmit={handleAddTrainee}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.2fr 1.2fr 0.8fr 0.8fr auto",
+                    gap: "10px",
+                    alignItems: "end",
+                  }}
+                >
+                  <label style={{ display: "grid", gap: "4px", fontSize: "12px", color: "#666" }}>
+                    Name
+                    <input
+                      required
+                      value={traineeForm.name}
+                      onChange={(event) => setTraineeForm((previous) => ({ ...previous, name: event.target.value }))}
+                      style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "8px 10px" }}
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: "4px", fontSize: "12px", color: "#666" }}>
+                    Email
+                    <input
+                      required
+                      type="email"
+                      value={traineeForm.email}
+                      onChange={(event) => setTraineeForm((previous) => ({ ...previous, email: event.target.value }))}
+                      style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "8px 10px" }}
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: "4px", fontSize: "12px", color: "#666" }}>
+                    Difficulty
+                    <select
+                      value={traineeForm.difficultyLevel}
+                      onChange={(event) =>
+                        setTraineeForm((previous) => ({ ...previous, difficultyLevel: event.target.value }))
+                      }
+                      style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "8px 10px" }}
+                    >
+                      <option value="D1">D1</option>
+                      <option value="D2">D2</option>
+                      <option value="D3">D3</option>
+                      <option value="D4">D4</option>
+                      <option value="D5">D5</option>
+                    </select>
+                  </label>
+                  <label style={{ display: "grid", gap: "4px", fontSize: "12px", color: "#666" }}>
+                    Objections
+                    <input
+                      type="number"
+                      min={1}
+                      max={7}
+                      value={traineeForm.numObjections}
+                      onChange={(event) =>
+                        setTraineeForm((previous) => ({
+                          ...previous,
+                          numObjections: Number(event.target.value),
+                        }))
+                      }
+                      style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "8px 10px" }}
+                    />
+                  </label>
+                  <button className={styles.btn} type="submit" disabled={isSubmittingTrainee}>
+                    {isSubmittingTrainee ? "Adding..." : "+ Add Trainee"}
+                  </button>
+                </form>
+                <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#666" }}>
+                  IP is captured after trainee consent from their invite link.
+                </p>
+                {traineeStatus ? <p style={{ margin: "8px 0 0", fontSize: "13px" }}>{traineeStatus}</p> : null}
+                {latestInviteUrl ? (
+                  <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#555" }}>
+                    Invite link: <a href={latestInviteUrl}>{latestInviteUrl}</a>
+                  </p>
+                ) : null}
+                <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#555" }}>
+                  Dashboard reads live data from trainees, sessions, metrics, and rebuttal responses.
+                </p>
+              </div>
+
               <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
                   <div className={styles.statHeader}>
@@ -212,6 +372,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   <div className={styles.statMeta}>
                     {minutesUsed} minutes used {minutesLimit ? `/ ${minutesLimit}` : ""}
                   </div>
+                  <div className={styles.planMeta}>Current plan: {planDisplayLabel}</div>
                 </div>
 
                 <div className={styles.statCard}>
@@ -227,7 +388,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               {selectedAgent && (
                 <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "2px solid var(--border)", marginBottom: "40px" }}>
                   <h3 style={{ color: "var(--primary-dark)", marginBottom: "16px" }}>Focus: {selectedAgent.name}</h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px" }}>
                     <div>
                       <div style={{ fontSize: "12px", color: "#999" }}>Recommendation</div>
                       <div style={{ fontWeight: "600" }}>{selectedAgent.recommendation}</div>
@@ -240,6 +401,10 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                       <div style={{ fontSize: "12px", color: "#999" }}>Appt. Rate</div>
                       <div style={{ fontWeight: "600" }}>{selectedAgent.appointmentSetRate}%</div>
                     </div>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#999" }}>Most Recent Session</div>
+                      <div style={{ fontWeight: "600" }}>{formatTimestamp(selectedAgent.latestSessionAt)}</div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -248,12 +413,19 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                 <h2>Team Roster</h2>
               </div>
               <div className={styles.tableContainer}>
+                {teamSnapshot.trainees.length === 0 ? (
+                  <p style={{ padding: "16px 0", color: "#666" }}>
+                    No trainees yet. Add a trainee above to start collecting Vapi training results.
+                  </p>
+                ) : null}
                 <table>
                   <thead>
                     <tr>
                       <th>Agent Name</th>
                       <th>Level</th>
                       <th>Avg Score</th>
+                      <th>Latest Score</th>
+                      <th>Latest Session</th>
                       <th>Appt. Rate</th>
                       <th>Hard Stops</th>
                       <th>Recommendation</th>
@@ -274,6 +446,11 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                               <div className={styles.scoreBarFill} style={{ width: `${member.avgScore}%` }}></div>
                             </div>
                           </div>
+                        </td>
+                        <td>{member.latestScore === null ? "-" : `${member.latestScore}%`}</td>
+                        <td>
+                          <div>{formatTimestamp(member.latestSessionAt)}</div>
+                          <div style={{ fontSize: "11px", color: "#999" }}>{member.latestSessionStatus ?? "no_session"}</div>
                         </td>
                         <td>{member.appointmentSetRate}%</td>
                         <td>

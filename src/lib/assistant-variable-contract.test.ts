@@ -1,0 +1,41 @@
+import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
+
+describe("validateAssistantVariableContract", () => {
+  it("passes for valid trainee payload", () => {
+    const result = validateAssistantVariableContract(
+      {
+        difficulty: "D2",
+        objectionsRequired: "3",
+        rebuttals: JSON.stringify({ not_interested: "Sample" }),
+        session_key: "sess_1",
+        org_id: "org_1",
+        trainer_id: "trainer_1",
+        trainee_id: "trainee_1",
+        trainee_name: "Sarah",
+        expected_rebuttals: JSON.stringify(["dont_remember", "not_interested"]),
+      },
+      "trainee",
+    );
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails when required keys are missing", () => {
+    const result = validateAssistantVariableContract(
+      {
+        difficulty: "D2",
+        objectionsRequired: "3",
+        rebuttals: "{}",
+        session_key: "",
+        org_id: "org_1",
+        trainer_id: "",
+      },
+      "trainer",
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.missingKeys).toEqual(expect.arrayContaining(["rebuttals", "session_key", "trainer_id"]));
+    }
+  });
+});
