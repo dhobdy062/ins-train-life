@@ -5,7 +5,7 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@cream.retrospxt.com";
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "cream@support.retrospxt.com";
 const BASE_URL = "https://cream.retrospxt.com";
 
 // ============================================================================
