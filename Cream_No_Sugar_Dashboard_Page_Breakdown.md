@@ -1,4 +1,5 @@
 # CREAM NO SUGAR TRAINER DASHBOARD
+
 ## Complete Page Breakdown
 
 **Mobile-Friendly Navigation via Sidebar**
@@ -10,30 +11,33 @@
 ### **What You See When You Log In**
 
 #### TOP SECTION: Header
+
 - **Greeting:** "Team Dashboard"
 - **Org Name:** "ABC Insurance Group"
 - **Your Profile:** Shows your name (Sarah Johnson), Plan type (Pro Team Plan • 5 Seats), Avatar
 
 #### STAT CARDS (Scrolling down)
+
 ```
 🎯 TEAM CLOSE RATE
    58%
    ↑ 12% from last month
-   
+
 🎯 TOTAL TRAINING CALLS
    487
    ↑ 87 this week
-   
+
 🎯 AVG CALL SCORE
    81%
    ↑ 4% from week 1
-   
+
 🎯 TEAM MINUTES USED
    642 / 900
    71% of monthly allocation
 ```
 
 #### SECTION: Top Performers This Week
+
 Shows leaderboard with medals:
 
 ```
@@ -51,6 +55,7 @@ Shows leaderboard with medals:
 ```
 
 #### SECTION: Team Member Performance Table
+
 ```
 NAME             | STATUS   | CALLS | AVG SCORE | BADGES | LEVEL | THIS WEEK
 ─────────────────────────────────────────────────────────────────────────────
@@ -62,6 +67,7 @@ Alex Rodriguez   | Active   | 9     | 72%       | 🚀     | D2    | 3 calls
 ```
 
 #### SECTION: Team Badges Earned (Grid View)
+
 ```
 🎯 CREDIBILITY MASTER    ⭐ PERFECT WEEK         🔥 ON FIRE
    3 earned                 2 earned                4 earned
@@ -77,6 +83,7 @@ Alex Rodriguez   | Active   | 9     | 72%       | 🚀     | D2    | 3 calls
 ### **Detailed Analytics & Trends**
 
 #### SECTION: Performance Overview
+
 ```
 METRIC               | THIS MONTH | LAST MONTH | CHANGE
 ──────────────────────────────────────────────────────
@@ -89,6 +96,7 @@ Agents Active        | 4/5        | 3/5        | +1
 ```
 
 #### SECTION: Score Distribution Chart
+
 ```
 DIFFICULTY LEVEL PERFORMANCE:
 
@@ -109,6 +117,7 @@ D5 (Brick Wall)
 ```
 
 #### SECTION: Top Performing Agents (Ranked)
+
 ```
 RANK | AGENT              | AVG SCORE | CALLS | BADGES | STREAK
 ────────────────────────────────────────────────────────────────
@@ -120,6 +129,7 @@ RANK | AGENT              | AVG SCORE | CALLS | BADGES | STREAK
 ```
 
 #### SECTION: Objection Handling Performance
+
 ```
 OBJECTION TYPE          | SUCCESS RATE | TOTAL ATTEMPTS | DIFFICULTY
 ───────────────────────────────────────────────────────────────────
@@ -133,6 +143,7 @@ How Got Number          | 76%          | 83             | Medium
 ```
 
 #### SECTION: Trend Over Time (Weekly)
+
 ```
 WEEK 1  | Avg: 71%  | Calls: 89  | Active: 3/5
 WEEK 2  | Avg: 75%  | Calls: 134 | Active: 4/5
@@ -147,27 +158,28 @@ WEEK 4  | Avg: 81%  | Calls: 108 | Active: 4/5 (Current)
 ### **Multiple Leaderboard Views**
 
 #### TAB 1: THIS WEEK (Currently Selected)
+
 ```
 🥇 MIKE CHEN
    8 calls this week | 89% avg score
    Badges: 🎯 Credibility Master, ⭐ Perfect Week, 🏅 D3 Unlocked
    Social shares: 3
-   
+
 🥈 JENNIFER LEE
    6 calls this week | 86% avg score
    Badges: 📅 Appointment Setter, 🔥 On Fire
    Social shares: 2
-   
+
 🥉 DAVID MARTINEZ
    5 calls this week | 79% avg score
    Badges: ⭐ Perfect Week
    Social shares: 1
-   
+
 4️⃣ ALEX RODRIGUEZ
    3 calls this week | 72% avg score
    Badges: 🚀 Early Adopter
    Social shares: 0
-   
+
 ❌ RACHEL THOMPSON
    0 calls this week | N/A
    Badges: None
@@ -175,46 +187,49 @@ WEEK 4  | Avg: 81%  | Calls: 108 | Active: 4/5 (Current)
 ```
 
 #### TAB 2: THIS MONTH
+
 ```
 🥇 MIKE CHEN
    18 calls this month | 89% avg score
    Total badges: 3
-   
+
 🥈 JENNIFER LEE
    15 calls this month | 86% avg score
    Total badges: 2
-   
+
 🥉 DAVID MARTINEZ
    12 calls this month | 79% avg score
    Total badges: 1
-   
+
 4️⃣ ALEX RODRIGUEZ
    9 calls this month | 72% avg score
    Total badges: 1
-   
+
 5️⃣ RACHEL THOMPSON
    6 calls this month | 65% avg score
    Total badges: 0
 ```
 
 #### TAB 3: ALL TIME
+
 ```
 🥇 JENNIFER LEE
    47 calls all-time | 84% avg score
    Total badges: 8
-   
+
 🥈 MIKE CHEN
    42 calls all-time | 82% avg score
    Total badges: 6
-   
+
 🥉 DAVID MARTINEZ
    28 calls all-time | 76% avg score
    Total badges: 3
-   
+
 [Shows entire history since joining]
 ```
 
 #### TAB 4: BADGES EARNED
+
 ```
 🎯 CREDIBILITY MASTER (Most Common)
    Mike Chen, Jennifer Lee, David Martinez
@@ -237,6 +252,7 @@ WEEK 4  | Avg: 81%  | Calls: 108 | Active: 4/5 (Current)
 ```
 
 #### TAB 5: STREAKS (Active)
+
 ```
 LONGEST WIN STREAKS:
 
@@ -260,32 +276,33 @@ LONGEST WIN STREAKS:
 ### **Downloadable Reports & Exports**
 
 #### SECTION: Report Type Selection
+
 ```
 □ MONTHLY PERFORMANCE REPORT
   Download team performance summary
   Includes: Scores, calls, badges, trends
   Format: PDF | Excel
-  
+
 □ INDIVIDUAL AGENT REPORT
   Select agent → Download full analytics
   Includes: All calls, scores, objections handled
   Format: PDF | Excel
-  
+
 □ OBJECTION HANDLING ANALYSIS
   Which objections your team struggles with
   Recommendations for improvement
   Format: PDF
-  
+
 □ BADGE TRACKING REPORT
   All badges earned by team
   Who earned what, when
   Format: Excel
-  
+
 □ TEAM LEADERBOARD SNAPSHOT
   Current standings + history
   Great for team motivation
   Format: PDF | Printable
-  
+
 □ USAGE & BILLING REPORT
   Minutes used vs. allocated
   Costs breakdown
@@ -293,6 +310,7 @@ LONGEST WIN STREAKS:
 ```
 
 #### SECTION: Recent Reports
+
 ```
 REPORT                           | DATE        | STATUS
 ─────────────────────────────────────────────────────
@@ -303,6 +321,7 @@ Q1 2026 Summary                  | Jan 30, 2026| Ready
 ```
 
 #### SECTION: Report Customization
+
 ```
 DATE RANGE
 From: [January 1, 2026]
@@ -331,6 +350,7 @@ FORMAT:
 ### **Individual Call Recordings & Analysis**
 
 #### SECTION: Call Library Filter
+
 ```
 FILTER BY:
 - Agent Name [Dropdown - Select Agent]
@@ -341,6 +361,7 @@ FILTER BY:
 ```
 
 #### SECTION: Call List (With Latest Calls)
+
 ```
 CALL ID | AGENT          | DATE    | SCORE | LEVEL | NOTES
 ──────────────────────────────────────────────────────────
@@ -349,29 +370,30 @@ CALL ID | AGENT          | DATE    | SCORE | LEVEL | NOTES
         │ Objection: "Already covered"
         │ Result: Appointment set
         │ [Listen] [View Transcript] [Give Feedback]
-        
+
 #486    | Jennifer Lee   | Feb 12  | 88%   | D2    | ✓ Good
         │ 2:15 PM | 3:48 duration
         │ Objection: "Need to think"
         │ Result: Call continued, promised callback
         │ [Listen] [View Transcript] [Give Feedback]
-        
+
 #485    | David Martinez | Feb 12  | 74%   | D2    | ⚠ Needs Work
         │ 10:42 AM | 2:31 duration
         │ Objection: "How got number"
         │ Result: Call ended
         │ [Listen] [View Transcript] [Coach Agent]
-        
+
 #484    | Alex Rodriguez | Feb 11  | 81%   | D1    | ✓ Good
         │ 3:20 PM | 5:12 duration
         │ Objection: "Not interested"
         │ Result: Appointment set
         │ [Listen] [View Transcript] [Give Feedback]
-        
+
 [Scroll to see more calls...]
 ```
 
 #### SECTION: When You Click a Call
+
 ```
 FULL CALL DETAILS:
 
@@ -386,10 +408,10 @@ FULL CALL DETAILS:
 
 📝 TRANSCRIPT
    AI PROSPECT: "How did you get my number?"
-   MIKE: "Great question. I pulled your contact from 
+   MIKE: "Great question. I pulled your contact from
          that Term Life request you submitted online..."
    AI PROSPECT: "Oh, yeah I think I did that..."
-   MIKE: "Perfect. So tell me why you were looking for 
+   MIKE: "Perfect. So tell me why you were looking for
          Term Life at that time?"
    [Full transcript scrolls...]
 
@@ -399,7 +421,7 @@ FULL CALL DETAILS:
    Tone: Confident, professional
    Pacing: Good (not rushed)
    Close Effectiveness: Strong
-   
+
 ✓ SCORE BREAKDOWN:
    Credibility Handling: 95%
    Objection Recovery: 90%
@@ -407,15 +429,15 @@ FULL CALL DETAILS:
    Overall Communication: 92%
 
 🎯 AI FEEDBACK:
-   "Excellent recovery on the credibility objection. 
-   You acknowledged the concern, provided specific 
-   details, and smoothly moved back to discovery. 
-   Your tone stayed confident throughout. This is 
+   "Excellent recovery on the credibility objection.
+   You acknowledged the concern, provided specific
+   details, and smoothly moved back to discovery.
+   Your tone stayed confident throughout. This is
    a master-level response."
 
 💬 COACH NOTES
    Your note here: [Text box to add private coaching notes]
-   
+
 ✉️ SEND FEEDBACK TO AGENT
    [Draft feedback message] [Send]
 ```
@@ -427,6 +449,7 @@ FULL CALL DETAILS:
 ### **Manage & Monitor Individual Agents**
 
 #### SECTION: Team Member List
+
 ```
 AGENT NAME         | ROLE        | STATUS   | CALLS | AVG SCORE | LEVEL
 ──────────────────────────────────────────────────────────────────────
@@ -439,18 +462,19 @@ Alex Rodriguez     | Sales Rep   | Active   | 9     | 72%       | D2
 ```
 
 #### SECTION: When You Click on an Agent Profile
+
 ```
 🧑 MIKE CHEN'S PROFILE
    ═══════════════════════════════════════
-   
+
    👤 PERSONAL INFO
       Name: Mike Chen
-      Email: mike.chen@abcinsurance.com
+      Email: cream@support.retrospxt.com
       Phone: (555) 123-4567
       Role: Sales Representative
       Joined: January 5, 2026
       Last Active: Today, 2:15 PM
-   
+
    📊 STATS OVERVIEW
       Total Calls: 18
       Avg Score: 89%
@@ -458,12 +482,12 @@ Alex Rodriguez     | Sales Rep   | Active   | 9     | 72%       | D2
       Best Objection: Not Interested (95%)
       Weakest Objection: Spouse Decision (72%)
       Current Streak: 5 wins
-   
+
    🏆 BADGES EARNED
       🎯 Credibility Master (Feb 8)
       ⭐ Perfect Week (Feb 5)
       🏅 D3 Level Unlocked (Feb 10)
-   
+
    📈 CALL HISTORY (Last 10)
       Feb 13: 92% (D3) ✓ Excellent
       Feb 13: 88% (D3) ✓ Good
@@ -475,13 +499,13 @@ Alex Rodriguez     | Sales Rep   | Active   | 9     | 72%       | D2
       Feb 9: 84% (D1) ✓ Good
       Feb 8: 83% (D2) ✓ Good
       Feb 8: 92% (D1) ✓ Excellent
-   
+
    🎯 RECOMMENDATIONS
       • Keep pushing D3 - you're excelling
       • Try D4 when ready
       • Practice "Spouse Decision" objection more
       • Consider unlocking next difficulty level
-   
+
    💬 ACTIONS
       [Schedule 1-on-1 Call]
       [Send Coaching Message]
@@ -490,14 +514,15 @@ Alex Rodriguez     | Sales Rep   | Active   | 9     | 72%       | D2
 ```
 
 #### SECTION: Team Settings
+
 ```
 MANAGE TEAM:
-   
+
    Team Name: ABC Insurance Group
    Plan: Pro Team (5 seats)
    Users: 4/5 (Rachel Thompson inactive)
    Monthly Minutes: 642/900 (71% used)
-   
+
    [Invite New Agent]
    [Remove Agent]
    [Change Roles]
@@ -511,10 +536,11 @@ MANAGE TEAM:
 ### **Account & Team Configuration**
 
 #### SECTION: Account Settings
+
 ```
 PROFILE INFORMATION
    Name: Sarah Johnson
-   Email: sarah.johnson@abcinsurance.com
+   Email: cream@support.retrospxt.com
    Phone: (555) 987-6543
    Role: Team Manager / Trainer
    [Edit] [Change Password]
@@ -536,6 +562,7 @@ NOTIFICATION PREFERENCES
 ```
 
 #### SECTION: Team Settings
+
 ```
 DIFFICULTY LEVEL SETTINGS
    Allow D1: ✓ (Everyone can access)
@@ -565,27 +592,29 @@ POLICY TRACK SETTINGS
 ```
 
 #### SECTION: Integrations
+
 ```
 CONNECT EXTERNAL TOOLS:
-   
+
    ☑ Stripe (Connected - for billing)
-      Connected as: sarah.johnson@abcinsurance.com
+      Connected as: cream@support.retrospxt.com
       [Disconnect]
-   
+
    ☐ Salesforce (Not connected)
       [Connect] - Sync call data to Salesforce
-   
+
    ☐ HubSpot (Not connected)
       [Connect] - Auto-update prospect data
-   
+
    ☐ Slack (Not connected)
       [Connect] - Get Slack notifications for wins
-   
+
    ☐ Zapier (Not connected)
       [Connect] - Custom workflows
 ```
 
 #### SECTION: Privacy & Security
+
 ```
 TWO-FACTOR AUTHENTICATION
    Status: ○ Disabled
@@ -609,14 +638,15 @@ DATA & PRIVACY
 ### **Subscription & Usage Management**
 
 #### SECTION: Current Plan
+
 ```
 CURRENT PLAN: Pro Team
-   
+
    Plan Type: Half and Half-Pro Team
    Billing Period: Monthly ($249/month)
    Renewal Date: March 13, 2026
    Status: Active
-   
+
    INCLUDED IN PLAN:
    ✓ Up to 5 seats
    ✓ 900 minutes/month
@@ -624,11 +654,12 @@ CURRENT PLAN: Pro Team
    ✓ Call recordings
    ✓ Full analytics
    ✓ Leaderboards
-   
+
    [Upgrade to Agency] [Downgrade] [Cancel]
 ```
 
 #### SECTION: Usage This Month
+
 ```
 CURRENT USAGE: 642 / 900 minutes
 
@@ -639,7 +670,7 @@ BREAKDOWN:
    Alex Rodriguez:   76 minutes (8%)
    Rachel Thompson:  41 minutes (5%)
    [Unassigned]:     161 minutes (18%)
-   
+
 ████████████████░░░░ 71% Used
 
 Overage Rate: $0.12 per minute
@@ -648,6 +679,7 @@ Projected to use: 780 minutes (stays under limit)
 ```
 
 #### SECTION: Billing History
+
 ```
 DATE          | DESCRIPTION        | AMOUNT  | STATUS
 ─────────────────────────────────────────────────
@@ -659,6 +691,7 @@ Nov 13, 2025  | Pro Plan (Monthly)  | $249.00 | Paid
 ```
 
 #### SECTION: Add Team Members
+
 ```
 ADD MORE SEATS:
 
@@ -674,12 +707,13 @@ CURRENT TEAM MEMBERS:
    ☑ David Martinez (Sales Rep)
    ☑ Rachel Thompson (Sales Rep - Inactive)
    ☐ Alex Rodriguez (Only has 5 seat limit)
-   
+
    Want 6 people on the team?
    [Upgrade to Agency Plan] ($699/month, 20 seats)
 ```
 
 #### SECTION: Plan Comparison
+
 ```
 UPGRADE OPTIONS:
 
@@ -704,25 +738,25 @@ MAIN MENU (Click any to navigate):
 
 📊 Dashboard
    ← You are here
-   
+
 📈 Team Performance
    Detailed analytics & trends
-   
+
 🏆 Leaderboards
    Rankings, streaks, badges
-   
+
 📋 Reports
    Download & export data
-   
+
 📞 Training Calls
    View individual call recordings
-   
+
 👥 Team Members
    Manage your agents
-   
+
 ⚙️ Settings
    Profile & preferences
-   
+
 💳 Billing
    Plan & usage management
 ```
@@ -732,6 +766,7 @@ MAIN MENU (Click any to navigate):
 ## 📲 MOBILE EXPERIENCE NOTES
 
 On mobile, the dashboard:
+
 - **Sidebar becomes a hamburger menu** (☰ icon, tap to open)
 - **Cards stack vertically** (all readable without horizontal scroll)
 - **Tables scroll horizontally** (swipe to see all columns)
@@ -751,7 +786,7 @@ On mobile, the dashboard:
 **Training Calls:** Listen to calls, give feedback, coach agents  
 **Team Members:** Monitor individual agent progress, send messages  
 **Settings:** Customize experience, manage preferences  
-**Billing:** Manage subscription, track usage, add seats  
+**Billing:** Manage subscription, track usage, add seats
 
 ---
 

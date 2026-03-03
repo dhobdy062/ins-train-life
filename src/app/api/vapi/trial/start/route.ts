@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { reserveTrialSession } from "@/lib/convex";
+import { recordAlert, reserveTrialSession } from "@/lib/convex";
 import { verifyToken } from "@/lib/token";
 import { buildAgentVariableValues } from "@/lib/agent-context";
+import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 
 const DEFAULT_REBUTTALS: Record<string, string> = {
   busy: "I understand you are busy. This is a quick 15-minute policy review.",
@@ -71,23 +72,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const variableValues = buildAgentVariableValues({
+    difficulty: "D2",
+    objectionsRequired: 2,
+    rebuttals: DEFAULT_REBUTTALS,
+    orgRole: null, // Trial users are always trainees
+    activeSequence: "trainee_invitation",
+    extraVariables: {
+      trial_mode: "true",
+      session_key: sessionKey,
+      trainee_email_hash: emailHash,
+    },
+  });
+
+  const contractValidation = validateAssistantVariableContract(variableValues, "trial");
+  if (!contractValidation.ok) {
+    await recordAlert({
+      source: "api/vapi/trial/start.contract",
+      severity: "critical",
+      message: "Assistant variable contract validation failed for trial session.",
+      context: {
+        sessionKey,
+        missingKeys: contractValidation.missingKeys,
+      },
+    }).catch(() => null);
+
+    return NextResponse.json(
+      {
+        error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+      },
+      { status: 500 },
+    );
+  }
+
   return NextResponse.json({
     sessionKey,
     assistantId,
     publicKey,
     remainingTrialSessions: reservation.remaining,
-    variableValues: buildAgentVariableValues({
-      difficulty: "D2",
-      objectionsRequired: 2,
-      rebuttals: DEFAULT_REBUTTALS,
-      orgRole: null, // Trial users are always trainees
-      activeSequence: "trainee_invitation",
-      extraVariables: {
-        trial_mode: "true",
-        session_key: sessionKey,
-        trainee_email_hash: emailHash,
-      },
-    }),
+    variableValues,
     metadata: {
       sessionKey,
       source: "web_trial",

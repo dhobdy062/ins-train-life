@@ -63,7 +63,7 @@ export default function LeadForm() {
         </label>
         <label className="field">
           Work email
-          <input name="email" type="email" placeholder="jordan@agency.com" required />
+          <input name="email" type="email" placeholder="cream@support.retrospxt.com" required />
         </label>
         <label className="field">
           Life policy focus

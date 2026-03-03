@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as dashboard from "../dashboard.js";
 import type * as identity from "../identity.js";
+import type * as mutations from "../mutations.js";
 import type * as sessions from "../sessions.js";
 import type * as storage from "../storage.js";
+import type * as trainee from "../trainee.js";
 import type * as webhooks from "../webhooks.js";
 
 import type {
@@ -20,9 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  dashboard: typeof dashboard;
   identity: typeof identity;
+  mutations: typeof mutations;
   sessions: typeof sessions;
   storage: typeof storage;
+  trainee: typeof trainee;
   webhooks: typeof webhooks;
 }>;
 

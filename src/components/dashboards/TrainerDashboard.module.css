@@ -122,10 +122,17 @@
     color: var(--text);
 }
 
-.userInfo .plan {
+.plan {
     color: var(--primary);
-    font-size: 12px;
-    margin-top: 4px;
+    font-size: 13px;
+    margin-top: 2px;
+    font-weight: 600;
+}
+
+.planSub {
+    color: #7d6d66;
+    font-size: 11px;
+    margin-top: 2px;
 }
 
 .avatar {
@@ -248,6 +255,12 @@
     font-size: 11px;
     color: #999;
     margin-top: 8px;
+}
+
+.planMeta {
+    font-size: 11px;
+    color: #7d6d66;
+    margin-top: 6px;
 }
 
 .sectionHeader {

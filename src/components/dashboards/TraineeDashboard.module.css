@@ -72,7 +72,7 @@
 }
 
 .navItem:hover,
-.navItem.active {
+.active {
   background: var(--primary);
   color: var(--cream);
 }

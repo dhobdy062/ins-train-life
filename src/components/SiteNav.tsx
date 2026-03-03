@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignOutButton, UserButton } from "@clerk/nextjs";
 
 export default function SiteNav() {
   const pathname = usePathname();
@@ -12,10 +12,6 @@ export default function SiteNav() {
     : pathname?.startsWith("/dashboard/trainee")
       ? "/dashboard/trainee"
       : "/";
-
-  if (pathname?.startsWith("/dashboard")) {
-    return null;
-  }
 
   return (
     <header className="site-nav-wrap">
@@ -38,6 +34,11 @@ export default function SiteNav() {
               <Link className="button secondary" href="/workspace/select-organization?redirect_url=%2Fdashboard%2Ftrainer">
                 Open workspace
               </Link>
+              <SignOutButton>
+                <button className="button secondary" type="button">
+                  Sign out
+                </button>
+              </SignOutButton>
               <UserButton />
             </SignedIn>
           </div>
