@@ -26,14 +26,16 @@ export async function POST(request: Request) {
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
 
   if (!assistantId || !publicKey) {
-    return NextResponse.json({ error: "VAPI config is missing." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Training service is temporarily unavailable. Please contact support." },
+      { status: 500 },
+    );
   }
 
   if (assistantId === publicKey) {
     return NextResponse.json(
       {
-        error:
-          "VAPI_TEST_ASSISTANT_ID/VAPI_ASSISTANT_ID appears to be set to the public key. Set the assistant ID to a valid Vapi assistant ID.",
+        error: "Training service is temporarily unavailable. Please contact support.",
       },
       { status: 500 },
     );
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
 
   const ipAddress = getRequestIpAddress(request);
   if (!ipAddress) {
-    return NextResponse.json({ error: "Unable to resolve client IP address." }, { status: 400 });
+    return NextResponse.json({ error: "Unable to confirm access from this device." }, { status: 400 });
   }
 
   const ipHash = hashIpAddress(ipAddress);
@@ -68,7 +70,7 @@ export async function POST(request: Request) {
   if (!profileByIp || profileByIp.traineeId !== trainee.traineeId) {
     return NextResponse.json(
       {
-        error: "IP consent required before starting training.",
+        error: "Access confirmation required before starting training.",
         code: "IP_CONSENT_REQUIRED",
       },
       { status: 403 },
@@ -133,7 +135,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+        error: "Training service configuration is invalid. Please contact support.",
       },
       { status: 500 },
     );

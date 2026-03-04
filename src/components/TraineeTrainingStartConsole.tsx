@@ -34,8 +34,8 @@ type TraineeTrainingStartConsoleProps = {
 
 function toFriendlyError(message: string) {
   const normalized = message.toLowerCase();
-  if (normalized.includes("ip consent")) {
-    return "Please approve identity linking before starting training.";
+  if (normalized.includes("access confirmation")) {
+    return "Please complete access confirmation before starting training.";
   }
   if (normalized.includes("invalid or expired invite")) {
     return "This invite link is invalid or expired. Ask your trainer for a new link.";
@@ -125,7 +125,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       setTraineeName(payload.traineeName ?? null);
       setDifficulty(payload.difficultyLevel ?? null);
       setNumObjections(payload.numObjections ?? null);
-      setStatus("Identity link complete. You can now start training.");
+      setStatus("Access confirmed. You can now start training.");
     } catch (error) {
       setStatus(toFriendlyError(error instanceof Error ? error.message : "Unable to capture consent."));
     } finally {
@@ -207,7 +207,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       <div className="tag">Trainee start</div>
       <h3>{traineeName ? `Welcome ${traineeName}` : "Start your training session"}</h3>
       <p className="disclaimer">
-        The app links your training identity to your network IP after consent. Your trainer does not enter your IP manually.
+        Complete the access confirmation step, then start your training call.
       </p>
 
       <div className="grid">
@@ -220,7 +220,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
           <strong>{numObjections ?? "-"}</strong>
         </div>
         <div className="metric">
-          <span>Identity linked</span>
+          <span>Access confirmed</span>
           <strong>{consented ? "Yes" : "No"}</strong>
         </div>
         <div className="metric">
@@ -231,7 +231,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
 
       <div className="hero-actions">
         <button className="button secondary" onClick={handleConsent} disabled={consenting || consented}>
-          {consented ? "Identity linked" : consenting ? "Linking..." : "Allow IP identity link"}
+          {consented ? "Access confirmed" : consenting ? "Confirming..." : "Confirm access"}
         </button>
         <button className="button" onClick={handleStartTraining} disabled={starting || !consented}>
           {starting ? "Starting..." : "Start Training"}

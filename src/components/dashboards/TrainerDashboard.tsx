@@ -334,7 +334,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   </button>
                 </form>
                 <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#666" }}>
-                  IP is captured after trainee consent from their invite link.
+                  Access confirmation is completed by the trainee from their invite link.
                 </p>
                 {traineeStatus ? <p style={{ margin: "8px 0 0", fontSize: "13px" }}>{traineeStatus}</p> : null}
                 {latestInviteUrl ? (
@@ -343,7 +343,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   </p>
                 ) : null}
                 <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#555" }}>
-                  Dashboard reads live data from trainees, sessions, metrics, and rebuttal responses.
+                  Dashboard updates after each completed training call.
                 </p>
               </div>
 
@@ -421,7 +421,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               <div className={styles.tableContainer}>
                 {teamSnapshot.trainees.length === 0 ? (
                   <p style={{ padding: "16px 0", color: "#666" }}>
-                    No trainees yet. Add a trainee above to start collecting Vapi training results.
+                    No trainees yet. Add a trainee above to start collecting training results.
                   </p>
                 ) : null}
                 <table>

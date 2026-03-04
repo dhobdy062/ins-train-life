@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   });
   if (!identitySync.ok) {
     return NextResponse.json(
-      { error: "Identity sync is temporarily unavailable. Please retry in one minute." },
+      { error: "Training access is temporarily unavailable. Please retry in one minute." },
       { status: 503 },
     );
   }
@@ -97,13 +97,15 @@ export async function POST(request: Request) {
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
 
   if (!assistantId || !publicKey) {
-    return NextResponse.json({ error: "VAPI config is missing." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Training service is temporarily unavailable. Please contact support." },
+      { status: 500 },
+    );
   }
   if (assistantId === publicKey) {
     return NextResponse.json(
       {
-        error:
-          "VAPI_TEST_ASSISTANT_ID/VAPI_ASSISTANT_ID appears to be set to the public key. Set the assistant ID to a valid Vapi assistant ID.",
+        error: "Training service is temporarily unavailable. Please contact support.",
       },
       { status: 500 },
     );
@@ -174,7 +176,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+          error: "Training service configuration is invalid. Please contact support.",
         },
         { status: 500 },
       );

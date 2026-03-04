@@ -22,7 +22,7 @@ export default function ObjectionsEditor({ initialLibrary, initialGuides }: Obje
   const [guides, setGuides] = useState<Record<string, string>>(initialGuides);
   const [savedLibrary, setSavedLibrary] = useState<ObjectionLibrary>(initialLibrary);
   const [savedGuides, setSavedGuides] = useState<Record<string, string>>(initialGuides);
-  const [status, setStatus] = useState("Edits save to your organization workspace.");
+  const [status, setStatus] = useState("Edits save for your entire team.");
   const [saving, setSaving] = useState(false);
 
   const rebuttalOptions = useMemo(() => Object.keys(guides).sort(), [guides]);
@@ -51,7 +51,7 @@ export default function ObjectionsEditor({ initialLibrary, initialGuides }: Obje
       const updatedAt = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString() : "just now";
       setSavedLibrary(library);
       setSavedGuides(guides);
-      setStatus(`Saved to Convex. Updated ${updatedAt}.`);
+      setStatus(`Saved. Updated ${updatedAt}.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to save objection library.");
     } finally {
@@ -102,7 +102,7 @@ export default function ObjectionsEditor({ initialLibrary, initialGuides }: Obje
           <div>
             <p className={styles.sectionTag}>Objection Library</p>
             <h2>Edit objections and rebuttal mappings</h2>
-            <p className={styles.helpText}>Changes are saved to Convex and used across your organization sessions.</p>
+            <p className={styles.helpText}>Changes apply across your organization sessions.</p>
           </div>
           <div className={styles.actions}>
             <button type="button" className={styles.secondaryButton} onClick={handleReset} disabled={saving}>

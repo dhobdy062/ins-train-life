@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const ipAddress = getRequestIpAddress(request);
   if (!ipAddress) {
-    return NextResponse.json({ error: "Unable to resolve client IP address." }, { status: 400 });
+    return NextResponse.json({ error: "Unable to confirm access from this device." }, { status: 400 });
   }
 
   try {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to link IP.";
+    const message = error instanceof Error ? error.message : "Unable to confirm access.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

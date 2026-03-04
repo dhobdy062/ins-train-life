@@ -22,19 +22,21 @@ function buildSessionKey() {
 export async function POST(request: NextRequest) {
   const secret = process.env.VERIFY_HMAC_SECRET;
   if (!secret) {
-    return NextResponse.json({ error: "Missing VERIFY_HMAC_SECRET" }, { status: 500 });
+    return NextResponse.json({ error: "Verification service is temporarily unavailable." }, { status: 500 });
   }
 
   const assistantId = process.env.VAPI_ASSISTANT_ID?.trim();
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
   if (!assistantId || !publicKey) {
-    return NextResponse.json({ error: "VAPI config is missing." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Training service is temporarily unavailable. Please contact support." },
+      { status: 500 },
+    );
   }
   if (assistantId === publicKey) {
     return NextResponse.json(
       {
-        error:
-          "VAPI_ASSISTANT_ID appears to be set to the public key. Set VAPI_ASSISTANT_ID to your Vapi assistant ID.",
+        error: "Training service is temporarily unavailable. Please contact support.",
       },
       { status: 500 },
     );
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: `Assistant variable contract is invalid. Missing keys: ${contractValidation.missingKeys.join(", ")}`,
+        error: "Training service configuration is invalid. Please contact support.",
       },
       { status: 500 },
     );

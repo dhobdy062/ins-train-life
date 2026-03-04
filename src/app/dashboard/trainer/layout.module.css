@@ -182,6 +182,16 @@
   color: #7f6f64;
 }
 
+.contentArea :global(.card) {
+  background: #ffffff;
+  border: 1px solid #e4d9d0;
+  color: #3f2414;
+}
+
+.contentArea :global(.card h4) {
+  color: #5a2e12;
+}
+
 .contentArea :global(.grid) {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
