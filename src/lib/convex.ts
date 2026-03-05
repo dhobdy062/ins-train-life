@@ -42,6 +42,9 @@ const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks:chec
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks:getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks:getOrgEntitlement");
 const getStripeCustomerForOrgRef = makeFunctionReference<"query">("webhooks:getStripeCustomerForOrg");
+const reconcileStripeCustomerBillingRef = makeFunctionReference<"mutation">(
+  "support:reconcileStripeCustomerBilling",
+);
 const upsertUserRef = makeFunctionReference<"mutation">("identity:upsertUser");
 const upsertOrganizationRef = makeFunctionReference<"mutation">("identity:upsertOrganization");
 const upsertOrganizationMembershipRef = makeFunctionReference<"mutation">("identity:upsertOrganizationMembership");
@@ -582,6 +585,24 @@ export async function getStripeCustomerForOrg(args: { orgId: string }) {
   const client = getClient();
   return client.query(getStripeCustomerForOrgRef, args as never) as Promise<{
     stripeCustomerId: string | null;
+  }>;
+}
+
+export async function reconcileStripeCustomerBilling(args: {
+  stripeCustomerId: string;
+  orgId: string;
+  reassignBillingEvents?: boolean;
+}) {
+  const client = getClient();
+  return client.mutation(reconcileStripeCustomerBillingRef, args as never) as Promise<{
+    stripeCustomerId: string;
+    orgId: string;
+    mappingUpdated: boolean;
+    previousOrgId: string | null;
+    scannedBillingEvents: number;
+    reassignedBillingEvents: number;
+    reassignBillingEvents: boolean;
+    reconciledAt: number;
   }>;
 }
 

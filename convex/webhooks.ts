@@ -275,9 +275,9 @@ async function persistStripeEvent(
   const stripeCustomerId = extractStripeCustomerId(payload);
   const stripeSubscriptionId = extractStripeSubscriptionId(payload);
 
-  let orgId = extractStripeOrgId(payload);
+  let orgId: string | undefined;
 
-  if (!orgId && stripeCustomerId) {
+  if (stripeCustomerId) {
     const mapped = await ctx.db
       .query("stripeCustomerOrgMap")
       .withIndex("by_stripeCustomerId", (q: any) => q.eq("stripeCustomerId", stripeCustomerId))
@@ -285,6 +285,13 @@ async function persistStripeEvent(
 
     if (mapped?.orgId) {
       orgId = mapped.orgId;
+    }
+  }
+
+  if (!orgId) {
+    const stripeUserId = extractStripeUserId(payload);
+    if (stripeUserId) {
+      orgId = await resolveOrgIdFromStripeUser(ctx, stripeUserId);
     }
   }
 
@@ -349,6 +356,33 @@ async function upsertStripeCustomerOrgMap(
     lastSeenAt: now,
     updatedAt: now,
   });
+}
+
+async function resolveOrgIdFromStripeUser(
+  ctx: any,
+  clerkUserId: string,
+) {
+  const memberships = await ctx.db
+    .query("organizationMemberships")
+    .withIndex("by_clerkUserId", (q: any) => q.eq("clerkUserId", clerkUserId))
+    .collect();
+
+  if (memberships.length === 0) {
+    return undefined;
+  }
+
+  const activeMemberships = memberships.filter((membership: any) => membership.status === "active");
+  if (activeMemberships.length === 1) {
+    return asString(activeMemberships[0].clerkOrgId);
+  }
+
+  if (activeMemberships.length > 1) {
+    const byUpdated = [...activeMemberships].sort((a: any, b: any) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    return asString(byUpdated[0]?.clerkOrgId);
+  }
+
+  const byUpdated = [...memberships].sort((a: any, b: any) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+  return asString(byUpdated[0]?.clerkOrgId);
 }
 
 async function persistVapiEvent(
@@ -760,11 +794,24 @@ async function getBillingEventsForOrg(
     .order("desc")
     .take(limit);
 
+  const userOrgCache = new Map<string, string | undefined>();
+
   for (const event of unscopedEvents) {
-    const inferredOrgId = extractStripeOrgId(event.payload);
-    if (inferredOrgId !== orgId) {
+    const inferredUserId = extractStripeUserId(event.payload);
+    if (!inferredUserId) {
       continue;
     }
+
+    if (!userOrgCache.has(inferredUserId)) {
+      const resolvedOrg = await resolveOrgIdFromStripeUser(ctx, inferredUserId);
+      userOrgCache.set(inferredUserId, resolvedOrg);
+    }
+
+    const resolvedOrgId = userOrgCache.get(inferredUserId);
+    if (resolvedOrgId !== orgId) {
+      continue;
+    }
+
     const dedupeKey = event.providerEventId || String(event._id);
     if (!merged.has(dedupeKey)) {
       merged.set(dedupeKey, event);
@@ -1045,28 +1092,29 @@ function extractStripeCustomerId(payload: any): string | undefined {
 }
 
 function extractStripeSubscriptionId(payload: any): string | undefined {
-  return asString(payload?.data?.object?.subscription) || asString(payload?.data?.object?.subscription?.id);
+  const object = payload?.data?.object;
+  return (
+    asString(object?.subscription) ||
+    asString(object?.subscription?.id) ||
+    // customer.subscription.* payloads use the subscription object itself.
+    (asString(object?.object) === "subscription" ? asString(object?.id) : undefined)
+  );
 }
 
-function extractStripeOrgId(payload: any): string | undefined {
+function extractStripeUserId(payload: any): string | undefined {
   const object = payload?.data?.object;
   const metadata = object?.metadata;
   const subscriptionDetailsMetadata = object?.subscription_details?.metadata;
   const expandedSubscriptionMetadata = object?.subscription?.metadata;
 
-  const direct =
-    asString(metadata?.orgId) ||
-    asString(metadata?.org_id) ||
-    asString(subscriptionDetailsMetadata?.orgId) ||
-    asString(subscriptionDetailsMetadata?.org_id) ||
-    asString(expandedSubscriptionMetadata?.orgId) ||
-    asString(expandedSubscriptionMetadata?.org_id);
-
-  if (direct) {
-    return direct;
-  }
-
-  return asString(object?.client_reference_id) || asString(object?.clientReferenceId);
+  return (
+    asString(metadata?.userId) ||
+    asString(metadata?.user_id) ||
+    asString(subscriptionDetailsMetadata?.userId) ||
+    asString(subscriptionDetailsMetadata?.user_id) ||
+    asString(expandedSubscriptionMetadata?.userId) ||
+    asString(expandedSubscriptionMetadata?.user_id)
+  );
 }
 
 function extractTimestampMs(payload: any): number | undefined {
