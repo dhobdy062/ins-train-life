@@ -29,6 +29,12 @@ const getOrgTrainerObjectionConfigRef = makeFunctionReference<"query">(
 const upsertOrgTrainerObjectionConfigRef = makeFunctionReference<"mutation">(
   "trainerObjections:upsertOrgTrainerObjectionConfig",
 );
+const getOrgTrainerTrainingPlansRef = makeFunctionReference<"query">(
+  "trainerPlans:getOrgTrainerTrainingPlans",
+);
+const upsertOrgTrainerTrainingPlansRef = makeFunctionReference<"mutation">(
+  "trainerPlans:upsertOrgTrainerTrainingPlans",
+);
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
@@ -341,6 +347,82 @@ export async function upsertOrgTrainerObjectionConfig(args: {
 }) {
   const client = getClient();
   return client.mutation(upsertOrgTrainerObjectionConfigRef, args as never) as Promise<{
+    configId: string;
+    created: boolean;
+    updatedAt: number;
+  }>;
+}
+
+export async function getOrgTrainerTrainingPlans(args: { orgId: string }) {
+  const client = getClient();
+  return client.query(getOrgTrainerTrainingPlansRef, args as never) as Promise<{
+    orgId: string;
+    plans: {
+      day30: {
+        goal: string;
+        metricTarget: string;
+        targetDate: string;
+        notes: string;
+      };
+      day60: {
+        goal: string;
+        metricTarget: string;
+        targetDate: string;
+        notes: string;
+      };
+      day90: {
+        goal: string;
+        metricTarget: string;
+        targetDate: string;
+        notes: string;
+      };
+      coaching: {
+        topic: string;
+        focusType: string;
+        scheduledAt: string;
+        attendees: string;
+        agenda: string;
+      };
+    };
+    updatedBy: string;
+    createdAt: number;
+    updatedAt: number;
+  } | null>;
+}
+
+export async function upsertOrgTrainerTrainingPlans(args: {
+  orgId: string;
+  updatedBy: string;
+  plans: {
+    day30: {
+      goal: string;
+      metricTarget: string;
+      targetDate: string;
+      notes: string;
+    };
+    day60: {
+      goal: string;
+      metricTarget: string;
+      targetDate: string;
+      notes: string;
+    };
+    day90: {
+      goal: string;
+      metricTarget: string;
+      targetDate: string;
+      notes: string;
+    };
+    coaching: {
+      topic: string;
+      focusType: string;
+      scheduledAt: string;
+      attendees: string;
+      agenda: string;
+    };
+  };
+}) {
+  const client = getClient();
+  return client.mutation(upsertOrgTrainerTrainingPlansRef, args as never) as Promise<{
     configId: string;
     created: boolean;
     updatedAt: number;

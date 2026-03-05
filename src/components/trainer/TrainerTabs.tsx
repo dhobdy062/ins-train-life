@@ -10,7 +10,8 @@ const TABS = [
   { href: "/dashboard/trainer/session-builder", label: "Training Calls" },
   { href: "/dashboard/trainer/objections", label: "Objection Library" },
   { href: "/dashboard/trainer/scoring", label: "Scoring" },
-  { href: "/dashboard/trainer/help", label: "FAQ + Docs" },
+  { href: "/dashboard/trainer/training-plans", label: "30/60/90 Plans" },
+  { href: "/dashboard/trainer/faq", label: "FAQ" },
 ];
 
 export default function TrainerTabs() {

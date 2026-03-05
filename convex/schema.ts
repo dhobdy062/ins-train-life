@@ -122,6 +122,40 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_orgId", ["orgId"]),
 
+  trainerTrainingPlans: defineTable({
+    orgId: v.string(),
+    plans: v.object({
+      day30: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      day60: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      day90: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      coaching: v.object({
+        topic: v.string(),
+        focusType: v.string(),
+        scheduledAt: v.string(),
+        attendees: v.string(),
+        agenda: v.string(),
+      }),
+    }),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_orgId", ["orgId"]),
+
   traineeSessionIps: defineTable({
     orgId: v.string(),
     traineeId: v.id("trainees"),
