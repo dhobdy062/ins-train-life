@@ -229,7 +229,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_providerEventId", ["providerEventId"])
-    .index("by_org_createdAt", ["orgId", "createdAt"]),
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_stripeCustomerId_createdAt", ["stripeCustomerId", "createdAt"]),
 
   stripeCustomerOrgMap: defineTable({
     stripeCustomerId: v.string(),

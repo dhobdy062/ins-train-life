@@ -165,12 +165,7 @@ export const getOrgBillingAccess = query({
   },
   handler: async (ctx, args) => {
     const limit = normalizeLimit(args.limit);
-
-    const events = await ctx.db
-      .query("billingEvents")
-      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
-      .order("desc")
-      .take(limit);
+    const events = await getBillingEventsForOrg(ctx, args.orgId, limit);
 
     return resolveBillingAccess(events);
   },
@@ -208,11 +203,7 @@ export const getOrgEntitlement = query({
   },
   handler: async (ctx, args) => {
     const limit = normalizeLimit(args.limit);
-    const billingEvents = await ctx.db
-      .query("billingEvents")
-      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
-      .order("desc")
-      .take(limit);
+    const billingEvents = await getBillingEventsForOrg(ctx, args.orgId, limit);
 
     const billingAccess = resolveBillingAccess(billingEvents);
     const currentPlan = resolveCurrentPlan(billingEvents);
@@ -297,7 +288,7 @@ async function persistStripeEvent(
     }
   }
 
-  if (eventType === "checkout.session.completed" && stripeCustomerId && orgId) {
+  if (stripeCustomerId && orgId) {
     await upsertStripeCustomerOrgMap(ctx, {
       stripeCustomerId,
       orgId,
@@ -719,6 +710,68 @@ function dayKey(timestamp: number) {
 
 function normalizeLimit(limit: number | undefined) {
   return Math.min(Math.max(limit ?? DEFAULT_BILLING_EVENT_LIMIT, 1), MAX_BILLING_EVENT_LIMIT);
+}
+
+async function getBillingEventsForOrg(
+  ctx: any,
+  orgId: string,
+  limit: number,
+) {
+  const scopedEvents = await ctx.db
+    .query("billingEvents")
+    .withIndex("by_org_createdAt", (q: any) => q.eq("orgId", orgId))
+    .order("desc")
+    .take(limit);
+
+  const customerMap = await ctx.db
+    .query("stripeCustomerOrgMap")
+    .withIndex("by_orgId", (q: any) => q.eq("orgId", orgId))
+    .order("desc")
+    .first();
+
+  const merged = new Map<string, (typeof scopedEvents)[number]>();
+
+  for (const event of scopedEvents) {
+    const dedupeKey = event.providerEventId || String(event._id);
+    merged.set(dedupeKey, event);
+  }
+
+  if (customerMap?.stripeCustomerId) {
+    const customerEvents = await ctx.db
+      .query("billingEvents")
+      .withIndex("by_stripeCustomerId_createdAt", (q: any) => q.eq("stripeCustomerId", customerMap.stripeCustomerId))
+      .order("desc")
+      .take(limit);
+
+    for (const event of customerEvents) {
+      if (event.orgId !== orgId && event.orgId !== "unscoped") {
+        continue;
+      }
+      const dedupeKey = event.providerEventId || String(event._id);
+      if (!merged.has(dedupeKey)) {
+        merged.set(dedupeKey, event);
+      }
+    }
+  }
+
+  const unscopedEvents = await ctx.db
+    .query("billingEvents")
+    .withIndex("by_org_createdAt", (q: any) => q.eq("orgId", "unscoped"))
+    .order("desc")
+    .take(limit);
+
+  for (const event of unscopedEvents) {
+    const inferredOrgId = extractStripeOrgId(event.payload);
+    if (inferredOrgId !== orgId) {
+      continue;
+    }
+    const dedupeKey = event.providerEventId || String(event._id);
+    if (!merged.has(dedupeKey)) {
+      merged.set(dedupeKey, event);
+    }
+  }
+
+  return [...merged.values()].sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
 }
 
 function resolveBillingAccess(
