@@ -30,6 +30,7 @@ type SessionCookieResponse = {
   trainee?: {
     id: string;
     name: string;
+    email?: string;
     difficulty: string;
     numObjections: number;
     status: string;
@@ -57,6 +58,30 @@ type TraineeStartUiState =
 
 const RESULTS_PROCESSING_DELAY_MS = 3000;
 const RESULTS_REDIRECT_SECONDS = 5;
+const CONNECTING_TIMEOUT_MS = 20000;
+
+function extractErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const candidateKeys = ["message", "error", "details", "reason"];
+    for (const key of candidateKeys) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value;
+      }
+    }
+  }
+
+  return fallback;
+}
 
 function toFriendlyError(message: string) {
   const normalized = message.toLowerCase();
@@ -75,6 +100,12 @@ function toFriendlyError(message: string) {
   }
   if (normalized.includes("network") || normalized.includes("failed to fetch")) {
     return "Network error. Please check your connection and try again.";
+  }
+  if (normalized.includes("email does not match")) {
+    return "Email verification failed. Enter the same email address where the invite was delivered.";
+  }
+  if (normalized.includes("timed out") || normalized.includes("timeout")) {
+    return "Connection timed out while starting the call. Retry and confirm microphone access is enabled.";
   }
   return message;
 }
@@ -115,14 +146,19 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
   const [status, setStatus] = useState<string | null>("Validating your invite link...");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [traineeName, setTraineeName] = useState<string | null>(null);
+  const [traineeEmail, setTraineeEmail] = useState<string | null>(null);
+  const [emailConfirmation, setEmailConfirmation] = useState("");
+  const [ipConsentChecked, setIpConsentChecked] = useState(false);
   const [difficulty, setDifficulty] = useState<string | null>(null);
   const [numObjections, setNumObjections] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const vapiRef = useRef<VapiClient | null>(null);
+  const uiStateRef = useRef<TraineeStartUiState>("validating_invite");
   const callStartedAtRef = useRef<number | null>(null);
   const resultsDelayRef = useRef<number | null>(null);
   const elapsedTickerRef = useRef<number | null>(null);
+  const connectingTimeoutRef = useRef<number | null>(null);
 
   const resultsUrl = useMemo(
     () => `/dashboard/trainee?refresh=1${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ""}`,
@@ -154,13 +190,14 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       }
 
       setTraineeName(payload.trainee.name);
+      setTraineeEmail(payload.trainee.email ?? null);
       setDifficulty(payload.trainee.difficulty);
       setNumObjections(payload.trainee.numObjections);
       setUiState("ready");
       setStatus("Start your training call when you're ready.");
     } catch (error) {
       setUiState("error");
-      setErrorMessage(toFriendlyError(error instanceof Error ? error.message : "Unable to validate invite."));
+      setErrorMessage(toFriendlyError(extractErrorMessage(error, "Unable to validate invite.")));
       setStatus(null);
     }
   }, [inviteToken]);
@@ -168,6 +205,10 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
   useEffect(() => {
     void validateInvite();
   }, [validateInvite]);
+
+  useEffect(() => {
+    uiStateRef.current = uiState;
+  }, [uiState]);
 
   useEffect(() => {
     if (uiState !== "in_call") {
@@ -226,6 +267,9 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       if (elapsedTickerRef.current) {
         window.clearInterval(elapsedTickerRef.current);
       }
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+      }
     },
     [],
   );
@@ -240,6 +284,10 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
     const client = new VapiCtor(publicKey);
 
     client.on("call-start", () => {
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
       callStartedAtRef.current = Date.now();
       setElapsedSeconds(0);
       setUiState("in_call");
@@ -248,6 +296,10 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
     });
 
     client.on("call-end", () => {
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
       setUiState("loading_results");
       setStatus("Call ended. Your score is being prepared.");
       if (resultsDelayRef.current) {
@@ -260,7 +312,11 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
     });
 
     client.on("error", (error) => {
-      const message = error instanceof Error ? error.message : String(error);
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
+      const message = extractErrorMessage(error, "Unable to connect to training.");
       setUiState("error");
       setErrorMessage(toFriendlyError(message));
       setStatus(null);
@@ -278,6 +334,20 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       return;
     }
 
+    if (!isEmailVerified) {
+      setUiState("error");
+      setErrorMessage("Email does not match the invitation.");
+      setStatus(null);
+      return;
+    }
+
+    if (!ipConsentChecked) {
+      setUiState("error");
+      setErrorMessage("Confirm access from this device before starting training.");
+      setStatus(null);
+      return;
+    }
+
     setUiState("starting");
     setStatus("Confirming access and preparing your call...");
     setErrorMessage(null);
@@ -286,7 +356,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       const consentResponse = await fetch("/api/trainee/consent-ip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteToken }),
+        body: JSON.stringify({ inviteToken, confirmedEmail: emailConfirmation.trim() }),
       });
 
       const consentPayload = (await consentResponse.json().catch(() => ({}))) as ConsentResponse;
@@ -301,7 +371,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       const response = await fetch("/api/vapi/trainee/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteToken }),
+        body: JSON.stringify({ inviteToken, confirmedEmail: emailConfirmation.trim() }),
       });
 
       const payload = (await response.json().catch(() => ({}))) as SessionStartResponse;
@@ -310,6 +380,19 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       }
 
       const client = await ensureClient(payload.publicKey);
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+      }
+      connectingTimeoutRef.current = window.setTimeout(() => {
+        if (uiStateRef.current !== "starting") {
+          return;
+        }
+        setUiState("error");
+        setErrorMessage(
+          toFriendlyError("Connection timed out while starting the call. Please retry and confirm browser permissions."),
+        );
+        setStatus(null);
+      }, CONNECTING_TIMEOUT_MS);
       await client.start(payload.assistantId, {
         variableValues: payload.variableValues,
         metadata: payload.metadata,
@@ -318,8 +401,12 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
       setUiState("starting");
       setStatus("Preparing your session. Connecting now...");
     } catch (error) {
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
       setUiState("error");
-      setErrorMessage(toFriendlyError(error instanceof Error ? error.message : "Unable to start training."));
+      setErrorMessage(toFriendlyError(extractErrorMessage(error, "Unable to start training.")));
       setStatus(null);
     }
   }
@@ -332,10 +419,18 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
     setUiState("loading_results");
     setStatus("Ending call and preparing your score...");
     setErrorMessage(null);
+    if (connectingTimeoutRef.current) {
+      window.clearTimeout(connectingTimeoutRef.current);
+      connectingTimeoutRef.current = null;
+    }
 
     try {
       await vapiRef.current.stop();
     } catch {
+      if (connectingTimeoutRef.current) {
+        window.clearTimeout(connectingTimeoutRef.current);
+        connectingTimeoutRef.current = null;
+      }
       setUiState("error");
       setErrorMessage("Unable to stop call cleanly. Please retry.");
       setStatus(null);
@@ -344,6 +439,10 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
 
   const callStatusLabel = toCallStatusLabel(uiState);
   const estimatedDuration = estimateDuration(numObjections);
+  const normalizedConfirmedEmail = emailConfirmation.trim().toLowerCase();
+  const normalizedInviteEmail = traineeEmail?.trim().toLowerCase() ?? "";
+  const isEmailVerified = normalizedInviteEmail.length > 0 && normalizedConfirmedEmail === normalizedInviteEmail;
+  const isVerificationIncomplete = !isEmailVerified || !ipConsentChecked;
   const isBusy = uiState === "validating_invite" || uiState === "starting" || uiState === "loading_results";
   const canStop = (uiState === "in_call" || uiState === "starting") && Boolean(vapiRef.current);
 
@@ -387,6 +486,37 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
         </div>
       </div>
 
+      {uiState !== "in_call" && uiState !== "call_ended" ? (
+        <div className={styles.verificationCard}>
+          <p className={styles.verificationTitle}>Identity and access verification</p>
+          <p className={styles.verificationText}>
+            Enter the email address that received the invite and confirm this device for IP-based access control.
+          </p>
+          <label className={styles.inputLabel} htmlFor="trainee-email-confirmation">
+            Invited email
+          </label>
+          <input
+            id="trainee-email-confirmation"
+            className={styles.input}
+            autoComplete="email"
+            inputMode="email"
+            placeholder="name@company.com"
+            value={emailConfirmation}
+            onChange={(event) => setEmailConfirmation(event.target.value)}
+            disabled={isBusy}
+          />
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={ipConsentChecked}
+              onChange={(event) => setIpConsentChecked(event.target.checked)}
+              disabled={isBusy}
+            />
+            <span>I consent to this session recording the IP/network signature used to start training.</span>
+          </label>
+        </div>
+      ) : null}
+
       {uiState === "in_call" ? (
         <div className={styles.callShell}>
           <span className={styles.liveBadge}>Live call</span>
@@ -398,7 +528,7 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
         <button
           className={styles.primaryAction}
           onClick={handleStartTraining}
-          disabled={isBusy || uiState === "in_call" || uiState === "call_ended"}
+          disabled={isBusy || uiState === "in_call" || uiState === "call_ended" || isVerificationIncomplete}
         >
           {uiState === "starting" ? "Connecting..." : "Start Training"}
         </button>
@@ -427,7 +557,10 @@ export default function TraineeTrainingStartConsole({ inviteToken }: TraineeTrai
         </button>
       ) : null}
 
-      <p className={styles.helpText}>Having trouble? Ask your trainer for a new invite link.</p>
+      <p className={styles.helpText}>
+        Trainee links are invite-only and do not require a dashboard account. Ask your trainer for a fresh invite if
+        this one fails.
+      </p>
     </div>
   );
 }

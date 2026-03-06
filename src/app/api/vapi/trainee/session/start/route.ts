@@ -15,6 +15,7 @@ import { buildGuideMapForExpected, DEFAULT_REBUTTAL_GUIDES } from "@/lib/trainer
 
 type TraineeSessionStartPayload = {
   inviteToken?: string;
+  confirmedEmail?: string;
 };
 
 export const runtime = "nodejs";
@@ -51,12 +52,19 @@ export async function POST(request: Request) {
   if (!payload.inviteToken || payload.inviteToken.trim().length === 0) {
     return NextResponse.json({ error: "inviteToken is required." }, { status: 400 });
   }
+  if (!payload.confirmedEmail || payload.confirmedEmail.trim().length === 0) {
+    return NextResponse.json({ error: "confirmedEmail is required." }, { status: 400 });
+  }
 
   const trainee = await getTraineeByInviteTokenHash({
     inviteTokenHash: hashInviteToken(payload.inviteToken),
   });
   if (!trainee) {
     return NextResponse.json({ error: "Invalid or expired invite token." }, { status: 404 });
+  }
+  const normalizedConfirmedEmail = payload.confirmedEmail.trim().toLowerCase();
+  if (normalizedConfirmedEmail !== trainee.email) {
+    return NextResponse.json({ error: "Email does not match invitation." }, { status: 403 });
   }
 
   const ipAddress = getRequestIpAddress(request);

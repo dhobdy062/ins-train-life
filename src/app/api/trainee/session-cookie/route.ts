@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     trainee: {
       id: trainee.traineeId,
       name: trainee.name,
+      email: trainee.email,
       difficulty: trainee.difficultyLevel,
       numObjections: trainee.numObjections,
       status: trainee.status,
