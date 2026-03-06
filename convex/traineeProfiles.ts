@@ -286,6 +286,34 @@ export const markTraineeActive = mutation({
   },
 });
 
+export const disableTraineeProfile = mutation({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId) {
+      throw new Error("Trainee not found");
+    }
+
+    const now = Date.now();
+    if (trainee.status !== "disabled") {
+      await ctx.db.patch(trainee._id, {
+        status: "disabled",
+        updatedAt: now,
+      });
+    }
+
+    return {
+      traineeId: trainee._id,
+      status: "disabled" as const,
+      updatedAt: now,
+      alreadyDisabled: trainee.status === "disabled",
+    };
+  },
+});
+
 export const getTraineeResultsSnapshot = query({
   args: {
     traineeId: v.id("trainees"),

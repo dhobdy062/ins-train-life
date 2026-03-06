@@ -1,7 +1,13 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTraineeProfile, getOrgTrainerObjectionConfig, listTraineesByOrg, logEmailEvent } from "@/lib/convex";
+import {
+  createTraineeProfile,
+  disableTraineeProfile,
+  getOrgTrainerObjectionConfig,
+  listTraineesByOrg,
+  logEmailEvent,
+} from "@/lib/convex";
 import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 import { renderEmailSequence } from "@/lib/email-sequences";
 import { hashInviteToken } from "@/lib/identity-link";
@@ -14,6 +20,10 @@ type CreateTraineePayload = {
   difficultyLevel?: string;
   numObjections?: number;
   trainerName?: string;
+};
+
+type DisableTraineePayload = {
+  traineeId?: string;
 };
 
 const RESEND_FALLBACK_FROM = "onboarding@resend.dev";
@@ -205,4 +215,36 @@ export async function POST(request: Request) {
     expectedRebuttals,
     trainingUrl,
   });
+}
+
+export async function DELETE(request: Request) {
+  const { userId, orgId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!orgId) {
+    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+  }
+
+  let payload: DisableTraineePayload = {};
+  try {
+    payload = (await request.json()) as DisableTraineePayload;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+  }
+
+  const traineeId = payload.traineeId?.trim();
+  if (!traineeId) {
+    return NextResponse.json({ error: "traineeId is required." }, { status: 400 });
+  }
+
+  try {
+    const result = await disableTraineeProfile({ traineeId, orgId });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to disable trainee access.";
+    const status = /not found/i.test(message) ? 404 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

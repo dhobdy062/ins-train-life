@@ -17,6 +17,7 @@ const createTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfil
 const getTraineeByInviteTokenHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByInviteTokenHash");
 const getTraineeByOrgAndEmailRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByOrgAndEmail");
 const listTraineesByOrgRef = makeFunctionReference<"query">("traineeProfiles:listTraineesByOrg");
+const disableTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:disableTraineeProfile");
 const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
   "traineeProfiles:linkTraineeIpByInviteTokenHash",
 );
@@ -41,6 +42,7 @@ const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessio
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks:checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks:getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks:getOrgEntitlement");
+const getOrganizationRevenueDashboardRef = makeFunctionReference<"query">("admin:getOrganizationRevenueDashboard");
 const getStripeCustomerForOrgRef = makeFunctionReference<"query">("webhooks:getStripeCustomerForOrg");
 const reconcileStripeCustomerBillingRef = makeFunctionReference<"mutation">(
   "support:reconcileStripeCustomerBilling",
@@ -215,6 +217,16 @@ export async function listTraineesByOrg(args: { orgId: string; limit?: number })
       ipConsentedAt: number | null;
     }>
   >;
+}
+
+export async function disableTraineeProfile(args: { traineeId: string; orgId: string }) {
+  const client = getClient();
+  return client.mutation(disableTraineeProfileRef, args as never) as Promise<{
+    traineeId: string;
+    status: "disabled";
+    updatedAt: number;
+    alreadyDisabled: boolean;
+  }>;
 }
 
 export async function linkTraineeIpByInviteTokenHash(args: {
@@ -577,6 +589,35 @@ export async function getOrgEntitlement(args: { orgId: string; limit?: number })
       stripeStatus: string | null;
       source: "subscription_price" | "checkout_metadata" | "event_fallback";
     } | null;
+  }>;
+}
+
+export async function getOrganizationRevenueDashboard(args?: { limit?: number }) {
+  const client = getClient();
+  return client.query(getOrganizationRevenueDashboardRef, (args ?? {}) as never) as Promise<{
+    generatedAt: number;
+    totalOrganizations: number;
+    payingOrganizations: number;
+    activeTrainerCount: number;
+    mrrCents: number;
+    arrCents: number;
+    organizations: Array<{
+      orgId: string;
+      orgName: string;
+      orgStatus: string;
+      activeTrainerCount: number;
+      billingStatus: string;
+      hasPaidAccess: boolean;
+      mrrCents: number;
+      arrCents: number;
+      latestBillingAt: number | null;
+      currentPlan: {
+        planId: "starter" | "pro" | "agency";
+        interval: "monthly" | "annual" | null;
+        stripeStatus: string | null;
+        source: "subscription_price" | "checkout_metadata" | "event_fallback";
+      } | null;
+    }>;
   }>;
 }
 
