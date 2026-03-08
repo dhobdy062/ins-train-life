@@ -1,0 +1,165 @@
+{
+  "workflow": {
+    "name": "life_insurance_training_prospect",
+    "startNode": "session_init",
+    "nodes": [
+
+      {
+        "id": "session_init",
+        "type": "logic",
+        "description": "Initialize training session",
+        "setVariables": {
+          "currentObjectionIndex": 0,
+          "objectionsUsed": 0,
+          "rebuttalScores": [],
+          "toneStrikes": 0,
+          "appointmentEligible": false
+        },
+        "next": "prospect_opener"
+      },
+
+      {
+        "id": "prospect_opener",
+        "type": "assistant",
+        "prompt": "You are a simulated life insurance prospect. Speak naturally like a middle-aged homeowner. Slightly skeptical, polite, and busy.",
+        "dynamicResponse": {
+          "D1": "Yeah I remember clicking something… what was this about again?",
+          "D2": "Uh… I don't remember filling anything out. Who are you?",
+          "D3": "Yeah I did request something online.",
+          "D4": "I already have life insurance so I'm not sure why we need to talk.",
+          "D5": "Yeah what is this about? I'm kind of busy."
+        },
+        "next": "present_objection"
+      },
+
+      {
+        "id": "present_objection",
+        "type": "assistant",
+        "prompt": "Speak the next objection naturally. Only act like the prospect.",
+        "say": "{{objectionSequence[currentObjectionIndex].line}}",
+        "toolCalls": [
+          {
+            "tool": "mark_objection_used",
+            "arguments": {
+              "type": "{{objectionSequence[currentObjectionIndex].type}}"
+            }
+          }
+        ],
+        "setVariables": {
+          "objectionsUsed": "{{objectionsUsed + 1}}"
+        },
+        "next": "wait_for_rebuttal"
+      },
+
+      {
+        "id": "wait_for_rebuttal",
+        "type": "listen",
+        "capture": "traineeRebuttal",
+        "next": "evaluate_rebuttal"
+      },
+
+      {
+        "id": "evaluate_rebuttal",
+        "type": "tool",
+        "tool": "score_rebuttal",
+        "arguments": {
+          "objectionType": "{{objectionSequence[currentObjectionIndex].type}}",
+          "traineeRebuttal": "{{traineeRebuttal}}",
+          "expectedRebuttal": "{{expectedRebuttals[objectionSequence[currentObjectionIndex].type]}}"
+        },
+        "saveResult": "scoreResult",
+        "next": "adjust_resistance"
+      },
+
+      {
+        "id": "adjust_resistance",
+        "type": "assistant",
+        "logic": [
+          {
+            "condition": "{{scoreResult.similarityScore >= 90}}",
+            "say": "Okay… that actually makes sense."
+          },
+          {
+            "condition": "{{scoreResult.similarityScore >= 70}}",
+            "say": "I mean… maybe. I just don't want a long sales call."
+          },
+          {
+            "condition": "{{scoreResult.similarityScore >= 50}}",
+            "say": "I still don't know about that."
+          },
+          {
+            "condition": "{{scoreResult.similarityScore < 50}}",
+            "say": "Yeah I'm really not interested."
+          }
+        ],
+        "next": "check_objection_count"
+      },
+
+      {
+        "id": "check_objection_count",
+        "type": "logic",
+        "conditions": [
+          {
+            "if": "{{objectionsUsed < objectionsRequired}}",
+            "next": "next_objection"
+          },
+          {
+            "if": "{{objectionsUsed >= objectionsRequired}}",
+            "next": "appointment_decision"
+          }
+        ]
+      },
+
+      {
+        "id": "next_objection",
+        "type": "logic",
+        "setVariables": {
+          "currentObjectionIndex": "{{currentObjectionIndex + 1}}"
+        },
+        "next": "present_objection"
+      },
+
+      {
+        "id": "appointment_decision",
+        "type": "logic",
+        "conditions": [
+          {
+            "if": "{{average(rebuttalScores) >= 70}}",
+            "next": "accept_appointment"
+          },
+          {
+            "else": "reject_call"
+          }
+        ]
+      },
+
+      {
+        "id": "accept_appointment",
+        "type": "assistant",
+        "say": "Alright… if it's just a quick review of what I already have, we can do that.",
+        "toolCalls": [
+          {
+            "tool": "set_appointment",
+            "arguments": {
+              "duration": 20
+            }
+          }
+        ],
+        "next": "end_call"
+      },
+
+      {
+        "id": "reject_call",
+        "type": "assistant",
+        "say": "I think I'm good for now. Please take me off your list.",
+        "next": "end_call"
+      },
+
+      {
+        "id": "end_call",
+        "type": "end"
+      }
+
+    ]
+  }
+}
