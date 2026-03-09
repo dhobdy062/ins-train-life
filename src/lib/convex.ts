@@ -16,6 +16,8 @@ const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("session
 const createTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:createTraineeProfile");
 const getTraineeByInviteTokenHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByInviteTokenHash");
 const getTraineeByOrgAndEmailRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByOrgAndEmail");
+const getTraineeByClerkUserIdRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByClerkUserId");
+const getTraineeProfileByIdRef = makeFunctionReference<"query">("traineeProfiles:getTraineeProfileById");
 const listTraineesByOrgRef = makeFunctionReference<"query">("traineeProfiles:listTraineesByOrg");
 const disableTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:disableTraineeProfile");
 const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
@@ -24,6 +26,9 @@ const linkTraineeIpByInviteTokenHashRef = makeFunctionReference<"mutation">(
 const getTraineeProfileByIpHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeProfileByIpHash");
 const markTraineeActiveRef = makeFunctionReference<"mutation">("traineeProfiles:markTraineeActive");
 const getTraineeResultsSnapshotRef = makeFunctionReference<"query">("traineeProfiles:getTraineeResultsSnapshot");
+const markAssignedSessionStartedRef = makeFunctionReference<"mutation">("sessions:markAssignedSessionStarted");
+const getAssignedSessionForTraineeStartRef = makeFunctionReference<"query">("sessions:getAssignedSessionForTraineeStart");
+const getTrainerSessionBuilderSnapshotRef = makeFunctionReference<"query">("sessions:getTrainerSessionBuilderSnapshot");
 const getOrgTrainerObjectionConfigRef = makeFunctionReference<"query">(
   "trainerObjections:getOrgTrainerObjectionConfig",
 );
@@ -96,13 +101,17 @@ export async function createTrainingSession(args: {
   orgId: string;
   trainerId: string;
   traineeId?: string;
+  traineeClerkUserId?: string;
   assistantId: string;
   difficulty: string;
   objectionsRequired: number;
   rebuttalKeys: string[];
+  selectedObjections?: Array<{ order: number; text: string; rebuttalType: string }>;
+  rebuttalGuideMap?: Record<string, string>;
   channel: "web";
   identityMode?: "ip_match" | "backup_code" | "manual_override";
   ipHash?: string;
+  initialStatus?: "assigned" | "started";
   profileSnapshot?: {
     difficultyLevel: string;
     objectionsRequired: number;
@@ -154,6 +163,8 @@ export async function recordRebuttalScore(args: {
 export async function createTraineeProfile(args: {
   orgId: string;
   trainerId: string;
+  clerkUserId?: string;
+  clerkMembershipId?: string;
   name: string;
   email: string;
   difficultyLevel: string;
@@ -174,6 +185,8 @@ export async function getTraineeByInviteTokenHash(args: { inviteTokenHash: strin
     traineeId: string;
     orgId: string;
     trainerId: string;
+    clerkUserId: string | null;
+    clerkMembershipId: string | null;
     name: string;
     email: string;
     difficultyLevel: string;
@@ -190,6 +203,44 @@ export async function getTraineeByOrgAndEmail(args: { orgId: string; email: stri
     traineeId: string;
     orgId: string;
     trainerId: string;
+    clerkUserId: string | null;
+    clerkMembershipId: string | null;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
+  } | null>;
+}
+
+export async function getTraineeByClerkUserId(args: { orgId: string; clerkUserId: string }) {
+  const client = getClient();
+  return client.query(getTraineeByClerkUserIdRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    clerkUserId: string | null;
+    clerkMembershipId: string | null;
+    name: string;
+    email: string;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
+  } | null>;
+}
+
+export async function getTraineeProfileById(args: { traineeId: string; orgId: string }) {
+  const client = getClient();
+  return client.query(getTraineeProfileByIdRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    clerkUserId: string | null;
+    clerkMembershipId: string | null;
     name: string;
     email: string;
     difficultyLevel: string;
@@ -205,6 +256,8 @@ export async function listTraineesByOrg(args: { orgId: string; limit?: number })
   return client.query(listTraineesByOrgRef, args as never) as Promise<
     Array<{
       traineeId: string;
+      clerkUserId: string | null;
+      clerkMembershipId: string | null;
       name: string;
       email: string;
       difficultyLevel: string;
@@ -227,6 +280,43 @@ export async function disableTraineeProfile(args: { traineeId: string; orgId: st
     updatedAt: number;
     alreadyDisabled: boolean;
   }>;
+}
+
+export async function markAssignedSessionStarted(args: {
+  sessionKey: string;
+  orgId: string;
+  traineeId: string;
+  traineeClerkUserId: string;
+}) {
+  const client = getClient();
+  return client.mutation(markAssignedSessionStartedRef, args as never) as Promise<{
+    sessionKey: string;
+    status: string;
+    startedAt: number;
+  }>;
+}
+
+export async function getAssignedSessionForTraineeStart(args: {
+  sessionKey: string;
+  orgId: string;
+  clerkUserId: string;
+}) {
+  const client = getClient();
+  return client.query(getAssignedSessionForTraineeStartRef, args as never) as Promise<{
+    sessionKey: string;
+    orgId: string;
+    trainerId: string;
+    traineeId: string;
+    traineeClerkUserId: string;
+    traineeName: string;
+    assistantId: string;
+    difficulty: string;
+    objectionsRequired: number;
+    rebuttalKeys: string[];
+    rebuttalGuideMap: Record<string, string>;
+    selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+    status: string;
+  } | null>;
 }
 
 export async function linkTraineeIpByInviteTokenHash(args: {
@@ -291,6 +381,15 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
       objectionsRequired: number;
       startedAt: number;
       endedAt: number | null;
+      structuredOutcome: {
+        rebuttalPerformanceScore?: number;
+        appointmentSet?: boolean;
+        callSummary?: string;
+        capturedAt: number;
+        providerEventId?: string;
+      } | null;
+      recordingUrl: string | null;
+      transcriptUrl: string | null;
     } | null;
     latestMetrics: {
       rebuttalScore: number | null;
@@ -310,6 +409,15 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
       feedback: string | null;
       createdAt: number;
     }>;
+    assignedSessions: Array<{
+      sessionKey: string;
+      status: string;
+      difficulty: string;
+      objectionsRequired: number;
+      createdAt: number;
+      startedAt: number | null;
+      selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+    }>;
     history: Array<{
       sessionKey: string;
       status: string;
@@ -318,6 +426,16 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
       objectionsRequired: number;
       startedAt: number;
       endedAt: number | null;
+      selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+      structuredOutcome: {
+        rebuttalPerformanceScore?: number;
+        appointmentSet?: boolean;
+        callSummary?: string;
+        capturedAt: number;
+        providerEventId?: string;
+      } | null;
+      recordingUrl: string | null;
+      transcriptUrl: string | null;
       metrics: {
         rebuttalScore: number | null;
         durationSeconds: number | null;
@@ -328,6 +446,33 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
       } | null;
     }>;
   } | null>;
+}
+
+export async function getTrainerSessionBuilderSnapshot(args: { orgId: string; trainerId: string; limit?: number }) {
+  const client = getClient();
+  return client.query(getTrainerSessionBuilderSnapshotRef, args as never) as Promise<
+    Array<{
+      sessionKey: string;
+      traineeId: string | null;
+      traineeName: string;
+      difficulty: string;
+      objectionsRequired: number;
+      selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+      status: string;
+      createdAt: number;
+      startedAt: number | null;
+      endedAt: number | null;
+      structuredOutcome: {
+        rebuttalPerformanceScore?: number;
+        appointmentSet?: boolean;
+        callSummary?: string;
+        capturedAt: number;
+        providerEventId?: string;
+      } | null;
+      recordingUrl: string | null;
+      transcriptUrl: string | null;
+    }>
+  >;
 }
 
 export async function getOrgTrainerObjectionConfig(args: { orgId: string }) {
@@ -516,7 +661,7 @@ export async function storeTranscript(args: {
   }>;
 }
 
-export async function getSessionWithFiles(args: { sessionKey: string; orgId: string; userId: string }) {
+export async function getSessionWithFiles(args: { sessionKey: string; orgId: string; userId: string; orgRole?: string }) {
   const client = getClient();
   return client.query(getSessionWithFilesRef, args as never) as Promise<{
     sessionKey: string;

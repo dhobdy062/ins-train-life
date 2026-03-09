@@ -9,6 +9,8 @@ export const createTraineeProfile = mutation({
   args: {
     orgId: v.string(),
     trainerId: v.string(),
+    clerkUserId: v.optional(v.string()),
+    clerkMembershipId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
     difficultyLevel: v.string(),
@@ -28,6 +30,8 @@ export const createTraineeProfile = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         trainerId: args.trainerId,
+        clerkUserId: args.clerkUserId,
+        clerkMembershipId: args.clerkMembershipId,
         name: args.name,
         difficultyLevel: args.difficultyLevel,
         numObjections: args.numObjections,
@@ -46,6 +50,8 @@ export const createTraineeProfile = mutation({
     const traineeId = await ctx.db.insert("trainees", {
       orgId: args.orgId,
       trainerId: args.trainerId,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId,
       name: args.name,
       email: normalizedEmail,
       difficultyLevel: args.difficultyLevel,
@@ -82,6 +88,8 @@ export const getTraineeByInviteTokenHash = query({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -112,6 +120,68 @@ export const getTraineeByOrgAndEmail = query({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
+export const getTraineeByClerkUserId = query({
+  args: {
+    orgId: v.string(),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_clerkUserId", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
+export const getTraineeProfileById = query({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -146,6 +216,8 @@ export const listTraineesByOrg = query({
 
         return {
           traineeId: trainee._id,
+          clerkUserId: trainee.clerkUserId ?? null,
+          clerkMembershipId: trainee.clerkMembershipId ?? null,
           name: trainee.name,
           email: trainee.email,
           difficultyLevel: trainee.difficultyLevel,
@@ -215,6 +287,8 @@ export const linkTraineeIpByInviteTokenHash = mutation({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -250,6 +324,8 @@ export const getTraineeProfileByIpHash = query({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -331,7 +407,7 @@ export const getTraineeResultsSnapshot = query({
       .query("trainingSessions")
       .withIndex("by_trainee_createdAt", (q) => q.eq("traineeId", args.traineeId))
       .order("desc")
-      .take(limit);
+      .take(limit * 3);
 
     const metricsBySession = new Map<
       string,
@@ -367,7 +443,20 @@ export const getTraineeResultsSnapshot = query({
       );
     }
 
-    const latestSession = sessions[0] ?? null;
+    const resultSessions = sessions.filter((session) => session.status !== "assigned").slice(0, limit);
+    const latestSession = resultSessions[0] ?? null;
+    const assignedSessions = sessions
+      .filter((session) => session.status === "assigned")
+      .slice(0, limit)
+      .map((session) => ({
+        sessionKey: session.sessionKey,
+        status: session.status,
+        difficulty: session.difficulty,
+        objectionsRequired: session.objectionsRequired,
+        createdAt: session.createdAt,
+        startedAt: session.startedAt ?? null,
+        selectedObjections: session.selectedObjections ?? [],
+      }));
     let latestRebuttals: Array<{
       objectionId: string | null;
       rebuttalTypeExpected: string | null;
@@ -400,6 +489,42 @@ export const getTraineeResultsSnapshot = query({
         }));
     }
 
+    const latestSessionInfo = latestSession
+      ? {
+          sessionKey: latestSession.sessionKey,
+          status: latestSession.status,
+          assistantId: latestSession.assistantId,
+          difficulty: latestSession.difficulty,
+          objectionsRequired: latestSession.objectionsRequired,
+          startedAt: latestSession.startedAt ?? latestSession.createdAt,
+          endedAt: latestSession.endedAt ?? null,
+          structuredOutcome: latestSession.structuredOutcome ?? null,
+          recordingUrl: latestSession.recordingStorageId
+            ? await ctx.storage.getUrl(latestSession.recordingStorageId)
+            : null,
+          transcriptUrl: latestSession.transcriptStorageId
+            ? await ctx.storage.getUrl(latestSession.transcriptStorageId)
+            : null,
+        }
+      : null;
+
+    const history = await Promise.all(
+      resultSessions.map(async (session) => ({
+        sessionKey: session.sessionKey,
+        status: session.status,
+        assistantId: session.assistantId,
+        difficulty: session.difficulty,
+        objectionsRequired: session.objectionsRequired,
+        startedAt: session.startedAt ?? session.createdAt,
+        endedAt: session.endedAt ?? null,
+        selectedObjections: session.selectedObjections ?? [],
+        structuredOutcome: session.structuredOutcome ?? null,
+        recordingUrl: session.recordingStorageId ? await ctx.storage.getUrl(session.recordingStorageId) : null,
+        transcriptUrl: session.transcriptStorageId ? await ctx.storage.getUrl(session.transcriptStorageId) : null,
+        metrics: metricsBySession.get(session.sessionKey) ?? null,
+      })),
+    );
+
     return {
       trainee: {
         id: trainee._id,
@@ -408,29 +533,11 @@ export const getTraineeResultsSnapshot = query({
         numObjections: trainee.numObjections,
         status: trainee.status,
       },
-      latestSession: latestSession
-        ? {
-            sessionKey: latestSession.sessionKey,
-            status: latestSession.status,
-            assistantId: latestSession.assistantId,
-            difficulty: latestSession.difficulty,
-            objectionsRequired: latestSession.objectionsRequired,
-            startedAt: latestSession.createdAt,
-            endedAt: latestSession.endedAt ?? null,
-          }
-        : null,
+      latestSession: latestSessionInfo,
       latestMetrics: latestSession ? metricsBySession.get(latestSession.sessionKey) ?? null : null,
       latestRebuttals,
-      history: sessions.map((session) => ({
-        sessionKey: session.sessionKey,
-        status: session.status,
-        assistantId: session.assistantId,
-        difficulty: session.difficulty,
-        objectionsRequired: session.objectionsRequired,
-        startedAt: session.createdAt,
-        endedAt: session.endedAt ?? null,
-        metrics: metricsBySession.get(session.sessionKey) ?? null,
-      })),
+      assignedSessions,
+      history,
     };
   },
 });

@@ -1,12 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getTraineeByInviteTokenHash, getTraineeByOrgAndEmail, getTraineeResultsSnapshot } from "@/lib/convex";
-import { hashInviteToken } from "@/lib/identity-link";
-import {
-  TRAINEE_SESSION_COOKIE_NAME,
-  setTraineeSessionCookie,
-  verifyTraineeSessionCookie,
-} from "@/lib/trainee-session-cookie";
+import { getTraineeByClerkUserId, getTraineeByOrgAndEmail, getTraineeResultsSnapshot } from "@/lib/convex";
 
 function toIso(timestamp: number | null | undefined) {
   if (!timestamp) {
@@ -33,75 +27,46 @@ function resolvePrimaryEmailAddress(user: Awaited<ReturnType<typeof currentUser>
   return normalized.length > 0 ? normalized : null;
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const inviteToken = searchParams.get("inviteToken") ?? searchParams.get("invite");
-  const limitParam = Number(searchParams.get("limit"));
-  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 25) : undefined;
+export async function GET(request: Request) {
   const { userId, orgId } = await auth();
-
-  const rawCookie = request.cookies.get(TRAINEE_SESSION_COOKIE_NAME)?.value;
-  const cookieIdentity = verifyTraineeSessionCookie(rawCookie);
-
-  let identity: { traineeId: string; orgId: string; trainerId: string } | null = cookieIdentity
-    ? {
-        traineeId: cookieIdentity.traineeId,
-        orgId: cookieIdentity.orgId,
-        trainerId: cookieIdentity.trainerId,
-      }
-    : null;
-
-  if (!identity && inviteToken && inviteToken.trim().length > 0) {
-    const trainee = await getTraineeByInviteTokenHash({
-      inviteTokenHash: hashInviteToken(inviteToken),
-    });
-    if (trainee) {
-      identity = {
-        traineeId: trainee.traineeId,
-        orgId: trainee.orgId,
-        trainerId: trainee.trainerId,
-      };
-    }
+  if (!userId || !orgId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!identity && userId && orgId) {
+  const { searchParams } = new URL(request.url);
+  const limitParam = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 25) : undefined;
+
+  let trainee = await getTraineeByClerkUserId({
+    orgId,
+    clerkUserId: userId,
+  }).catch(() => null);
+
+  if (!trainee) {
     const user = await currentUser().catch(() => null);
     const primaryEmail = resolvePrimaryEmailAddress(user);
-
     if (primaryEmail) {
-      const trainee = await getTraineeByOrgAndEmail({
+      trainee = await getTraineeByOrgAndEmail({
         orgId,
         email: primaryEmail,
       }).catch(() => null);
-
-      if (trainee) {
-        identity = {
-          traineeId: trainee.traineeId,
-          orgId: trainee.orgId,
-          trainerId: trainee.trainerId,
-        };
-      }
     }
   }
 
-  if (!identity) {
-    if (rawCookie) {
-      return NextResponse.json({ error: "Invalid trainee session cookie." }, { status: 401 });
-    }
-    return NextResponse.json({ error: "Trainee session cookie is required." }, { status: 401 });
+  if (!trainee) {
+    return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
   }
 
   const snapshot = await getTraineeResultsSnapshot({
-    traineeId: identity.traineeId,
-    orgId: identity.orgId,
+    traineeId: trainee.traineeId,
+    orgId,
     limit,
   });
-
   if (!snapshot) {
     return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
   }
 
-  const response = NextResponse.json({
+  return NextResponse.json({
     trainee: {
       id: snapshot.trainee.id,
       name: snapshot.trainee.name,
@@ -116,6 +81,9 @@ export async function GET(request: NextRequest) {
           endedAt: toIso(snapshot.latestSession.endedAt),
           status: snapshot.latestSession.status,
           assistantId: snapshot.latestSession.assistantId,
+          structuredOutcome: snapshot.latestSession.structuredOutcome,
+          recordingUrl: snapshot.latestSession.recordingUrl,
+          transcriptUrl: snapshot.latestSession.transcriptUrl,
         }
       : null,
     latestMetrics: snapshot.latestMetrics
@@ -138,6 +106,15 @@ export async function GET(request: NextRequest) {
       feedback: rebuttal.feedback,
       createdAt: toIso(rebuttal.createdAt),
     })),
+    assignedSessions: snapshot.assignedSessions.map((session) => ({
+      sessionKey: session.sessionKey,
+      status: session.status,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      createdAt: toIso(session.createdAt),
+      startedAt: toIso(session.startedAt),
+      selectedObjections: session.selectedObjections,
+    })),
     history: snapshot.history.map((session) => ({
       sessionKey: session.sessionKey,
       startedAt: toIso(session.startedAt),
@@ -146,6 +123,10 @@ export async function GET(request: NextRequest) {
       assistantId: session.assistantId,
       difficulty: session.difficulty,
       objectionsRequired: session.objectionsRequired,
+      selectedObjections: session.selectedObjections,
+      structuredOutcome: session.structuredOutcome,
+      recordingUrl: session.recordingUrl,
+      transcriptUrl: session.transcriptUrl,
       metrics: session.metrics
         ? {
             score: session.metrics.rebuttalScore,
@@ -158,12 +139,4 @@ export async function GET(request: NextRequest) {
         : null,
     })),
   });
-
-  setTraineeSessionCookie(response, {
-    traineeId: snapshot.trainee.id,
-    orgId: identity.orgId,
-    trainerId: identity.trainerId,
-  });
-
-  return response;
 }

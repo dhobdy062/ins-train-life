@@ -8,6 +8,7 @@ type CreateTraineeApiResponse = {
   error?: string;
   details?: string;
   trainingUrl?: string;
+  clerkUserId?: string;
 };
 
 export default function AddTraineeForm() {
@@ -44,7 +45,11 @@ export default function AddTraineeForm() {
         throw new Error(payload.details ?? payload.error ?? "Unable to create trainee.");
       }
 
-      setStatus("Trainee created and invitation sent.");
+      setStatus(
+        payload.clerkUserId
+          ? "Trainee created in Clerk and onboarding email sent."
+          : "Trainee created and onboarding email sent.",
+      );
       setForm({
         name: "",
         email: "",

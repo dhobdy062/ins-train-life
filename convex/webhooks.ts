@@ -422,6 +422,7 @@ async function persistVapiEvent(
     "unknown";
 
   const durationSeconds = asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds) || 0;
+  const structuredOutcome = extractStructuredOutcome(payload);
 
   await ctx.db.insert("sessionMetrics", {
     sessionKey,
@@ -430,8 +431,8 @@ async function persistVapiEvent(
     eventType,
     durationSeconds: durationSeconds > 0 ? durationSeconds : undefined,
     toneStrikeCount: asNumber(message?.analysis?.toneStrikeCount),
-    rebuttalScore: asNumber(message?.analysis?.similarityScore),
-    appointmentSet: asBoolean(message?.analysis?.appointmentSet),
+    rebuttalScore: structuredOutcome.rebuttalPerformanceScore,
+    appointmentSet: structuredOutcome.appointmentSet,
     rawPayload: payload,
     createdAt: Date.now(),
   });
@@ -482,6 +483,23 @@ async function persistVapiEvent(
         eventType,
       },
       createdAt: Date.now(),
+    });
+  }
+
+  const session = await ctx.db
+    .query("trainingSessions")
+    .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", sessionKey))
+    .first();
+  if (session) {
+    await ctx.db.patch(session._id, {
+      structuredOutcome: {
+        rebuttalPerformanceScore: structuredOutcome.rebuttalPerformanceScore,
+        appointmentSet: structuredOutcome.appointmentSet,
+        callSummary: structuredOutcome.callSummary,
+        capturedAt: Date.now(),
+        providerEventId: asString(payload?.id) || asString(message?.id),
+      },
+      updatedAt: Date.now(),
     });
   }
 
@@ -660,6 +678,27 @@ function extractTranscriptAsset(payload: any): { kind: "text" | "url"; value: st
   }
 
   return null;
+}
+
+function extractStructuredOutcome(payload: any) {
+  const call = payload?.call ?? payload?.message?.call ?? {};
+  const message = payload?.message ?? payload;
+  const analysis = message?.analysis ?? payload?.analysis ?? {};
+
+  return {
+    rebuttalPerformanceScore:
+      asNumber(analysis?.rebuttalPerformanceScore) ||
+      asNumber(analysis?.rebuttalPerformance) ||
+      asNumber(analysis?.similarityScore) ||
+      undefined,
+    appointmentSet: asBoolean(analysis?.appointmentSet),
+    callSummary:
+      asString(analysis?.callSummary) ||
+      asString(message?.summary) ||
+      asString(payload?.summary) ||
+      asString(call?.summary) ||
+      undefined,
+  };
 }
 
 async function materializeRecordingBlob(asset: { kind: "base64" | "url"; value: string; mimeType?: string }) {

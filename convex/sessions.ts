@@ -6,13 +6,25 @@ export const createTrainingSession = mutation({
     orgId: v.string(),
     trainerId: v.string(),
     traineeId: v.optional(v.string()),
+    traineeClerkUserId: v.optional(v.string()),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
     rebuttalKeys: v.array(v.string()),
+    selectedObjections: v.optional(
+      v.array(
+        v.object({
+          order: v.number(),
+          text: v.string(),
+          rebuttalType: v.string(),
+        }),
+      ),
+    ),
+    rebuttalGuideMap: v.optional(v.record(v.string(), v.string())),
     channel: v.literal("web"),
     identityMode: v.optional(v.union(v.literal("ip_match"), v.literal("backup_code"), v.literal("manual_override"))),
     ipHash: v.optional(v.string()),
+    initialStatus: v.optional(v.union(v.literal("assigned"), v.literal("started"))),
     profileSnapshot: v.optional(
       v.object({
         difficultyLevel: v.string(),
@@ -29,16 +41,20 @@ export const createTrainingSession = mutation({
       orgId: args.orgId,
       trainerId: args.trainerId,
       traineeId: args.traineeId,
+      traineeClerkUserId: args.traineeClerkUserId,
       assistantId: args.assistantId,
       difficulty: args.difficulty,
       objectionsRequired: args.objectionsRequired,
       rebuttalKeys: args.rebuttalKeys,
+      selectedObjections: args.selectedObjections,
+      rebuttalGuideMap: args.rebuttalGuideMap,
       channel: args.channel,
       identityMode: args.identityMode,
       ipHash: args.ipHash,
       profileSnapshot: args.profileSnapshot,
-      status: "started",
+      status: args.initialStatus ?? "started",
       createdAt: Date.now(),
+      startedAt: args.initialStatus === "assigned" ? undefined : Date.now(),
       updatedAt: Date.now(),
     });
 
@@ -69,6 +85,53 @@ export const reserveTrialSession = mutation({
     });
 
     return { allowed: true, remaining: 3 - (existing.length + 1) };
+  },
+});
+
+export const markAssignedSessionStarted = mutation({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    traineeId: v.id("trainees"),
+    traineeClerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId) {
+      throw new Error("Session not found");
+    }
+
+    if (session.traineeId !== args.traineeId) {
+      throw new Error("Session does not belong to this trainee");
+    }
+
+    if (session.traineeClerkUserId && session.traineeClerkUserId !== args.traineeClerkUserId) {
+      throw new Error("Unauthorized");
+    }
+
+    const now = Date.now();
+    if (session.status === "assigned") {
+      await ctx.db.patch(session._id, {
+        status: "started",
+        startedAt: now,
+        updatedAt: now,
+      });
+    } else if (!session.startedAt) {
+      await ctx.db.patch(session._id, {
+        startedAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      sessionKey: session.sessionKey,
+      status: session.status === "assigned" ? ("started" as const) : session.status,
+      startedAt: session.startedAt ?? now,
+    };
   },
 });
 
@@ -130,6 +193,7 @@ export const markSessionCompletedFromWebhook = internalMutation({
     const patch: {
       status?: "completed";
       endedAt?: number;
+      startedAt?: number;
       updatedAt: number;
     } = {
       updatedAt: Date.now(),
@@ -141,6 +205,10 @@ export const markSessionCompletedFromWebhook = internalMutation({
 
     if (!session.endedAt) {
       patch.endedAt = args.endedAt ?? Date.now();
+    }
+
+    if (!session.startedAt) {
+      patch.startedAt = session.createdAt;
     }
 
     await ctx.db.patch(session._id, patch);
@@ -176,6 +244,7 @@ export const markSessionCompleted = mutation({
     const now = Date.now();
     await ctx.db.patch(session._id, {
       status: "completed",
+      startedAt: session.startedAt ?? session.createdAt,
       endedAt: args.endedAt ?? now,
       updatedAt: now,
     });
@@ -256,6 +325,96 @@ export const recordRebuttalScore = mutation({
   },
 });
 
+export const getAssignedSessionForTraineeStart = query({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId) {
+      return null;
+    }
+
+    const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    const linkedClerkUserId = session.traineeClerkUserId ?? trainee.clerkUserId ?? null;
+    if (!linkedClerkUserId || linkedClerkUserId !== args.clerkUserId) {
+      return null;
+    }
+
+    if (session.status === "completed" || session.status === "abandoned") {
+      return null;
+    }
+
+    return {
+      sessionKey: session.sessionKey,
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: trainee._id,
+      traineeClerkUserId: linkedClerkUserId,
+      traineeName: trainee.name,
+      assistantId: session.assistantId,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      rebuttalKeys: session.rebuttalKeys,
+      rebuttalGuideMap: session.rebuttalGuideMap ?? {},
+      selectedObjections: session.selectedObjections ?? [],
+      status: session.status,
+    };
+  },
+});
+
+export const getTrainerSessionBuilderSnapshot = query({
+  args: {
+    orgId: v.string(),
+    trainerId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(args.limit ?? 20, 1), 50);
+    const sessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(limit * 3);
+
+    const filtered = sessions.filter((session) => session.trainerId === args.trainerId).slice(0, limit);
+
+    return Promise.all(
+      filtered.map(async (session) => {
+        const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+        const recordingUrl = session.recordingStorageId ? await ctx.storage.getUrl(session.recordingStorageId) : null;
+        const transcriptUrl = session.transcriptStorageId ? await ctx.storage.getUrl(session.transcriptStorageId) : null;
+
+        return {
+          sessionKey: session.sessionKey,
+          traineeId: session.traineeId ?? null,
+          traineeName: trainee?.name ?? "Unassigned trainee",
+          difficulty: session.difficulty,
+          objectionsRequired: session.objectionsRequired,
+          selectedObjections: session.selectedObjections ?? [],
+          status: session.status,
+          createdAt: session.createdAt,
+          startedAt: session.startedAt ?? null,
+          endedAt: session.endedAt ?? null,
+          structuredOutcome: session.structuredOutcome ?? null,
+          recordingUrl,
+          transcriptUrl,
+        };
+      }),
+    );
+  },
+});
+
 export const getTrainerDashboardSnapshot = query({
   args: { orgId: v.string(), trainerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -271,7 +430,8 @@ export const getTrainerDashboardSnapshot = query({
       .collect();
 
     const sessions = args.trainerId ? allSessions.filter((session) => session.trainerId === args.trainerId) : allSessions;
-    const sessionKeySet = new Set(sessions.map((session) => session.sessionKey));
+    const performanceSessions = sessions.filter((session) => session.status !== "assigned");
+    const sessionKeySet = new Set(performanceSessions.map((session) => session.sessionKey));
 
     const allMetrics = await ctx.db
       .query("sessionMetrics")
@@ -310,7 +470,7 @@ export const getTrainerDashboardSnapshot = query({
 
     const responses = allResponses.filter((response) => sessionKeySet.has(response.sessionKey));
 
-    const completedSessions = sessions.filter((session) => session.status === "completed");
+    const completedSessions = performanceSessions.filter((session) => session.status === "completed");
     const latestMetricRows = Array.from(latestMetricsBySession.values());
     const scores = latestMetricRows
       .map((metric) => metric.rebuttalScore)
@@ -326,6 +486,7 @@ export const getTrainerDashboardSnapshot = query({
     const traineeRows = activeTrainees.map((trainee) => {
       const traineeSessions = sessions
         .filter((session) => session.traineeId === trainee._id)
+        .filter((session) => session.status !== "assigned")
         .sort((a, b) => b.createdAt - a.createdAt);
 
       const traineeSessionKeys = new Set(traineeSessions.map((session) => session.sessionKey));
@@ -388,7 +549,7 @@ export const getTrainerDashboardSnapshot = query({
         status: trainee.status,
         latestScore: latestMetric?.rebuttalScore ?? null,
         latestSessionStatus: latestSession?.status ?? null,
-        latestSessionAt: latestSession?.createdAt ?? null,
+        latestSessionAt: latestSession?.startedAt ?? latestSession?.createdAt ?? null,
       };
     });
 

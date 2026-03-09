@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "./TraineeDashboard.module.css";
 
 type TraineeResultsPayload = {
@@ -18,6 +18,13 @@ type TraineeResultsPayload = {
     endedAt: string | null;
     status: string;
     assistantId: string;
+    structuredOutcome: {
+      rebuttalPerformanceScore?: number;
+      appointmentSet?: boolean;
+      callSummary?: string;
+    } | null;
+    recordingUrl: string | null;
+    transcriptUrl: string | null;
   } | null;
   latestMetrics: {
     score: number | null;
@@ -37,6 +44,15 @@ type TraineeResultsPayload = {
     feedback: string | null;
     createdAt: string | null;
   }>;
+  assignedSessions: Array<{
+    sessionKey: string;
+    status: string;
+    difficulty: string;
+    objectionsRequired: number;
+    createdAt: string | null;
+    startedAt: string | null;
+    selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+  }>;
   history: Array<{
     sessionKey: string;
     startedAt: string | null;
@@ -45,6 +61,14 @@ type TraineeResultsPayload = {
     assistantId: string;
     difficulty: string;
     objectionsRequired: number;
+    selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
+    structuredOutcome: {
+      rebuttalPerformanceScore?: number;
+      appointmentSet?: boolean;
+      callSummary?: string;
+    } | null;
+    recordingUrl: string | null;
+    transcriptUrl: string | null;
     metrics: {
       score: number | null;
       durationSeconds: number | null;
@@ -58,7 +82,6 @@ type TraineeResultsPayload = {
 
 type TraineeDashboardProps = {
   refreshOnLoad?: boolean;
-  inviteToken?: string | null;
 };
 
 function formatDateTime(value: string | null) {
@@ -78,14 +101,11 @@ function formatDuration(seconds: number | null) {
   }
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  if (minutes === 0) {
-    return `${remainingSeconds}s`;
-  }
-  return `${minutes}m ${remainingSeconds}s`;
+  return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${remainingSeconds}s`;
 }
 
 function scoreClass(score: number | null) {
-  if (score === null) {
+  if (score === null || score === undefined) {
     return "";
   }
   if (score >= 90) {
@@ -97,81 +117,52 @@ function scoreClass(score: number | null) {
   return "";
 }
 
-export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = null }: TraineeDashboardProps) {
+export default function TraineeDashboard({ refreshOnLoad = false }: TraineeDashboardProps) {
   const [data, setData] = useState<TraineeResultsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (inviteToken) {
-      params.set("inviteToken", inviteToken);
+  const fetchResults = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
     }
-    const query = params.toString();
-    return query.length > 0 ? `?${query}` : "";
-  }, [inviteToken]);
 
-  const fetchResults = useCallback(
-    async (isRefresh = false) => {
+    try {
+      const response = await fetch("/api/trainee/results", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => ({}))) as TraineeResultsPayload & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to load trainee results.");
+      }
+
+      setData(payload);
+      setError(null);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unable to load trainee results.");
+    } finally {
       if (isRefresh) {
-        setRefreshing(true);
+        setRefreshing(false);
       } else {
-        setLoading(true);
+        setLoading(false);
       }
-
-      try {
-        const response = await fetch(`/api/trainee/results${queryString}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const payload = (await response.json().catch(() => ({}))) as TraineeResultsPayload & { error?: string };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Unable to load trainee results.");
-        }
-
-        setData(payload);
-        setError(null);
-      } catch (caughtError) {
-        const message = caughtError instanceof Error ? caughtError.message : "Unable to load trainee results.";
-        setError(message);
-      } finally {
-        if (isRefresh) {
-          setRefreshing(false);
-        } else {
-          setLoading(false);
-        }
-      }
-    },
-    [queryString],
-  );
+    }
+  }, []);
 
   useEffect(() => {
-    let isActive = true;
-
-    async function loadDashboard() {
-      if (!isActive) {
-        return;
-      }
-
-      await fetchResults(false);
-
-      if (refreshOnLoad && isActive) {
+    void fetchResults(false).then(async () => {
+      if (refreshOnLoad) {
         await fetchResults(true);
       }
-    }
-
-    void loadDashboard();
-
-    return () => {
-      isActive = false;
-    };
+    });
   }, [fetchResults, refreshOnLoad]);
 
-  const latestScore = data?.latestMetrics?.score ?? null;
-  const latestSessionStatus = data?.latestSession?.status ?? "no_sessions";
-  const rebuttalCount = data?.latestRebuttals.length ?? 0;
+  const latestScore = data?.latestMetrics?.score ?? data?.latestSession?.structuredOutcome?.rebuttalPerformanceScore ?? null;
 
   return (
     <div className={styles.container}>
@@ -179,9 +170,7 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
         <div className={styles.sidebarLogo}>CREAM</div>
         <nav className={styles.sidebarNav}>
           <span className={`${styles.navItem} ${styles.active}`}>Dashboard</span>
-          <Link href="/training/start" className={styles.navItem}>
-            Training
-          </Link>
+          <span className={styles.navItem}>Assigned Sessions</span>
         </nav>
       </aside>
 
@@ -189,7 +178,7 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
         <header className={styles.header}>
           <div className={styles.headerLeft}>
             <h1>{data?.trainee.name ? `Welcome, ${data.trainee.name}` : "Trainee Dashboard"}</h1>
-            <p>Live scoring from your latest training sessions.</p>
+            <p>Your trainer-assigned practice sessions and latest results.</p>
           </div>
           <div className={styles.headerProfile}>
             <button className={styles.ctaButton} onClick={() => void fetchResults(true)} disabled={refreshing || loading}>
@@ -197,14 +186,6 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
             </button>
           </div>
         </header>
-
-        <div className={styles.ctaCard}>
-          <h2 className={styles.ctaTitle}>Run another training call</h2>
-          <p className={styles.ctaSubtitle}>Complete another session to update your objection-level scorecard.</p>
-          <Link className={styles.ctaButton} href="/training/start">
-            Start Training Call
-          </Link>
-        </div>
 
         {loading ? (
           <section className={styles.progressSection}>
@@ -221,6 +202,26 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
 
         {!loading && !error ? (
           <>
+            <div className={styles.ctaCard}>
+              <h2 className={styles.ctaTitle}>Pending Assigned Sessions</h2>
+              <p className={styles.ctaSubtitle}>
+                {data?.assignedSessions.length
+                  ? `${data.assignedSessions.length} session${data.assignedSessions.length === 1 ? "" : "s"} ready to start.`
+                  : "No pending sessions right now."}
+              </p>
+              {data?.assignedSessions.map((session) => (
+                <div key={session.sessionKey} style={{ display: "grid", gap: 6, marginTop: 12 }}>
+                  <strong>{session.difficulty} • {session.objectionsRequired} objections</strong>
+                  <span>
+                    {session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}
+                  </span>
+                  <Link className={styles.ctaButton} href={`/training/start?session=${encodeURIComponent(session.sessionKey)}`}>
+                    Start Assigned Session
+                  </Link>
+                </div>
+              ))}
+            </div>
+
             <div className={styles.statsGrid}>
               <div className={styles.statCard}>
                 <div className={styles.statHeader}>
@@ -228,7 +229,7 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
                 </div>
                 <p className={styles.statValue}>{latestScore === null ? "-" : `${latestScore}%`}</p>
                 <div className={styles.statMeta}>
-                  <span className={scoreClass(latestScore)}>{latestScore === null ? "Awaiting metrics" : "Session metric"}</span>
+                  <span className={scoreClass(latestScore)}>{latestScore === null ? "Awaiting metrics" : "Session score"}</span>
                   <span className={styles.statContext}>Difficulty {data?.trainee.difficulty ?? "-"}</span>
                 </div>
               </div>
@@ -237,7 +238,7 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
                 <div className={styles.statHeader}>
                   <span className={styles.statTitle}>Latest Session</span>
                 </div>
-                <p className={styles.statValue}>{latestSessionStatus}</p>
+                <p className={styles.statValue}>{data?.latestSession?.status ?? "no_sessions"}</p>
                 <div className={styles.statMeta}>
                   <span className={styles.statContext}>Started {formatDateTime(data?.latestSession?.startedAt ?? null)}</span>
                   <span className={styles.statContext}>Ended {formatDateTime(data?.latestSession?.endedAt ?? null)}</span>
@@ -246,21 +247,18 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
 
               <div className={styles.statCard}>
                 <div className={styles.statHeader}>
-                  <span className={styles.statTitle}>Latest Rebuttals</span>
+                  <span className={styles.statTitle}>Latest Summary</span>
                 </div>
-                <p className={styles.statValue}>{rebuttalCount}</p>
+                <p className={styles.statValue}>{data?.latestSession?.structuredOutcome?.appointmentSet ? "Booked" : "Open"}</p>
                 <div className={styles.statMeta}>
-                  <span className={styles.statContext}>Expected objections {data?.trainee.numObjections ?? "-"}</span>
-                  <span className={styles.statContext}>Status {data?.trainee.status ?? "-"}</span>
+                  <span className={styles.statContext}>{data?.latestSession?.structuredOutcome?.callSummary ?? "No summary yet."}</span>
                 </div>
               </div>
             </div>
 
             <section className={styles.recentCallsSection}>
               <h2 className={styles.sectionTitle}>Latest Session Rebuttal Scores</h2>
-              {data?.latestSession && data.latestRebuttals.length === 0 ? (
-                <p>No scored rebuttals yet for the latest session.</p>
-              ) : null}
+              {data?.latestSession && data.latestRebuttals.length === 0 ? <p>No scored rebuttals yet for the latest session.</p> : null}
               {!data?.latestSession ? <p>No completed sessions yet.</p> : null}
               {data?.latestRebuttals.length ? (
                 <>
@@ -285,31 +283,37 @@ export default function TraineeDashboard({ refreshOnLoad = false, inviteToken = 
             </section>
 
             <section className={styles.coachFeedbackSection}>
-              <h2 className={styles.sectionTitle}>Recent Sessions</h2>
+              <h2 className={styles.sectionTitle}>Session History</h2>
               {data?.history.length === 0 ? <p>No completed sessions yet.</p> : null}
               {data?.history.length ? (
-                <>
-                  <div className={styles.tableHeader}>
-                    <span>Started</span>
-                    <span>Difficulty</span>
-                    <span>Duration</span>
-                    <span>Score</span>
-                    <span>Status</span>
-                  </div>
+                <div style={{ display: "grid", gap: 16 }}>
                   {data.history.map((session) => (
-                    <div className={styles.tableRow} key={session.sessionKey}>
-                      <span>{formatDateTime(session.startedAt)}</span>
-                      <span>{session.difficulty}</span>
-                      <span>{formatDuration(session.metrics?.durationSeconds ?? null)}</span>
-                      <span className={scoreClass(session.metrics?.score ?? null)}>
-                        {session.metrics?.score === null || session.metrics?.score === undefined
-                          ? "-"
-                          : `${session.metrics.score}%`}
-                      </span>
-                      <span>{session.status}</span>
-                    </div>
+                    <article className={styles.statCard} key={session.sessionKey}>
+                      <div className={styles.statHeader}>
+                        <span className={styles.statTitle}>{session.difficulty} • {session.status}</span>
+                      </div>
+                      <p className={styles.statValue}>{session.metrics?.score ?? session.structuredOutcome?.rebuttalPerformanceScore ?? "-"}</p>
+                      <div className={styles.statMeta}>
+                        <span className={styles.statContext}>Started {formatDateTime(session.startedAt)}</span>
+                        <span className={styles.statContext}>Duration {formatDuration(session.metrics?.durationSeconds ?? null)}</span>
+                      </div>
+                      <p>{session.structuredOutcome?.callSummary ?? "No call summary yet."}</p>
+                      <p>{session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}</p>
+                      <div className={styles.headerProfile} style={{ justifyContent: "flex-start", gap: 12 }}>
+                        {session.recordingUrl ? (
+                          <a className={styles.ctaButton} href={session.recordingUrl} target="_blank" rel="noreferrer">
+                            Recording
+                          </a>
+                        ) : null}
+                        {session.transcriptUrl ? (
+                          <a className={styles.ctaButton} href={session.transcriptUrl} target="_blank" rel="noreferrer">
+                            Transcript
+                          </a>
+                        ) : null}
+                      </div>
+                    </article>
                   ))}
-                </>
+                </div>
               ) : null}
             </section>
           </>

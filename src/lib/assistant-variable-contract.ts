@@ -9,6 +9,7 @@ const REQUIRED_KEYS_BY_SCOPE: Record<AssistantContractScope, string[]> = {
   trainee: [
     "difficulty",
     "objectionsRequired",
+    "objection_sequence",
     "rebuttals",
     "session_key",
     "org_id",
@@ -21,7 +22,7 @@ const REQUIRED_KEYS_BY_SCOPE: Record<AssistantContractScope, string[]> = {
 };
 
 function isJsonPayloadKey(key: string) {
-  return key === "rebuttals" || key === "expected_rebuttals";
+  return key === "rebuttals" || key === "expected_rebuttals" || key === "objection_sequence";
 }
 
 function isMissingValue(key: string, rawValue: unknown) {

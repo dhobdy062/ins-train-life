@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import {
-  createTrainingSession,
-  getOrgTrainerObjectionConfig,
-  getTraineeByInviteTokenHash,
-  getTraineeProfileByIpHash,
-  markTraineeActive,
+  getAssignedSessionForTraineeStart,
+  markAssignedSessionStarted,
   recordAlert,
 } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
-import { getRequestIpAddress, hashInviteToken, hashIpAddress } from "@/lib/identity-link";
-import { setTraineeSessionCookie } from "@/lib/trainee-session-cookie";
-import { buildGuideMapForExpected, DEFAULT_REBUTTAL_GUIDES } from "@/lib/trainer-objections";
 
 type TraineeSessionStartPayload = {
-  inviteToken?: string;
-  confirmedEmail?: string;
+  sessionKey?: string;
 };
 
 export const runtime = "nodejs";
@@ -23,21 +17,18 @@ export const preferredRegion = "iad1";
 export const maxDuration = 10;
 
 export async function POST(request: Request) {
-  const assistantId = (process.env.VAPI_TEST_ASSISTANT_ID ?? process.env.VAPI_ASSISTANT_ID)?.trim();
-  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
-
-  if (!assistantId || !publicKey) {
-    return NextResponse.json(
-      { error: "Training service is temporarily unavailable. Please contact support." },
-      { status: 500 },
-    );
+  const { userId, orgId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!orgId) {
+    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
   }
 
-  if (assistantId === publicKey) {
+  const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
+  if (!publicKey) {
     return NextResponse.json(
-      {
-        error: "Training service is temporarily unavailable. Please contact support.",
-      },
+      { error: "Training service is temporarily unavailable. Please contact support." },
       { status: 500 },
     );
   }
@@ -49,81 +40,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
-  if (!payload.inviteToken || payload.inviteToken.trim().length === 0) {
-    return NextResponse.json({ error: "inviteToken is required." }, { status: 400 });
-  }
-  if (!payload.confirmedEmail || payload.confirmedEmail.trim().length === 0) {
-    return NextResponse.json({ error: "confirmedEmail is required." }, { status: 400 });
+  if (!payload.sessionKey || payload.sessionKey.trim().length === 0) {
+    return NextResponse.json({ error: "sessionKey is required." }, { status: 400 });
   }
 
-  const trainee = await getTraineeByInviteTokenHash({
-    inviteTokenHash: hashInviteToken(payload.inviteToken),
+  const assignedSession = await getAssignedSessionForTraineeStart({
+    sessionKey: payload.sessionKey.trim(),
+    orgId,
+    clerkUserId: userId,
   });
-  if (!trainee) {
-    return NextResponse.json({ error: "Invalid or expired invite token." }, { status: 404 });
-  }
-  const normalizedConfirmedEmail = payload.confirmedEmail.trim().toLowerCase();
-  if (normalizedConfirmedEmail !== trainee.email) {
-    return NextResponse.json({ error: "Email does not match invitation." }, { status: 403 });
+
+  if (!assignedSession) {
+    return NextResponse.json({ error: "Assigned session not found." }, { status: 404 });
   }
 
-  const ipAddress = getRequestIpAddress(request);
-  if (!ipAddress) {
-    return NextResponse.json({ error: "Unable to confirm access from this device." }, { status: 400 });
-  }
-
-  const ipHash = hashIpAddress(ipAddress);
-  const profileByIp = await getTraineeProfileByIpHash({ ipHash });
-
-  if (!profileByIp || profileByIp.traineeId !== trainee.traineeId) {
+  if (assignedSession.assistantId === publicKey) {
     return NextResponse.json(
-      {
-        error: "Access confirmation required before starting training.",
-        code: "IP_CONSENT_REQUIRED",
-      },
-      { status: 403 },
+      { error: "Training service is temporarily unavailable. Please contact support." },
+      { status: 500 },
     );
   }
 
-  const orgConfig = await getOrgTrainerObjectionConfig({ orgId: trainee.orgId }).catch(() => null);
-  const rebuttals = buildGuideMapForExpected(
-    trainee.expectedRebuttals,
-    orgConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES,
-  );
-
-  const session = await createTrainingSession({
-    orgId: trainee.orgId,
-    trainerId: trainee.trainerId,
-    traineeId: trainee.traineeId,
-    assistantId,
-    difficulty: trainee.difficultyLevel,
-    objectionsRequired: trainee.numObjections,
-    rebuttalKeys: trainee.expectedRebuttals,
-    channel: "web",
-    identityMode: "ip_match",
-    ipHash,
-    profileSnapshot: {
-      difficultyLevel: trainee.difficultyLevel,
-      objectionsRequired: trainee.numObjections,
-      expectedRebuttals: trainee.expectedRebuttals,
-    },
-  });
-
-  await markTraineeActive({ traineeId: trainee.traineeId }).catch(() => null);
-
   const variableValues = buildAgentVariableValues({
-    difficulty: trainee.difficultyLevel,
-    objectionsRequired: trainee.numObjections,
-    rebuttals,
+    difficulty: assignedSession.difficulty,
+    objectionsRequired: assignedSession.objectionsRequired,
+    rebuttals: assignedSession.rebuttalGuideMap,
     orgRole: null,
     activeSequence: "trainee_invitation",
     extraVariables: {
-      org_id: trainee.orgId,
-      trainer_id: trainee.trainerId,
-      trainee_id: trainee.traineeId,
-      trainee_name: trainee.name,
-      session_key: session.sessionKey,
-      expected_rebuttals: JSON.stringify(trainee.expectedRebuttals),
+      org_id: assignedSession.orgId,
+      trainer_id: assignedSession.trainerId,
+      trainee_id: assignedSession.traineeId,
+      trainee_name: assignedSession.traineeName,
+      session_key: assignedSession.sessionKey,
+      expected_rebuttals: JSON.stringify(assignedSession.rebuttalKeys),
+      objection_sequence: JSON.stringify(assignedSession.selectedObjections),
     },
   });
 
@@ -134,40 +85,37 @@ export async function POST(request: Request) {
       severity: "critical",
       message: "Assistant variable contract validation failed.",
       context: {
-        sessionKey: session.sessionKey,
-        traineeId: trainee.traineeId,
-        orgId: trainee.orgId,
+        sessionKey: assignedSession.sessionKey,
+        traineeId: assignedSession.traineeId,
+        orgId: assignedSession.orgId,
         missingKeys: contractValidation.missingKeys,
       },
     }).catch(() => null);
 
     return NextResponse.json(
-      {
-        error: "Training service configuration is invalid. Please contact support.",
-      },
+      { error: "Training service configuration is invalid. Please contact support." },
       { status: 500 },
     );
   }
 
-  const response = NextResponse.json({
-    sessionKey: session.sessionKey,
-    assistantId,
+  await markAssignedSessionStarted({
+    sessionKey: assignedSession.sessionKey,
+    orgId,
+    traineeId: assignedSession.traineeId,
+    traineeClerkUserId: userId,
+  });
+
+  return NextResponse.json({
+    sessionKey: assignedSession.sessionKey,
+    assistantId: assignedSession.assistantId,
     publicKey,
     variableValues,
     metadata: {
-      orgId: trainee.orgId,
-      trainerId: trainee.trainerId,
-      traineeId: trainee.traineeId,
-      sessionKey: session.sessionKey,
+      orgId: assignedSession.orgId,
+      trainerId: assignedSession.trainerId,
+      traineeId: assignedSession.traineeId,
+      sessionKey: assignedSession.sessionKey,
       sequenceStage: variableValues.email_sequence_stage,
     },
   });
-
-  setTraineeSessionCookie(response, {
-    traineeId: trainee.traineeId,
-    orgId: trainee.orgId,
-    trainerId: trainee.trainerId,
-  });
-
-  return response;
 }

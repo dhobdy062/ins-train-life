@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { deleteSessionWithArtifacts, getSessionWithFiles } from "@/lib/convex";
 
 export async function GET(_request: Request, context: { params: Promise<{ sessionKey: string }> }) {
-  const { userId, orgId } = await auth();
+  const { userId, orgId, sessionClaims } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -17,7 +17,12 @@ export async function GET(_request: Request, context: { params: Promise<{ sessio
   }
 
   try {
-    const result = await getSessionWithFiles({ sessionKey, orgId, userId });
+    const result = await getSessionWithFiles({
+      sessionKey,
+      orgId,
+      userId,
+      orgRole: typeof sessionClaims?.org_role === "string" ? sessionClaims.org_role : undefined,
+    });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load session files.";

@@ -4,6 +4,7 @@ import { createTrainingSession, getOrgEntitlement, getOrgTrainerObjectionConfig,
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { syncIdentityForRequest } from "@/lib/identitySync";
+import { resolveLifeAssistantId } from "@/lib/vapi-assistants";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
 
@@ -93,20 +94,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const assistantId = (process.env.VAPI_TEST_ASSISTANT_ID ?? process.env.VAPI_ASSISTANT_ID)?.trim();
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
 
-  if (!assistantId || !publicKey) {
+  if (!publicKey) {
     return NextResponse.json(
       { error: "Training service is temporarily unavailable. Please contact support." },
-      { status: 500 },
-    );
-  }
-  if (assistantId === publicKey) {
-    return NextResponse.json(
-      {
-        error: "Training service is temporarily unavailable. Please contact support.",
-      },
       { status: 500 },
     );
   }
@@ -122,6 +114,24 @@ export async function POST(request: Request) {
   const difficulty = payload.difficulty && ["D1", "D2", "D3", "D4", "D5"].includes(payload.difficulty)
     ? payload.difficulty
     : "D2";
+  let assistantId: string;
+  try {
+    assistantId = resolveLifeAssistantId(difficulty);
+  } catch {
+    return NextResponse.json(
+      { error: "Training service is temporarily unavailable. Please contact support." },
+      { status: 500 },
+    );
+  }
+
+  if (assistantId === publicKey) {
+    return NextResponse.json(
+      {
+        error: "Training service is temporarily unavailable. Please contact support.",
+      },
+      { status: 500 },
+    );
+  }
 
   const objectionsRequired =
     typeof payload.objectionsRequired === "number" && payload.objectionsRequired >= 1 && payload.objectionsRequired <= 7

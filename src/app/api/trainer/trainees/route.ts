@@ -8,6 +8,7 @@ import {
   listTraineesByOrg,
   logEmailEvent,
 } from "@/lib/convex";
+import { provisionTraineeClerkIdentity } from "@/lib/clerk-trainees";
 import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 import { renderEmailSequence } from "@/lib/email-sequences";
 import { hashInviteToken } from "@/lib/identity-link";
@@ -100,12 +101,18 @@ export async function POST(request: Request) {
   const expectedRebuttals = objectionConfig
     ? buildExpectedRebuttalsFromLibrary(difficulty, objectionsRequired, objectionConfig.objectionLibrary)
     : buildExpectedRebuttals(difficulty, objectionsRequired);
-  const inviteToken = buildInviteToken();
-  const inviteTokenHash = hashInviteToken(inviteToken);
+  const inviteTokenHash = hashInviteToken(buildInviteToken());
 
+  const clerkIdentity = await provisionTraineeClerkIdentity({
+    orgId,
+    email,
+    name,
+  });
   const result = await createTraineeProfile({
     orgId,
     trainerId: userId,
+    clerkUserId: clerkIdentity.clerkUserId,
+    clerkMembershipId: clerkIdentity.clerkMembershipId,
     name,
     email,
     difficultyLevel: difficulty,
@@ -114,7 +121,7 @@ export async function POST(request: Request) {
     inviteTokenHash,
   });
 
-  const trainingUrl = `${getAppUrl()}/training/start?invite=${encodeURIComponent(inviteToken)}`;
+  const trainingUrl = `${getAppUrl()}/sign-in?redirect_url=${encodeURIComponent("/dashboard/trainee")}`;
   const rendered = renderEmailSequence({
     sequence: "trainee_invitation",
     variables: {
@@ -176,6 +183,8 @@ export async function POST(request: Request) {
         metadata: {
           source: "api/trainer/trainees",
           traineeId: result.traineeId,
+          clerkUserId: clerkIdentity.clerkUserId,
+          clerkMembershipId: clerkIdentity.clerkMembershipId,
           fromAddress: fromAddressUsed,
           configuredFromAddress,
         },
@@ -214,6 +223,12 @@ export async function POST(request: Request) {
     numObjections: objectionsRequired,
     expectedRebuttals,
     trainingUrl,
+    clerkUserId: clerkIdentity.clerkUserId,
+    clerkMembershipId: clerkIdentity.clerkMembershipId,
+    clerkProvisioning: {
+      createdUser: clerkIdentity.createdUser,
+      createdMembership: clerkIdentity.createdMembership,
+    },
   });
 }
 
