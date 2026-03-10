@@ -18,10 +18,10 @@ type CreateAssignedSessionPayload = {
 export async function POST(request: Request) {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to assign sessions." }, { status: 401 });
   }
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before assigning sessions." }, { status: 400 });
   }
 
   let payload: CreateAssignedSessionPayload = {};
@@ -43,7 +43,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
   }
   if (!trainee.clerkUserId) {
-    return NextResponse.json({ error: "Trainee is not linked to Clerk yet." }, { status: 409 });
+    return NextResponse.json(
+      { error: "This trainee's sign-in access is still syncing. Ask them to open their dashboard once, then retry." },
+      { status: 409 },
+    );
   }
 
   const fallbackDifficulty =

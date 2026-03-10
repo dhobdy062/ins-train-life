@@ -47,7 +47,7 @@ export default function AddTraineeForm() {
 
       setStatus(
         payload.clerkUserId
-          ? "Trainee created in Clerk and onboarding email sent."
+          ? "Trainee access created and onboarding email sent."
           : "Trainee created and onboarding email sent.",
       );
       setForm({

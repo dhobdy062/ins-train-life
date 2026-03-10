@@ -47,6 +47,8 @@ type SessionBuilderProps = {
   recentSessions: RecentSession[];
 };
 
+type SessionRecoveryAction = "mark_missed" | "mark_failed" | "create_replacement";
+
 function objectionKey(row: { text: string; rebuttalType: string }) {
   return `${row.text}::${row.rebuttalType}`;
 }
@@ -75,6 +77,10 @@ export default function SessionBuilder({
   const [selectedObjections, setSelectedObjections] = useState<ObjectionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [sessionActionState, setSessionActionState] = useState<{
+    sessionKey: string;
+    action: SessionRecoveryAction;
+  } | null>(null);
 
   useEffect(() => {
     if (!selectedTrainee) {
@@ -155,6 +161,48 @@ export default function SessionBuilder({
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSessionRecovery(sessionKey: string, action: SessionRecoveryAction) {
+    setSessionActionState({ sessionKey, action });
+    setStatus(null);
+
+    try {
+      const response = await fetch(`/api/trainer/sessions/${encodeURIComponent(sessionKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        message?: string;
+        replacementSessionKey?: string | null;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to update this session.");
+      }
+
+      setStatus(payload.message ?? "Session updated.");
+      router.refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to update this session.");
+    } finally {
+      setSessionActionState(null);
+    }
+  }
+
+  function getRecoveryLabel(session: RecentSession) {
+    if (session.status === "assigned") {
+      return "Mark missed";
+    }
+    return "Mark failed";
+  }
+
+  function canCreateReplacement(session: RecentSession) {
+    return session.status === "assigned" || session.status === "started" || session.status === "abandoned";
   }
 
   return (
@@ -249,7 +297,10 @@ export default function SessionBuilder({
         </div>
 
         {!selectedTrainee?.clerkUserId ? (
-          <p className="disclaimer">This trainee is not linked to Clerk yet. Re-save the trainee profile before assigning sessions.</p>
+          <p className="disclaimer">
+            This trainee&apos;s sign-in access is still syncing. Ask them to open their dashboard once, then try assigning the
+            session again.
+          </p>
         ) : null}
         {status ? <p className="disclaimer">{status}</p> : null}
       </form>
@@ -290,6 +341,37 @@ export default function SessionBuilder({
                     <a className="button secondary" href={session.transcriptUrl} target="_blank" rel="noreferrer">
                       Transcript
                     </a>
+                  ) : null}
+                  {session.status === "assigned" || session.status === "started" ? (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={Boolean(sessionActionState)}
+                      onClick={() =>
+                        void handleSessionRecovery(
+                          session.sessionKey,
+                          session.status === "assigned" ? "mark_missed" : "mark_failed",
+                        )
+                      }
+                    >
+                      {sessionActionState?.sessionKey === session.sessionKey &&
+                      sessionActionState.action !== "create_replacement"
+                        ? "Updating..."
+                        : getRecoveryLabel(session)}
+                    </button>
+                  ) : null}
+                  {canCreateReplacement(session) ? (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={Boolean(sessionActionState)}
+                      onClick={() => void handleSessionRecovery(session.sessionKey, "create_replacement")}
+                    >
+                      {sessionActionState?.sessionKey === session.sessionKey &&
+                      sessionActionState.action === "create_replacement"
+                        ? "Sending..."
+                        : "Send replacement"}
+                    </button>
                   ) : null}
                 </div>
               </article>

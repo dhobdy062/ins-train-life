@@ -52,11 +52,11 @@ function isFromAddressVerificationError(error: { name?: string; message?: string
 export async function GET() {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to view trainees." }, { status: 401 });
   }
 
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before viewing trainees." }, { status: 400 });
   }
 
   const trainees = await listTraineesByOrg({ orgId, limit: 100 });
@@ -66,11 +66,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to add trainees." }, { status: 401 });
   }
 
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before adding trainees." }, { status: 400 });
   }
 
   let payload: CreateTraineePayload = {};
@@ -235,11 +235,11 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to manage trainees." }, { status: 401 });
   }
 
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before managing trainees." }, { status: 400 });
   }
 
   let payload: DisableTraineePayload = {};

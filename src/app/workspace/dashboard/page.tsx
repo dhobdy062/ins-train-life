@@ -1,7 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getTraineeByOrgAndEmail } from "@/lib/convex";
 import { isAdminPortalUser, resolvePrimaryEmailAddress } from "@/lib/admin-portal";
+import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
 
 export default async function WorkspaceDashboardAliasPage() {
   const { userId, orgId } = await auth();
@@ -20,11 +20,13 @@ export default async function WorkspaceDashboardAliasPage() {
     redirect("/workspace/select-organization?redirect_url=%2Fworkspace%2Fdashboard");
   }
 
-  if (primaryEmail) {
-    const trainee = await getTraineeByOrgAndEmail({ orgId, email: primaryEmail }).catch(() => null);
-    if (trainee) {
-      redirect("/dashboard/trainee");
-    }
+  const traineeAccess = await resolveAuthenticatedTrainee({
+    userId,
+    orgId,
+    source: "workspace/dashboard",
+  });
+  if (traineeAccess.trainee) {
+    redirect("/dashboard/trainee");
   }
 
   redirect("/dashboard/trainer");

@@ -390,6 +390,67 @@ export const disableTraineeProfile = mutation({
   },
 });
 
+export const linkTraineeIdentity = mutation({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+    clerkUserId: v.string(),
+    clerkMembershipId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId) {
+      throw new Error("Trainee not found");
+    }
+
+    const now = Date.now();
+    const nextStatus = trainee.status === "disabled" ? "disabled" : "active";
+
+    await ctx.db.patch(trainee._id, {
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId ?? trainee.clerkMembershipId,
+      status: nextStatus,
+      lastActiveAt: now,
+      updatedAt: now,
+    });
+
+    const sessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_trainee_createdAt", (q) => q.eq("traineeId", args.traineeId))
+      .collect();
+
+    let repairedSessionCount = 0;
+    for (const session of sessions) {
+      if (session.orgId !== args.orgId) {
+        continue;
+      }
+
+      if (session.status === "completed" || session.status === "abandoned") {
+        continue;
+      }
+
+      if (session.traineeClerkUserId === args.clerkUserId) {
+        continue;
+      }
+
+      await ctx.db.patch(session._id, {
+        traineeClerkUserId: args.clerkUserId,
+        updatedAt: now,
+      });
+      repairedSessionCount += 1;
+    }
+
+    return {
+      traineeId: trainee._id,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId ?? trainee.clerkMembershipId ?? null,
+      status: nextStatus,
+      repairedSessionCount,
+      updatedAt: now,
+    };
+  },
+});
+
 export const getTraineeResultsSnapshot = query({
   args: {
     traineeId: v.id("trainees"),

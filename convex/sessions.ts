@@ -415,6 +415,152 @@ export const getTrainerSessionBuilderSnapshot = query({
   },
 });
 
+export const recoverTrainingSession = mutation({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    trainerId: v.string(),
+    action: v.union(v.literal("mark_missed"), v.literal("mark_failed"), v.literal("create_replacement")),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId || session.trainerId !== args.trainerId) {
+      throw new Error("Session not found.");
+    }
+
+    const now = Date.now();
+    const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+    const baseContext = {
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: session.traineeId ?? null,
+      sessionKey: session.sessionKey,
+      statusBefore: session.status,
+    };
+
+    if (args.action === "mark_missed" || args.action === "mark_failed") {
+      if (session.status === "completed") {
+        throw new Error("Completed sessions cannot be reclassified.");
+      }
+
+      if (session.status === "abandoned") {
+        return {
+          action: args.action,
+          sessionKey: session.sessionKey,
+          status: session.status,
+          replacementSessionKey: null,
+          message: "This session has already been flagged for follow-up.",
+        };
+      }
+
+      const reason = args.action === "mark_missed" ? "trainer_marked_missed" : "trainer_marked_failed";
+      const message =
+        args.action === "mark_missed"
+          ? "Trainer marked a session as missed."
+          : "Trainer marked a session as failed and needing follow-up.";
+
+      await ctx.db.patch(session._id, {
+        status: "abandoned",
+        endedAt: session.endedAt ?? now,
+        updatedAt: now,
+      });
+
+      await ctx.db.insert("alertEvents", {
+        source: "sessions:recoverTrainingSession",
+        severity: "warning",
+        message,
+        context: {
+          ...baseContext,
+          statusAfter: "abandoned",
+          reason,
+        },
+        createdAt: now,
+      });
+
+      return {
+        action: args.action,
+        sessionKey: session.sessionKey,
+        status: "abandoned" as const,
+        replacementSessionKey: null,
+        message:
+          args.action === "mark_missed"
+            ? "Session marked as missed."
+            : "Session marked as failed and logged for follow-up.",
+      };
+    }
+
+    if (!session.traineeId || !trainee || trainee.status === "disabled") {
+      throw new Error("This session no longer has an active trainee.");
+    }
+
+    const traineeClerkUserId = session.traineeClerkUserId ?? trainee.clerkUserId ?? null;
+    if (!traineeClerkUserId) {
+      throw new Error("Ask the trainee to open their dashboard once before sending a replacement session.");
+    }
+
+    const replacementSessionKey = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    await ctx.db.insert("trainingSessions", {
+      sessionKey: replacementSessionKey,
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: session.traineeId,
+      traineeClerkUserId,
+      assistantId: session.assistantId,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      rebuttalKeys: session.rebuttalKeys,
+      selectedObjections: session.selectedObjections,
+      rebuttalGuideMap: session.rebuttalGuideMap,
+      channel: session.channel,
+      identityMode: session.identityMode,
+      ipHash: session.ipHash,
+      profileSnapshot:
+        session.profileSnapshot ?? {
+          difficultyLevel: session.difficulty,
+          objectionsRequired: session.objectionsRequired,
+          expectedRebuttals: session.rebuttalKeys,
+        },
+      status: "assigned",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (session.status !== "completed" && session.status !== "abandoned") {
+      await ctx.db.patch(session._id, {
+        status: "abandoned",
+        endedAt: session.endedAt ?? now,
+        updatedAt: now,
+      });
+    }
+
+    await ctx.db.insert("alertEvents", {
+      source: "sessions:recoverTrainingSession",
+      severity: "warning",
+      message: "Trainer created a replacement session after a missed or failed attempt.",
+      context: {
+        ...baseContext,
+        statusAfter: session.status === "completed" ? "completed" : "abandoned",
+        reason: "replacement_session_created",
+        replacementSessionKey,
+      },
+      createdAt: now,
+    });
+
+    return {
+      action: args.action,
+      sessionKey: session.sessionKey,
+      status: session.status === "completed" ? "completed" : ("abandoned" as const),
+      replacementSessionKey,
+      message: `Replacement session ${replacementSessionKey} is ready for ${trainee.name}.`,
+    };
+  },
+});
+
 export const getTrainerDashboardSnapshot = query({
   args: { orgId: v.string(), trainerId: v.optional(v.string()) },
   handler: async (ctx, args) => {

@@ -7,6 +7,7 @@ import {
 } from "@/lib/convex";
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
+import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
 
 type TraineeSessionStartPayload = {
   sessionKey?: string;
@@ -19,10 +20,10 @@ export const maxDuration = 10;
 export async function POST(request: Request) {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in before starting your assigned session." }, { status: 401 });
   }
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose your team before starting this session." }, { status: 400 });
   }
 
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim();
@@ -41,8 +42,14 @@ export async function POST(request: Request) {
   }
 
   if (!payload.sessionKey || payload.sessionKey.trim().length === 0) {
-    return NextResponse.json({ error: "sessionKey is required." }, { status: 400 });
+    return NextResponse.json({ error: "Session key is required." }, { status: 400 });
   }
+
+  await resolveAuthenticatedTrainee({
+    userId,
+    orgId,
+    source: "api/vapi/trainee/session/start",
+  });
 
   const assignedSession = await getAssignedSessionForTraineeStart({
     sessionKey: payload.sessionKey.trim(),
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
   });
 
   if (!assignedSession) {
-    return NextResponse.json({ error: "Assigned session not found." }, { status: 404 });
+    return NextResponse.json({ error: "This assigned session is no longer available." }, { status: 404 });
   }
 
   if (assignedSession.assistantId === publicKey) {

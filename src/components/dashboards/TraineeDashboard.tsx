@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 import styles from "./TraineeDashboard.module.css";
 
@@ -80,7 +81,14 @@ type TraineeResultsPayload = {
   }>;
 };
 
+export type TraineeDashboardViewer = {
+  userName: string;
+  organizationName: string;
+  initials: string;
+};
+
 type TraineeDashboardProps = {
+  viewer: TraineeDashboardViewer;
   refreshOnLoad?: boolean;
 };
 
@@ -117,7 +125,7 @@ function scoreClass(score: number | null) {
   return "";
 }
 
-export default function TraineeDashboard({ refreshOnLoad = false }: TraineeDashboardProps) {
+export default function TraineeDashboard({ viewer, refreshOnLoad = false }: TraineeDashboardProps) {
   const [data, setData] = useState<TraineeResultsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -163,105 +171,190 @@ export default function TraineeDashboard({ refreshOnLoad = false }: TraineeDashb
   }, [fetchResults, refreshOnLoad]);
 
   const latestScore = data?.latestMetrics?.score ?? data?.latestSession?.structuredOutcome?.rebuttalPerformanceScore ?? null;
+  const latestSummary = data?.latestSession?.structuredOutcome?.callSummary ?? "No coach summary yet.";
+  const latestOutcomeLabel = data?.latestSession
+    ? data.latestSession.structuredOutcome?.appointmentSet
+      ? "Booked"
+      : "Open"
+    : "Waiting";
 
   return (
-    <div className={styles.container}>
+    <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <div className={styles.sidebarLogo}>CREAM</div>
-        <nav className={styles.sidebarNav}>
-          <span className={`${styles.navItem} ${styles.active}`}>Dashboard</span>
-          <span className={styles.navItem}>Assigned Sessions</span>
+        <div className={styles.sidebarBrand}>
+          <div className={styles.sidebarLogo}>Cream No Sugar</div>
+          <p className={styles.sidebarOrg}>{viewer.organizationName}</p>
+        </div>
+
+        <nav className={styles.sidebarNav} aria-label="Trainee dashboard navigation">
+          <a className={styles.navItem} href="#dashboard">
+            Dashboard
+          </a>
+          <a className={styles.navItem} href="#assigned-sessions">
+            Assigned Sessions
+          </a>
+          <a className={styles.navItem} href="#session-history">
+            Session History
+          </a>
         </nav>
+
+        <div className={styles.sidebarFooter}>
+          <Link className={styles.sidebarLink} href="/workspace/dashboard">
+            Workspace Home
+          </Link>
+        </div>
       </aside>
 
       <main className={styles.mainContent}>
-        <header className={styles.header}>
+        <header className={styles.header} id="dashboard">
           <div className={styles.headerLeft}>
-            <h1>{data?.trainee.name ? `Welcome, ${data.trainee.name}` : "Trainee Dashboard"}</h1>
-            <p>Your trainer-assigned practice sessions and latest results.</p>
+            <h1>Welcome back, {viewer.userName}</h1>
+            <p>{viewer.organizationName} trainee workspace</p>
           </div>
-          <div className={styles.headerProfile}>
-            <button className={styles.ctaButton} onClick={() => void fetchResults(true)} disabled={refreshing || loading}>
+
+          <div className={styles.headerActions}>
+            <button className={styles.refreshButton} onClick={() => void fetchResults(true)} disabled={refreshing || loading}>
               {refreshing ? "Refreshing..." : "Refresh Results"}
             </button>
+
+            <div className={styles.utilityBar}>
+              <div className={styles.switcherBlock}>
+                <span className={styles.utilityLabel}>Team</span>
+                <OrganizationSwitcher
+                  hidePersonal
+                  appearance={{
+                    elements: {
+                      rootBox: { display: "flex", alignItems: "center" },
+                    },
+                  }}
+                />
+              </div>
+
+              <div className={styles.profileCard}>
+                <div className={styles.profileInfo}>
+                  <span className={styles.profileName}>{viewer.userName}</span>
+                  <span className={styles.profileMeta}>{viewer.organizationName}</span>
+                </div>
+                <div className={styles.profileAvatar} aria-hidden="true">
+                  {viewer.initials}
+                </div>
+              </div>
+
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </div>
         </header>
 
         {loading ? (
-          <section className={styles.progressSection}>
+          <section className={styles.panel}>
             <h2 className={styles.sectionTitle}>Loading results...</h2>
           </section>
         ) : null}
 
         {error ? (
-          <section className={styles.progressSection}>
+          <section className={styles.panel}>
             <h2 className={styles.sectionTitle}>Unable to load results</h2>
-            <p>{error}</p>
+            <p className={styles.disclaimer}>{error}</p>
           </section>
         ) : null}
 
         {!loading && !error ? (
           <>
-            <div className={styles.ctaCard}>
-              <h2 className={styles.ctaTitle}>Pending Assigned Sessions</h2>
-              <p className={styles.ctaSubtitle}>
-                {data?.assignedSessions.length
-                  ? `${data.assignedSessions.length} session${data.assignedSessions.length === 1 ? "" : "s"} ready to start.`
-                  : "No pending sessions right now."}
-              </p>
-              {data?.assignedSessions.map((session) => (
-                <div key={session.sessionKey} style={{ display: "grid", gap: 6, marginTop: 12 }}>
-                  <strong>{session.difficulty} • {session.objectionsRequired} objections</strong>
-                  <span>
-                    {session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}
-                  </span>
-                  <Link className={styles.ctaButton} href={`/training/start?session=${encodeURIComponent(session.sessionKey)}`}>
-                    Start Assigned Session
-                  </Link>
-                </div>
-              ))}
-            </div>
+            <section className={styles.ctaCard} id="assigned-sessions">
+              <div className={styles.ctaCopy}>
+                <h2 className={styles.ctaTitle}>Assigned sessions ready to start</h2>
+                <p className={styles.ctaSubtitle}>
+                  {data?.assignedSessions.length
+                    ? `${data.assignedSessions.length} session${data.assignedSessions.length === 1 ? "" : "s"} waiting for you.`
+                    : "No pending sessions right now."}
+                </p>
+              </div>
 
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
+              <div className={styles.assignedGrid}>
+                {data?.assignedSessions.length ? (
+                  data.assignedSessions.map((session) => (
+                    <article key={session.sessionKey} className={styles.assignedCard}>
+                      <div className={styles.assignedMeta}>
+                        <span>{session.difficulty}</span>
+                        <span>{session.objectionsRequired} objections</span>
+                        <span>Assigned {formatDateTime(session.createdAt)}</span>
+                      </div>
+                      <strong className={styles.assignedTitle}>{session.sessionKey}</strong>
+                      <p className={styles.disclaimer}>
+                        {session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}
+                      </p>
+                      <Link className={styles.ctaButton} href={`/training/start?session=${encodeURIComponent(session.sessionKey)}`}>
+                        Start Assigned Session
+                      </Link>
+                    </article>
+                  ))
+                ) : (
+                  <article className={styles.assignedCard}>
+                    <strong className={styles.assignedTitle}>No active assignments</strong>
+                    <p className={styles.disclaimer}>
+                      Your next trainer-built session will appear here as soon as it is ready.
+                    </p>
+                  </article>
+                )}
+              </div>
+            </section>
+
+            <section className={styles.streakBanner}>
+              <div className={styles.streakContent}>
+                <span className={styles.streakTag}>Current focus</span>
+                <strong>Difficulty {data?.trainee.difficulty ?? "-"}</strong>
+                <span>{data?.trainee.numObjections ?? 0} objection targets in your current plan</span>
+              </div>
+              <div className={styles.streakScore}>
+                {latestScore === null ? "Awaiting score" : `${latestScore}% latest score`}
+              </div>
+            </section>
+
+            <section className={styles.statsGrid}>
+              <article className={styles.statCard}>
                 <div className={styles.statHeader}>
                   <span className={styles.statTitle}>Latest Score</span>
+                  <span className={styles.metricPill}>Performance</span>
                 </div>
                 <p className={styles.statValue}>{latestScore === null ? "-" : `${latestScore}%`}</p>
                 <div className={styles.statMeta}>
-                  <span className={scoreClass(latestScore)}>{latestScore === null ? "Awaiting metrics" : "Session score"}</span>
+                  <span className={scoreClass(latestScore)}>{latestScore === null ? "Waiting for metrics" : "Session score"}</span>
                   <span className={styles.statContext}>Difficulty {data?.trainee.difficulty ?? "-"}</span>
                 </div>
-              </div>
+              </article>
 
-              <div className={styles.statCard}>
+              <article className={styles.statCard}>
                 <div className={styles.statHeader}>
                   <span className={styles.statTitle}>Latest Session</span>
+                  <span className={styles.metricPill}>Status</span>
                 </div>
-                <p className={styles.statValue}>{data?.latestSession?.status ?? "no_sessions"}</p>
+                <p className={styles.statValue}>{data?.latestSession?.status ?? "no sessions"}</p>
                 <div className={styles.statMeta}>
                   <span className={styles.statContext}>Started {formatDateTime(data?.latestSession?.startedAt ?? null)}</span>
                   <span className={styles.statContext}>Ended {formatDateTime(data?.latestSession?.endedAt ?? null)}</span>
                 </div>
-              </div>
+              </article>
 
-              <div className={styles.statCard}>
+              <article className={styles.statCard}>
                 <div className={styles.statHeader}>
                   <span className={styles.statTitle}>Latest Summary</span>
+                  <span className={styles.metricPill}>Outcome</span>
                 </div>
-                <p className={styles.statValue}>{data?.latestSession?.structuredOutcome?.appointmentSet ? "Booked" : "Open"}</p>
+                <p className={styles.statValue}>{latestOutcomeLabel}</p>
                 <div className={styles.statMeta}>
-                  <span className={styles.statContext}>{data?.latestSession?.structuredOutcome?.callSummary ?? "No summary yet."}</span>
+                  <span className={styles.statContext}>{latestSummary}</span>
                 </div>
-              </div>
-            </div>
+              </article>
+            </section>
 
-            <section className={styles.recentCallsSection}>
+            <section className={styles.panel}>
               <h2 className={styles.sectionTitle}>Latest Session Rebuttal Scores</h2>
-              {data?.latestSession && data.latestRebuttals.length === 0 ? <p>No scored rebuttals yet for the latest session.</p> : null}
-              {!data?.latestSession ? <p>No completed sessions yet.</p> : null}
+              {data?.latestSession && data.latestRebuttals.length === 0 ? (
+                <p className={styles.disclaimer}>No scored rebuttals yet for the latest session.</p>
+              ) : null}
+              {!data?.latestSession ? <p className={styles.disclaimer}>No completed sessions yet.</p> : null}
               {data?.latestRebuttals.length ? (
-                <>
+                <div className={styles.tableWrap}>
                   <div className={styles.tableHeader}>
                     <span>Time</span>
                     <span>Expected</span>
@@ -278,35 +371,40 @@ export default function TraineeDashboard({ refreshOnLoad = false }: TraineeDashb
                       <span>{rebuttal.tone ?? "-"}</span>
                     </div>
                   ))}
-                </>
+                </div>
               ) : null}
             </section>
 
-            <section className={styles.coachFeedbackSection}>
+            <section className={styles.panel} id="session-history">
               <h2 className={styles.sectionTitle}>Session History</h2>
-              {data?.history.length === 0 ? <p>No completed sessions yet.</p> : null}
+              {data?.history.length === 0 ? <p className={styles.disclaimer}>No completed sessions yet.</p> : null}
               {data?.history.length ? (
-                <div style={{ display: "grid", gap: 16 }}>
+                <div className={styles.historyGrid}>
                   {data.history.map((session) => (
-                    <article className={styles.statCard} key={session.sessionKey}>
+                    <article className={styles.historyCard} key={session.sessionKey}>
                       <div className={styles.statHeader}>
-                        <span className={styles.statTitle}>{session.difficulty} • {session.status}</span>
+                        <span className={styles.statTitle}>{`${session.difficulty} | ${session.status}`}</span>
+                        <span className={styles.metricPill}>{session.metrics?.eventType ?? "Session"}</span>
                       </div>
-                      <p className={styles.statValue}>{session.metrics?.score ?? session.structuredOutcome?.rebuttalPerformanceScore ?? "-"}</p>
+                      <p className={styles.statValue}>
+                        {session.metrics?.score ?? session.structuredOutcome?.rebuttalPerformanceScore ?? "-"}
+                      </p>
                       <div className={styles.statMeta}>
                         <span className={styles.statContext}>Started {formatDateTime(session.startedAt)}</span>
                         <span className={styles.statContext}>Duration {formatDuration(session.metrics?.durationSeconds ?? null)}</span>
                       </div>
-                      <p>{session.structuredOutcome?.callSummary ?? "No call summary yet."}</p>
-                      <p>{session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}</p>
-                      <div className={styles.headerProfile} style={{ justifyContent: "flex-start", gap: 12 }}>
+                      <p className={styles.disclaimer}>{session.structuredOutcome?.callSummary ?? "No coach summary yet."}</p>
+                      <p className={styles.disclaimer}>
+                        {session.selectedObjections.map((row) => `${row.order + 1}. ${row.text}`).join(" | ")}
+                      </p>
+                      <div className={styles.historyActions}>
                         {session.recordingUrl ? (
-                          <a className={styles.ctaButton} href={session.recordingUrl} target="_blank" rel="noreferrer">
+                          <a className={styles.secondaryButton} href={session.recordingUrl} target="_blank" rel="noreferrer">
                             Recording
                           </a>
                         ) : null}
                         {session.transcriptUrl ? (
-                          <a className={styles.ctaButton} href={session.transcriptUrl} target="_blank" rel="noreferrer">
+                          <a className={styles.secondaryButton} href={session.transcriptUrl} target="_blank" rel="noreferrer">
                             Transcript
                           </a>
                         ) : null}

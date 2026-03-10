@@ -54,7 +54,7 @@ export default async function TrainerDashboardLayout({
         <header className={styles.topBar}>
           <div>
             <h1 className={styles.pageTitle}>Team Dashboard</h1>
-            <p className={styles.pageSubtitle}>{canOpenDashboard ? orgName : "Authentication required"}</p>
+            <p className={styles.pageSubtitle}>{canOpenDashboard ? orgName : "Sign in to open your team dashboard"}</p>
           </div>
           <div className={styles.topActions}>
             {canOpenDashboard ? (

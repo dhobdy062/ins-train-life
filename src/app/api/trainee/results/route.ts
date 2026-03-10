@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { getTraineeByClerkUserId, getTraineeByOrgAndEmail, getTraineeResultsSnapshot } from "@/lib/convex";
+import { auth } from "@clerk/nextjs/server";
+import { getTraineeResultsSnapshot } from "@/lib/convex";
+import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
 
 function toIso(timestamp: number | null | undefined) {
   if (!timestamp) {
@@ -9,52 +10,28 @@ function toIso(timestamp: number | null | undefined) {
   return new Date(timestamp).toISOString();
 }
 
-function resolvePrimaryEmailAddress(user: Awaited<ReturnType<typeof currentUser>>) {
-  if (!user) {
-    return null;
-  }
-
-  const primaryId = user.primaryEmailAddressId ?? null;
-  const emailAddresses = Array.isArray(user.emailAddresses) ? user.emailAddresses : [];
-  const primaryMatch = primaryId ? emailAddresses.find((email) => email.id === primaryId) : null;
-  const candidate = primaryMatch?.emailAddress ?? emailAddresses[0]?.emailAddress ?? null;
-
-  if (!candidate) {
-    return null;
-  }
-
-  const normalized = candidate.trim().toLowerCase();
-  return normalized.length > 0 ? normalized : null;
-}
-
 export async function GET(request: Request) {
   const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in to open your trainee dashboard." }, { status: 401 });
+  }
+  if (!orgId) {
+    return NextResponse.json({ error: "Choose your team to open the trainee dashboard." }, { status: 400 });
   }
 
   const { searchParams } = new URL(request.url);
   const limitParam = Number(searchParams.get("limit"));
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 25) : undefined;
 
-  let trainee = await getTraineeByClerkUserId({
+  const traineeAccess = await resolveAuthenticatedTrainee({
+    userId,
     orgId,
-    clerkUserId: userId,
-  }).catch(() => null);
+    source: "api/trainee/results",
+  });
+  const trainee = traineeAccess.trainee;
 
   if (!trainee) {
-    const user = await currentUser().catch(() => null);
-    const primaryEmail = resolvePrimaryEmailAddress(user);
-    if (primaryEmail) {
-      trainee = await getTraineeByOrgAndEmail({
-        orgId,
-        email: primaryEmail,
-      }).catch(() => null);
-    }
-  }
-
-  if (!trainee) {
-    return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
+    return NextResponse.json({ error: "Your trainee seat is not active for this team yet." }, { status: 404 });
   }
 
   const snapshot = await getTraineeResultsSnapshot({
@@ -63,10 +40,12 @@ export async function GET(request: Request) {
     limit,
   });
   if (!snapshot) {
-    return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
+    return NextResponse.json({ error: "Your trainee dashboard could not be loaded for this team." }, { status: 404 });
   }
 
   return NextResponse.json({
+    resolution: traineeAccess.resolution,
+    identityRepaired: traineeAccess.repaired,
     trainee: {
       id: snapshot.trainee.id,
       name: snapshot.trainee.name,
