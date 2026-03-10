@@ -73,7 +73,7 @@ export default function SessionBuilder({
     [trainees, selectedTraineeId],
   );
   const [difficulty, setDifficulty] = useState<Difficulty>((selectedTrainee?.difficultyLevel as Difficulty) ?? "D2");
-  const availableObjections = objectionLibrary[difficulty] ?? [];
+  const availableObjections = useMemo(() => objectionLibrary[difficulty] ?? [], [objectionLibrary, difficulty]);
   const [selectedObjections, setSelectedObjections] = useState<ObjectionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
