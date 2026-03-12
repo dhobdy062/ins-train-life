@@ -9,7 +9,7 @@ This review confirms several critical product and operational risks, but not eve
 - Identity drift is real. Trainee access currently depends on a mix of auth user id, org context, and email fallback, which can leave a valid signed-in user unable to resolve to a trainee record.
 - Session integrity is incomplete. The data model supports `assigned`, `started`, `completed`, and `abandoned`, but there is no full stale-session classification path for missed or failed sessions.
 - Operational visibility is weak. Alerts and failed email events are stored, but the admin dashboard only exposes revenue, not operational failures.
-- Repo hygiene is poor. Duplicate files such as `convex/identity 2.ts` and `src/lib/identitySync 2.ts` increase maintenance risk and reduce confidence in the active source of truth.
+- Repo hygiene needs guardrails. The repo previously contained duplicate identity files, and the duplicate-file check should stay in regular verification to prevent stale copies from returning.
 - Webhook hardening is incomplete. Signature verification exists for Clerk, Stripe, and VAPI, but there is no webhook rate limiting, IP policy, or replay monitoring beyond idempotency keys.
 
 ### Overstated or Unproven
@@ -142,7 +142,7 @@ Trainers and trainees expect simple team-based access and reliable session handl
 - Security: keep webhook signature verification intact and do not expand trust in email fallback beyond controlled repair.
 - Reliability: trainee resolution should not fail closed when identity mirroring is temporarily behind.
 - Observability: every repair or mismatch category must be measurable.
-- Maintainability: duplicate identity files must be removed in follow-up cleanup.
+- Maintainability: keep repo hygiene checks in the verification path so stale duplicate files do not return.
 
 ## Audit Plan
 
@@ -202,7 +202,7 @@ Trainers and trainees expect simple team-based access and reliable session handl
 | Email-match repair links the wrong user | High | Only repair inside the currently authenticated org and log every repair event |
 | Identity mirror remains stale | Medium | Keep request-time sync best-effort, not blocking, and rely on canonical resolver |
 | Session status expansion breaks analytics | Medium | Add migration plan and preserve backward-compatible aggregates |
-| Duplicate files continue to confuse maintenance | Medium | Remove or archive duplicate files in follow-up cleanup milestone |
+| Stale duplicate files can return and confuse maintenance | Medium | Keep the duplicate-file hygiene check in regular verification |
 
 ## Immediate Implementation Slice
 
@@ -218,5 +218,5 @@ This repo change set starts Milestone 1 by:
 1. Add admin UI for the new audit output.
 2. Add session classification job for stale assigned/started sessions.
 3. Add trainer recovery actions.
-4. Remove duplicate identity files.
+4. Keep the duplicate-file hygiene check in regular verification.
 5. Replace backend jargon in all trainer and trainee flows.

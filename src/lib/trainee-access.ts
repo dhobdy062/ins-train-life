@@ -5,6 +5,7 @@ import {
   getTraineeByOrgAndEmail,
   linkTraineeIdentity,
 } from "@/lib/convex";
+import { resolvePrimaryEmailAddress } from "@/lib/admin-portal";
 import { syncIdentityForRequest } from "@/lib/identitySync";
 
 type ResolvedTrainee = {
@@ -21,24 +22,6 @@ type ResolvedTrainee = {
   status: string;
   lastActiveAt: number | null;
 };
-
-function resolvePrimaryEmailAddress(user: Awaited<ReturnType<typeof currentUser>>) {
-  if (!user) {
-    return null;
-  }
-
-  const primaryId = user.primaryEmailAddressId ?? null;
-  const emailAddresses = Array.isArray(user.emailAddresses) ? user.emailAddresses : [];
-  const primaryMatch = primaryId ? emailAddresses.find((email) => email.id === primaryId) : null;
-  const candidate = primaryMatch?.emailAddress ?? emailAddresses[0]?.emailAddress ?? null;
-
-  if (!candidate) {
-    return null;
-  }
-
-  const normalized = candidate.trim().toLowerCase();
-  return normalized.length > 0 ? normalized : null;
-}
 
 export async function resolveAuthenticatedTrainee(args: {
   userId: string;

@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { canAccessSessionFiles } from "../src/lib/session-file-access";
 
 function decodeBase64(input: string) {
   const normalized = input.includes(",") ? input.slice(input.indexOf(",") + 1) : input;
@@ -18,19 +19,6 @@ async function getSessionByKey(ctx: any, sessionKey: string) {
     .first();
 }
 
-function canAccessSession(
-  session: { trainerId: string; orgId: string; traineeClerkUserId?: string | null },
-  orgId: string,
-  userId: string,
-  orgRole?: string,
-) {
-  return (
-    session.trainerId === userId ||
-    session.traineeClerkUserId === userId ||
-    (session.orgId === orgId && orgRole === "org:admin")
-  );
-}
-
 export const storeSessionRecording = mutation({
   args: {
     sessionKey: v.string(),
@@ -45,7 +33,7 @@ export const storeSessionRecording = mutation({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId })) {
       throw new Error("Unauthorized");
     }
 
@@ -80,7 +68,7 @@ export const storeTranscript = mutation({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId })) {
       throw new Error("Unauthorized");
     }
 
@@ -113,7 +101,7 @@ export const getRecordingUrl = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId, args.orgRole)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
@@ -143,7 +131,7 @@ export const getTranscriptUrl = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId, args.orgRole)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
@@ -173,7 +161,7 @@ export const getSessionWithFiles = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId, args.orgRole)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 

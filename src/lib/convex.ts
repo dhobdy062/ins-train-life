@@ -663,7 +663,12 @@ export async function reserveTrialSession(args: { emailHash: string; sessionKey:
   return client.mutation(reserveTrialSessionRef, args as never) as Promise<{ allowed: boolean; remaining: number }>;
 }
 
-export async function deleteSessionWithArtifacts(args: { sessionKey: string; orgId: string; userId: string }) {
+export async function deleteSessionWithArtifacts(args: {
+  sessionKey: string;
+  orgId: string;
+  userId: string;
+  orgRole?: string;
+}) {
   const client = getClient();
   return client.mutation(deleteSessionWithArtifactsRef, args as never) as Promise<{
     success: boolean;

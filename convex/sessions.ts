@@ -1,5 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { buildAssignedSessionStartUpdate } from "../src/lib/assigned-session-start";
+import { canDeleteSessionFiles } from "../src/lib/session-file-access";
 
 export const createTrainingSession = mutation({
   args: {
@@ -114,23 +116,15 @@ export const markAssignedSessionStarted = mutation({
     }
 
     const now = Date.now();
-    if (session.status === "assigned") {
-      await ctx.db.patch(session._id, {
-        status: "started",
-        startedAt: now,
-        updatedAt: now,
-      });
-    } else if (!session.startedAt) {
-      await ctx.db.patch(session._id, {
-        startedAt: now,
-        updatedAt: now,
-      });
+    const update = buildAssignedSessionStartUpdate(session, args.traineeClerkUserId, now);
+    if (update.patch) {
+      await ctx.db.patch(session._id, update.patch);
     }
 
     return {
       sessionKey: session.sessionKey,
-      status: session.status === "assigned" ? ("started" as const) : session.status,
-      startedAt: session.startedAt ?? now,
+      status: update.status,
+      startedAt: update.startedAt,
     };
   },
 });
@@ -140,6 +134,7 @@ export const deleteSessionWithArtifacts = mutation({
     sessionKey: v.string(),
     orgId: v.string(),
     userId: v.string(),
+    orgRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db
@@ -151,8 +146,7 @@ export const deleteSessionWithArtifacts = mutation({
       throw new Error("Session not found");
     }
 
-    const hasAccess = session.trainerId === args.userId || session.orgId === args.orgId;
-    if (!hasAccess) {
+    if (!canDeleteSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
