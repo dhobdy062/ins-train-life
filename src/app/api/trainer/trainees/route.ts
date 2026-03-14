@@ -1,4 +1,7 @@
 import crypto from "crypto";
+import {
+  isClerkAPIResponseError,
+} from "@clerk/nextjs/errors";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import {
@@ -110,8 +113,11 @@ export async function POST(request: Request) {
       email,
       name,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to provision trainee identity.";
+  } catch (error: unknown) {
+    let message = error instanceof Error ? error.message : "Unable to provision trainee identity.";
+    if (isClerkAPIResponseError(error)) {
+      message = error.errors[0]?.longMessage || error.errors[0]?.message || message;
+    }
     return NextResponse.json(
       { error: "Unable to create trainee account.", details: message },
       { status: 502 },

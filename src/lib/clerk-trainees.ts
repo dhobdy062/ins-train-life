@@ -53,7 +53,7 @@ export async function provisionTraineeClerkIdentity(args: {
     membership = await client.organizations.createOrganizationMembership({
       organizationId: args.orgId,
       userId: clerkUser.id,
-      role: "org:member",
+      role: "org:trainee",
     });
     createdMembership = true;
   }
