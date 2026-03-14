@@ -103,23 +103,42 @@ export async function POST(request: Request) {
     : buildExpectedRebuttals(difficulty, objectionsRequired);
   const inviteTokenHash = hashInviteToken(buildInviteToken());
 
-  const clerkIdentity = await provisionTraineeClerkIdentity({
-    orgId,
-    email,
-    name,
-  });
-  const result = await createTraineeProfile({
-    orgId,
-    trainerId: userId,
-    clerkUserId: clerkIdentity.clerkUserId,
-    clerkMembershipId: clerkIdentity.clerkMembershipId,
-    name,
-    email,
-    difficultyLevel: difficulty,
-    numObjections: objectionsRequired,
-    expectedRebuttals,
-    inviteTokenHash,
-  });
+  let clerkIdentity;
+  try {
+    clerkIdentity = await provisionTraineeClerkIdentity({
+      orgId,
+      email,
+      name,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to provision trainee identity.";
+    return NextResponse.json(
+      { error: "Unable to create trainee account.", details: message },
+      { status: 502 },
+    );
+  }
+
+  let result;
+  try {
+    result = await createTraineeProfile({
+      orgId,
+      trainerId: userId,
+      clerkUserId: clerkIdentity.clerkUserId,
+      clerkMembershipId: clerkIdentity.clerkMembershipId,
+      name,
+      email,
+      difficultyLevel: difficulty,
+      numObjections: objectionsRequired,
+      expectedRebuttals,
+      inviteTokenHash,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to save trainee profile.";
+    return NextResponse.json(
+      { error: "Unable to save trainee profile.", details: message },
+      { status: 500 },
+    );
+  }
 
   const trainingUrl = `${getAppUrl()}/sign-in?redirect_url=${encodeURIComponent("/dashboard/trainee")}`;
   const rendered = renderEmailSequence({
