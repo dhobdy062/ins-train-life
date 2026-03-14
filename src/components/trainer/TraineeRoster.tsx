@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getTraineeRosterActionRequest } from "@/components/trainer/trainee-roster-actions";
 
 type TraineeRow = {
   traineeId: string;
@@ -21,7 +22,7 @@ type TraineeRosterProps = {
   avgScoreById: Record<string, number>;
 };
 
-type DisableTraineeApiResponse = {
+type TraineeActionApiResponse = {
   ok?: boolean;
   error?: string;
 };
@@ -58,7 +59,7 @@ function getAccessStatus(trainee: TraineeRow) {
 
 export default function TraineeRoster({ trainees, avgScoreById }: TraineeRosterProps) {
   const router = useRouter();
-  const [removingTraineeId, setRemovingTraineeId] = useState<string | null>(null);
+  const [actingTraineeId, setActingTraineeId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   async function removeAccess(trainee: TraineeRow) {
@@ -67,27 +68,29 @@ export default function TraineeRoster({ trainees, avgScoreById }: TraineeRosterP
       return;
     }
 
-    setRemovingTraineeId(trainee.traineeId);
+    setActingTraineeId(trainee.traineeId);
     setStatusMessage(null);
 
     try {
+      const action = getTraineeRosterActionRequest(trainee);
       const response = await fetch("/api/trainer/trainees", {
-        method: "DELETE",
+        method: action.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ traineeId: trainee.traineeId }),
+        body: action.body,
       });
-      const payload = (await response.json().catch(() => ({}))) as DisableTraineeApiResponse;
+      const payload = (await response.json().catch(() => ({}))) as TraineeActionApiResponse;
 
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? "Unable to remove trainee access.");
+        throw new Error(payload.error ?? action.errorMessage);
       }
 
-      setStatusMessage(`Removed access for ${trainee.name}.`);
+      setStatusMessage(action.successMessage);
       router.refresh();
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Unable to remove trainee access.");
+      const action = getTraineeRosterActionRequest(trainee);
+      setStatusMessage(error instanceof Error ? error.message : action.errorMessage);
     } finally {
-      setRemovingTraineeId(null);
+      setActingTraineeId(null);
     }
   }
 
@@ -129,10 +132,12 @@ export default function TraineeRoster({ trainees, avgScoreById }: TraineeRosterP
                       type="button"
                       className="button secondary"
                       style={{ padding: "8px 14px", fontSize: "0.85rem" }}
-                      disabled={Boolean(removingTraineeId) || trainee.status === "disabled"}
+                      disabled={Boolean(actingTraineeId)}
                       onClick={() => void removeAccess(trainee)}
                     >
-                      {removingTraineeId === trainee.traineeId ? "Removing..." : "Remove access"}
+                      {actingTraineeId === trainee.traineeId
+                        ? getTraineeRosterActionRequest(trainee).pendingLabel
+                        : getTraineeRosterActionRequest(trainee).idleLabel}
                     </button>
                   </td>
                 </tr>
