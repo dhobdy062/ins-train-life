@@ -77,39 +77,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Selected objections are out of sync with the current library." }, { status: 400 });
   }
 
-  const expectedRebuttals = buildExpectedRebuttalsFromAssigned(selectedObjections);
-  const rebuttalGuideMap = buildRebuttalGuideMapForAssigned(
-    selectedObjections,
-    objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES,
-  );
+  try {
+    const expectedRebuttals = buildExpectedRebuttalsFromAssigned(selectedObjections);
+    const rebuttalGuideMap = buildRebuttalGuideMapForAssigned(
+      selectedObjections,
+      objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES,
+    );
+    const assistantId = resolveLifeAssistantId(difficulty);
 
-  const session = await createTrainingSession({
-    orgId,
-    trainerId: userId,
-    traineeId: trainee.traineeId,
-    traineeClerkUserId: trainee.clerkUserId,
-    assistantId: resolveLifeAssistantId(difficulty),
-    difficulty,
-    objectionsRequired: selectedObjections.length,
-    rebuttalKeys: expectedRebuttals,
-    selectedObjections,
-    rebuttalGuideMap,
-    channel: "web",
-    initialStatus: "assigned",
-    profileSnapshot: {
-      difficultyLevel: difficulty,
+    const session = await createTrainingSession({
+      orgId,
+      trainerId: userId,
+      traineeId: trainee.traineeId,
+      traineeClerkUserId: trainee.clerkUserId,
+      assistantId,
+      difficulty,
       objectionsRequired: selectedObjections.length,
-      expectedRebuttals,
-    },
-  });
+      rebuttalKeys: expectedRebuttals,
+      selectedObjections,
+      rebuttalGuideMap,
+      channel: "web",
+      initialStatus: "assigned",
+      profileSnapshot: {
+        difficultyLevel: difficulty,
+        objectionsRequired: selectedObjections.length,
+        expectedRebuttals,
+      },
+    });
 
-  return NextResponse.json({
-    ok: true,
-    sessionKey: session.sessionKey,
-    traineeId: trainee.traineeId,
-    traineeName: trainee.name,
-    difficulty,
-    objectionsRequired: selectedObjections.length,
-    selectedObjections,
-  });
+    return NextResponse.json({
+      ok: true,
+      sessionKey: session.sessionKey,
+      traineeId: trainee.traineeId,
+      traineeName: trainee.name,
+      difficulty,
+      objectionsRequired: selectedObjections.length,
+      selectedObjections,
+    });
+  } catch (err: any) {
+    console.error("Session creation error:", err);
+    return NextResponse.json({ error: err?.message || "Internal server error during session creation." }, { status: 500 });
+  }
 }
