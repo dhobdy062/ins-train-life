@@ -1,0 +1,37 @@
+
+ name                                       value               environments                        created    
+ VAPI_ASSISTANT_D5_LIFE_ID                  Encrypted           Development, Preview, Production    23m ago    
+ VAPI_ASSISTANT_D4_LIFE_ID                  Encrypted           Development, Preview, Production    23m ago    
+ VAPI_ASSISTANT_D3_LIFE_ID                  Encrypted           Development, Preview, Production    23m ago    
+ VAPI_ASSISTANT_D2_LIFE_ID                  Encrypted           Development, Preview, Production    23m ago    
+ VAPI_ASSISTANT_D1_LIFE_ID                  Encrypted           Development, Preview, Production    23m ago    
+ ADMIN_PORTAL_EMAILS                        Encrypted           Development, Preview, Production    8d ago     
+ EMAIL_FROM                                 Encrypted           Preview                             11d ago    
+ EMAIL_FROM                                 Encrypted           Production                          11d ago    
+ RESEND_FROM_EMAIL                          Encrypted           Production                          11d ago    
+ RESEND_FROM_EMAIL                          Encrypted           Development                         11d ago    
+ RESEND_FROM_EMAIL                          Encrypted           Preview                             11d ago    
+ VAPI_WEBHOOK_SECRET                        Encrypted           Development, Preview, Production    23d ago    
+ CLERK_WEBHOOK_SIGNING_SECRET               Encrypted           Development, Preview, Production    26d ago    
+ VAPI_PRIVATE_API_KEY                       Encrypted           Development, Preview, Production    28d ago    
+ STRIPE_WEBHOOK_SECRET                      Encrypted           Development, Preview, Production    29d ago    
+ VERIFY_HMAC_SECRET                         Encrypted           Development, Preview, Production    30d ago    
+ RESEND_API_KEY                             Encrypted           Development, Preview, Production    30d ago    
+ EMAIL_FROM                                 Encrypted           Development                         30d ago    
+ APP_URL                                    Encrypted           Development, Preview, Production    30d ago    
+ NEXT_PUBLIC_CONVEX_SITE_URL                Encrypted           Production                          31d ago    
+ STRIPE_PRICE_STARTER_ANNUAL_ID             Encrypted           Production                          31d ago    
+ STRIPE_PRICE_PRO_MONTHLY_ID                Encrypted           Production                          31d ago    
+ STRIPE_PRICE_PRO_ANNUAL_ID                 Encrypted           Production                          31d ago    
+ STRIPE_PRICE_AGENCY_MONTHLY_ID             Encrypted           Production                          31d ago    
+ STRIPE_PRICE_AGENCY_ANNUAL_ID              Encrypted           Production                          31d ago    
+ CONVEX_ADMIN_KEY                           Encrypted           Production                          31d ago    
+ CONVEX_URL                                 Encrypted           Production                          31d ago    
+ NEXT_PUBLIC_VAPI_PUBLIC_KEY                Encrypted           Production                          31d ago    
+ CRON_SECRET                                Encrypted           Production                          31d ago    
+ STRIPE_SECRET_KEY                          Encrypted           Production                          31d ago    
+ STRIPE_PRICE_STARTER_MONTHLY_ID            Encrypted           Production                          31d ago    
+ CONVEX_DEPLOY_KEY                          Encrypted           Development, Preview, Production    31d ago    
+ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY          Encrypted           Production, Preview, Development    32d ago    
+ CLERK_SECRET_KEY                           Encrypted           Production, Preview, Development    32d ago    
+
