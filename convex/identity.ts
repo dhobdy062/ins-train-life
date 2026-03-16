@@ -123,6 +123,19 @@ export const getMembershipByClerkId = query({
   },
 });
 
+export const getMembershipByOrgAndUser = query({
+  args: {
+    clerkOrgId: v.string(),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query("organizationMemberships")
+      .withIndex("by_org_user", (q) => q.eq("clerkOrgId", args.clerkOrgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+  },
+});
+
 export const upsertUser = mutation({
   args: {
     clerkUserId: v.string(),

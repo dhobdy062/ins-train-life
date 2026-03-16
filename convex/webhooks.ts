@@ -165,12 +165,7 @@ export const getOrgBillingAccess = query({
   },
   handler: async (ctx, args) => {
     const limit = normalizeLimit(args.limit);
-
-    const events = await ctx.db
-      .query("billingEvents")
-      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
-      .order("desc")
-      .take(limit);
+    const events = await getBillingEventsForOrg(ctx, args.orgId, limit);
 
     return resolveBillingAccess(events);
   },
@@ -208,11 +203,7 @@ export const getOrgEntitlement = query({
   },
   handler: async (ctx, args) => {
     const limit = normalizeLimit(args.limit);
-    const billingEvents = await ctx.db
-      .query("billingEvents")
-      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
-      .order("desc")
-      .take(limit);
+    const billingEvents = await getBillingEventsForOrg(ctx, args.orgId, limit);
 
     const billingAccess = resolveBillingAccess(billingEvents);
     const currentPlan = resolveCurrentPlan(billingEvents);
@@ -284,12 +275,9 @@ async function persistStripeEvent(
   const stripeCustomerId = extractStripeCustomerId(payload);
   const stripeSubscriptionId = extractStripeSubscriptionId(payload);
 
-  let orgId =
-    asString(payload?.data?.object?.metadata?.orgId) ||
-    asString(payload?.data?.object?.client_reference_id) ||
-    asString(payload?.data?.object?.clientReferenceId);
+  let orgId: string | undefined;
 
-  if (!orgId && stripeCustomerId) {
+  if (stripeCustomerId) {
     const mapped = await ctx.db
       .query("stripeCustomerOrgMap")
       .withIndex("by_stripeCustomerId", (q: any) => q.eq("stripeCustomerId", stripeCustomerId))
@@ -300,7 +288,14 @@ async function persistStripeEvent(
     }
   }
 
-  if (eventType === "checkout.session.completed" && stripeCustomerId && orgId) {
+  if (!orgId) {
+    const stripeUserId = extractStripeUserId(payload);
+    if (stripeUserId) {
+      orgId = await resolveOrgIdFromStripeUser(ctx, stripeUserId);
+    }
+  }
+
+  if (stripeCustomerId && orgId) {
     await upsertStripeCustomerOrgMap(ctx, {
       stripeCustomerId,
       orgId,
@@ -363,6 +358,33 @@ async function upsertStripeCustomerOrgMap(
   });
 }
 
+async function resolveOrgIdFromStripeUser(
+  ctx: any,
+  clerkUserId: string,
+) {
+  const memberships = await ctx.db
+    .query("organizationMemberships")
+    .withIndex("by_clerkUserId", (q: any) => q.eq("clerkUserId", clerkUserId))
+    .collect();
+
+  if (memberships.length === 0) {
+    return undefined;
+  }
+
+  const activeMemberships = memberships.filter((membership: any) => membership.status === "active");
+  if (activeMemberships.length === 1) {
+    return asString(activeMemberships[0].clerkOrgId);
+  }
+
+  if (activeMemberships.length > 1) {
+    const byUpdated = [...activeMemberships].sort((a: any, b: any) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    return asString(byUpdated[0]?.clerkOrgId);
+  }
+
+  const byUpdated = [...memberships].sort((a: any, b: any) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+  return asString(byUpdated[0]?.clerkOrgId);
+}
+
 async function persistVapiEvent(
   ctx: any,
   payload: any,
@@ -400,6 +422,7 @@ async function persistVapiEvent(
     "unknown";
 
   const durationSeconds = asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds) || 0;
+  const structuredOutcome = extractStructuredOutcome(payload);
 
   await ctx.db.insert("sessionMetrics", {
     sessionKey,
@@ -408,8 +431,8 @@ async function persistVapiEvent(
     eventType,
     durationSeconds: durationSeconds > 0 ? durationSeconds : undefined,
     toneStrikeCount: asNumber(message?.analysis?.toneStrikeCount),
-    rebuttalScore: asNumber(message?.analysis?.similarityScore),
-    appointmentSet: asBoolean(message?.analysis?.appointmentSet),
+    rebuttalScore: structuredOutcome.rebuttalPerformanceScore,
+    appointmentSet: structuredOutcome.appointmentSet,
     rawPayload: payload,
     createdAt: Date.now(),
   });
@@ -460,6 +483,23 @@ async function persistVapiEvent(
         eventType,
       },
       createdAt: Date.now(),
+    });
+  }
+
+  const session = await ctx.db
+    .query("trainingSessions")
+    .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", sessionKey))
+    .first();
+  if (session) {
+    await ctx.db.patch(session._id, {
+      structuredOutcome: {
+        rebuttalPerformanceScore: structuredOutcome.rebuttalPerformanceScore,
+        appointmentSet: structuredOutcome.appointmentSet,
+        callSummary: structuredOutcome.callSummary,
+        capturedAt: Date.now(),
+        providerEventId: asString(payload?.id) || asString(message?.id),
+      },
+      updatedAt: Date.now(),
     });
   }
 
@@ -640,6 +680,27 @@ function extractTranscriptAsset(payload: any): { kind: "text" | "url"; value: st
   return null;
 }
 
+function extractStructuredOutcome(payload: any) {
+  const call = payload?.call ?? payload?.message?.call ?? {};
+  const message = payload?.message ?? payload;
+  const analysis = message?.analysis ?? payload?.analysis ?? {};
+
+  return {
+    rebuttalPerformanceScore:
+      asNumber(analysis?.rebuttalPerformanceScore) ||
+      asNumber(analysis?.rebuttalPerformance) ||
+      asNumber(analysis?.similarityScore) ||
+      undefined,
+    appointmentSet: asBoolean(analysis?.appointmentSet),
+    callSummary:
+      asString(analysis?.callSummary) ||
+      asString(message?.summary) ||
+      asString(payload?.summary) ||
+      asString(call?.summary) ||
+      undefined,
+  };
+}
+
 async function materializeRecordingBlob(asset: { kind: "base64" | "url"; value: string; mimeType?: string }) {
   if (asset.kind === "url") {
     const response = await fetch(asset.value);
@@ -724,6 +785,81 @@ function normalizeLimit(limit: number | undefined) {
   return Math.min(Math.max(limit ?? DEFAULT_BILLING_EVENT_LIMIT, 1), MAX_BILLING_EVENT_LIMIT);
 }
 
+async function getBillingEventsForOrg(
+  ctx: any,
+  orgId: string,
+  limit: number,
+) {
+  const scopedEvents = await ctx.db
+    .query("billingEvents")
+    .withIndex("by_org_createdAt", (q: any) => q.eq("orgId", orgId))
+    .order("desc")
+    .take(limit);
+
+  const customerMap = await ctx.db
+    .query("stripeCustomerOrgMap")
+    .withIndex("by_orgId", (q: any) => q.eq("orgId", orgId))
+    .order("desc")
+    .first();
+
+  const merged = new Map<string, (typeof scopedEvents)[number]>();
+
+  for (const event of scopedEvents) {
+    const dedupeKey = event.providerEventId || String(event._id);
+    merged.set(dedupeKey, event);
+  }
+
+  if (customerMap?.stripeCustomerId) {
+    const customerEvents = await ctx.db
+      .query("billingEvents")
+      .withIndex("by_stripeCustomerId_createdAt", (q: any) => q.eq("stripeCustomerId", customerMap.stripeCustomerId))
+      .order("desc")
+      .take(limit);
+
+    for (const event of customerEvents) {
+      if (event.orgId !== orgId && event.orgId !== "unscoped") {
+        continue;
+      }
+      const dedupeKey = event.providerEventId || String(event._id);
+      if (!merged.has(dedupeKey)) {
+        merged.set(dedupeKey, event);
+      }
+    }
+  }
+
+  const unscopedEvents = await ctx.db
+    .query("billingEvents")
+    .withIndex("by_org_createdAt", (q: any) => q.eq("orgId", "unscoped"))
+    .order("desc")
+    .take(limit);
+
+  const userOrgCache = new Map<string, string | undefined>();
+
+  for (const event of unscopedEvents) {
+    const inferredUserId = extractStripeUserId(event.payload);
+    if (!inferredUserId) {
+      continue;
+    }
+
+    if (!userOrgCache.has(inferredUserId)) {
+      const resolvedOrg = await resolveOrgIdFromStripeUser(ctx, inferredUserId);
+      userOrgCache.set(inferredUserId, resolvedOrg);
+    }
+
+    const resolvedOrgId = userOrgCache.get(inferredUserId);
+    if (resolvedOrgId !== orgId) {
+      continue;
+    }
+
+    const dedupeKey = event.providerEventId || String(event._id);
+    if (!merged.has(dedupeKey)) {
+      merged.set(dedupeKey, event);
+    }
+  }
+
+  return [...merged.values()].sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+}
+
 function resolveBillingAccess(
   events: Array<{
     stripeSubscriptionId?: string;
@@ -746,6 +882,10 @@ function resolveBillingAccess(
     const status = event.status?.toLowerCase();
 
     if (!subscriptionId || !status) {
+      continue;
+    }
+
+    if (!allowedStatuses.has(status) && !deniedStatuses.has(status)) {
       continue;
     }
 
@@ -778,7 +918,7 @@ function resolveBillingAccess(
     return { hasAccess: true, reason: "checkout_provisional" as const };
   }
 
-  return { hasAccess: false, reason: "checkout_provisional_expired" as const };
+  return { hasAccess: true, reason: "checkout_completed" as const };
 }
 
 function resolveCurrentPlan(
@@ -991,7 +1131,29 @@ function extractStripeCustomerId(payload: any): string | undefined {
 }
 
 function extractStripeSubscriptionId(payload: any): string | undefined {
-  return asString(payload?.data?.object?.subscription) || asString(payload?.data?.object?.subscription?.id);
+  const object = payload?.data?.object;
+  return (
+    asString(object?.subscription) ||
+    asString(object?.subscription?.id) ||
+    // customer.subscription.* payloads use the subscription object itself.
+    (asString(object?.object) === "subscription" ? asString(object?.id) : undefined)
+  );
+}
+
+function extractStripeUserId(payload: any): string | undefined {
+  const object = payload?.data?.object;
+  const metadata = object?.metadata;
+  const subscriptionDetailsMetadata = object?.subscription_details?.metadata;
+  const expandedSubscriptionMetadata = object?.subscription?.metadata;
+
+  return (
+    asString(metadata?.userId) ||
+    asString(metadata?.user_id) ||
+    asString(subscriptionDetailsMetadata?.userId) ||
+    asString(subscriptionDetailsMetadata?.user_id) ||
+    asString(expandedSubscriptionMetadata?.userId) ||
+    asString(expandedSubscriptionMetadata?.user_id)
+  );
 }
 
 function extractTimestampMs(payload: any): number | undefined {

@@ -1,11 +1,22 @@
 import crypto from "crypto";
+import {
+  isClerkAPIResponseError,
+} from "@clerk/nextjs/errors";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createTraineeProfile, listTraineesByOrg, logEmailEvent } from "@/lib/convex";
+import {
+  createTraineeProfile,
+  disableTraineeProfile,
+  getOrgTrainerObjectionConfig,
+  listTraineesByOrg,
+  logEmailEvent,
+} from "@/lib/convex";
+import { provisionTraineeClerkIdentity } from "@/lib/clerk-trainees";
 import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 import { renderEmailSequence } from "@/lib/email-sequences";
 import { hashInviteToken } from "@/lib/identity-link";
 import { buildExpectedRebuttals, isDifficultyLevel, type DifficultyLevel } from "@/lib/training-profile";
+import { buildExpectedRebuttalsFromLibrary } from "@/lib/trainer-objections";
 
 type CreateTraineePayload = {
   name?: string;
@@ -15,6 +26,12 @@ type CreateTraineePayload = {
   trainerName?: string;
 };
 
+type DisableTraineePayload = {
+  traineeId?: string;
+};
+
+const RESEND_FALLBACK_FROM = "onboarding@resend.dev";
+
 function hashEmail(email: string) {
   return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
@@ -23,14 +40,26 @@ function buildInviteToken() {
   return `${crypto.randomBytes(18).toString("hex")}${Date.now().toString(36)}`;
 }
 
+function isFromAddressVerificationError(error: { name?: string; message?: string } | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.name === "invalid_from_address") {
+    return true;
+  }
+
+  return /domain .* not verified/i.test(error.message ?? "");
+}
+
 export async function GET() {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to view trainees." }, { status: 401 });
   }
 
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before viewing trainees." }, { status: 400 });
   }
 
   const trainees = await listTraineesByOrg({ orgId, limit: 100 });
@@ -40,11 +69,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const { userId, orgId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to add trainees." }, { status: 401 });
   }
 
   if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a team before adding trainees." }, { status: 400 });
   }
 
   let payload: CreateTraineePayload = {};
@@ -71,22 +100,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
   }
 
-  const expectedRebuttals = buildExpectedRebuttals(difficulty, objectionsRequired);
-  const inviteToken = buildInviteToken();
-  const inviteTokenHash = hashInviteToken(inviteToken);
+  const objectionConfig = await getOrgTrainerObjectionConfig({ orgId }).catch(() => null);
+  const expectedRebuttals = objectionConfig
+    ? buildExpectedRebuttalsFromLibrary(difficulty, objectionsRequired, objectionConfig.objectionLibrary)
+    : buildExpectedRebuttals(difficulty, objectionsRequired);
+  const inviteTokenHash = hashInviteToken(buildInviteToken());
 
-  const result = await createTraineeProfile({
-    orgId,
-    trainerId: userId,
-    name,
-    email,
-    difficultyLevel: difficulty,
-    numObjections: objectionsRequired,
-    expectedRebuttals,
-    inviteTokenHash,
-  });
+  let clerkIdentity;
+  try {
+    clerkIdentity = await provisionTraineeClerkIdentity({
+      orgId,
+      email,
+      name,
+    });
+  } catch (error: unknown) {
+    let message = error instanceof Error ? error.message : "Unable to provision trainee identity.";
+    if (isClerkAPIResponseError(error)) {
+      message = error.errors[0]?.longMessage || error.errors[0]?.message || message;
+    }
+    return NextResponse.json(
+      { error: "Unable to create trainee account.", details: message },
+      { status: 502 },
+    );
+  }
 
-  const trainingUrl = `${getAppUrl()}/training/start?invite=${encodeURIComponent(inviteToken)}`;
+  let result;
+  try {
+    result = await createTraineeProfile({
+      orgId,
+      trainerId: userId,
+      clerkUserId: clerkIdentity.clerkUserId,
+      clerkMembershipId: clerkIdentity.clerkMembershipId,
+      name,
+      email,
+      difficultyLevel: difficulty,
+      numObjections: objectionsRequired,
+      expectedRebuttals,
+      inviteTokenHash,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to save trainee profile.";
+    return NextResponse.json(
+      { error: "Unable to save trainee profile.", details: message },
+      { status: 500 },
+    );
+  }
+
+  const trainingUrl = `${getAppUrl()}/sign-in?redirect_url=${encodeURIComponent("/dashboard/trainee")}`;
   const rendered = renderEmailSequence({
     sequence: "trainee_invitation",
     variables: {
@@ -100,8 +160,10 @@ export async function POST(request: Request) {
   if (rendered.ok) {
     try {
       const resend = getEmailClient();
-      const sendResult = await resend.emails.send({
-        from: getFromAddress(),
+      const configuredFromAddress = getFromAddress();
+      let fromAddressUsed = configuredFromAddress;
+      let sendResult = await resend.emails.send({
+        from: configuredFromAddress,
         to: email,
         subject: rendered.subject,
         html: rendered.html,
@@ -110,6 +172,28 @@ export async function POST(request: Request) {
           "X-Cream-Sequence": "trainee_invitation",
         },
       });
+
+      if (
+        sendResult.error &&
+        isFromAddressVerificationError(sendResult.error) &&
+        configuredFromAddress !== RESEND_FALLBACK_FROM
+      ) {
+        const fallbackResult = await resend.emails.send({
+          from: RESEND_FALLBACK_FROM,
+          to: email,
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text,
+          headers: {
+            "X-Cream-Sequence": "trainee_invitation",
+          },
+        });
+
+        sendResult = fallbackResult;
+        if (!fallbackResult.error) {
+          fromAddressUsed = RESEND_FALLBACK_FROM;
+        }
+      }
 
       await logEmailEvent({
         provider: "resend",
@@ -124,6 +208,10 @@ export async function POST(request: Request) {
         metadata: {
           source: "api/trainer/trainees",
           traineeId: result.traineeId,
+          clerkUserId: clerkIdentity.clerkUserId,
+          clerkMembershipId: clerkIdentity.clerkMembershipId,
+          fromAddress: fromAddressUsed,
+          configuredFromAddress,
         },
       }).catch(() => null);
 
@@ -131,6 +219,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error: "Trainee created, but invitation email failed to send.",
+            details: sendResult.error.message,
             traineeId: result.traineeId,
             trainingUrl,
           },
@@ -159,5 +248,43 @@ export async function POST(request: Request) {
     numObjections: objectionsRequired,
     expectedRebuttals,
     trainingUrl,
+    clerkUserId: clerkIdentity.clerkUserId,
+    clerkMembershipId: clerkIdentity.clerkMembershipId,
+    clerkProvisioning: {
+      createdUser: clerkIdentity.createdUser,
+      createdMembership: clerkIdentity.createdMembership,
+    },
   });
+}
+
+export async function DELETE(request: Request) {
+  const { userId, orgId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in to manage trainees." }, { status: 401 });
+  }
+
+  if (!orgId) {
+    return NextResponse.json({ error: "Choose a team before managing trainees." }, { status: 400 });
+  }
+
+  let payload: DisableTraineePayload = {};
+  try {
+    payload = (await request.json()) as DisableTraineePayload;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+  }
+
+  const traineeId = payload.traineeId?.trim();
+  if (!traineeId) {
+    return NextResponse.json({ error: "traineeId is required." }, { status: 400 });
+  }
+
+  try {
+    const result = await disableTraineeProfile({ traineeId, orgId });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to disable trainee access.";
+    const status = /not found/i.test(message) ? 404 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

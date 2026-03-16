@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "jest --runInBand",
     "lint": "eslint",
+    "check:hygiene": "node scripts/check-repo-hygiene.mjs",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
-    "backfill:clerk:convex": "tsx scripts/backfill-clerk-to-convex.ts"
+    "backfill:clerk:convex": "tsx scripts/backfill-clerk-to-convex.ts",
+    "audit:identity-sessions": "tsx scripts/audit-identity-session-mismatches.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",

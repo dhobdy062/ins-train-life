@@ -64,10 +64,21 @@ export default defineSchema({
     orgId: v.string(),
     trainerId: v.string(),
     traineeId: v.optional(v.string()),
+    traineeClerkUserId: v.optional(v.string()),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
     rebuttalKeys: v.array(v.string()),
+    selectedObjections: v.optional(
+      v.array(
+        v.object({
+          order: v.number(),
+          text: v.string(),
+          rebuttalType: v.string(),
+        }),
+      ),
+    ),
+    rebuttalGuideMap: v.optional(v.record(v.string(), v.string())),
     channel: v.literal("web"),
     identityMode: v.optional(v.union(v.literal("ip_match"), v.literal("backup_code"), v.literal("manual_override"))),
     ipHash: v.optional(v.string()),
@@ -80,8 +91,18 @@ export default defineSchema({
     ),
     recordingStorageId: v.optional(v.id("_storage")),
     transcriptStorageId: v.optional(v.id("_storage")),
-    status: v.union(v.literal("started"), v.literal("completed"), v.literal("abandoned")),
+    structuredOutcome: v.optional(
+      v.object({
+        rebuttalPerformanceScore: v.optional(v.number()),
+        appointmentSet: v.optional(v.boolean()),
+        callSummary: v.optional(v.string()),
+        capturedAt: v.number(),
+        providerEventId: v.optional(v.string()),
+      }),
+    ),
+    status: v.union(v.literal("assigned"), v.literal("started"), v.literal("completed"), v.literal("abandoned")),
     createdAt: v.number(),
+    startedAt: v.optional(v.number()),
     endedAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
@@ -92,6 +113,8 @@ export default defineSchema({
   trainees: defineTable({
     orgId: v.string(),
     trainerId: v.string(),
+    clerkUserId: v.optional(v.string()),
+    clerkMembershipId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
     difficultyLevel: v.string(),
@@ -105,7 +128,57 @@ export default defineSchema({
   })
     .index("by_org_createdAt", ["orgId", "createdAt"])
     .index("by_org_email", ["orgId", "email"])
+    .index("by_org_clerkUserId", ["orgId", "clerkUserId"])
     .index("by_inviteTokenHash", ["inviteTokenHash"]),
+
+  trainerObjectionConfigs: defineTable({
+    orgId: v.string(),
+    objectionLibrary: v.object({
+      D1: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D2: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D3: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D4: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+      D5: v.array(v.object({ text: v.string(), rebuttalType: v.string(), frequency: v.string() })),
+    }),
+    rebuttalGuides: v.record(v.string(), v.string()),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_orgId", ["orgId"]),
+
+  trainerTrainingPlans: defineTable({
+    orgId: v.string(),
+    plans: v.object({
+      day30: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      day60: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      day90: v.object({
+        goal: v.string(),
+        metricTarget: v.string(),
+        targetDate: v.string(),
+        notes: v.string(),
+      }),
+      coaching: v.object({
+        topic: v.string(),
+        focusType: v.string(),
+        scheduledAt: v.string(),
+        attendees: v.string(),
+        agenda: v.string(),
+      }),
+    }),
+    updatedBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_orgId", ["orgId"]),
 
   traineeSessionIps: defineTable({
     orgId: v.string(),
@@ -180,7 +253,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_providerEventId", ["providerEventId"])
-    .index("by_org_createdAt", ["orgId", "createdAt"]),
+    .index("by_org_createdAt", ["orgId", "createdAt"])
+    .index("by_stripeCustomerId_createdAt", ["stripeCustomerId", "createdAt"]),
 
   stripeCustomerOrgMap: defineTable({
     stripeCustomerId: v.string(),

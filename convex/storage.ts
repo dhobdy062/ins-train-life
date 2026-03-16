@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { canAccessSessionFiles } from "../src/lib/session-file-access";
 
 function decodeBase64(input: string) {
   const normalized = input.includes(",") ? input.slice(input.indexOf(",") + 1) : input;
@@ -18,10 +19,6 @@ async function getSessionByKey(ctx: any, sessionKey: string) {
     .first();
 }
 
-function canAccessSession(session: { trainerId: string; orgId: string }, orgId: string, userId: string) {
-  return session.trainerId === userId || session.orgId === orgId;
-}
-
 export const storeSessionRecording = mutation({
   args: {
     sessionKey: v.string(),
@@ -36,7 +33,7 @@ export const storeSessionRecording = mutation({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId })) {
       throw new Error("Unauthorized");
     }
 
@@ -71,7 +68,7 @@ export const storeTranscript = mutation({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId })) {
       throw new Error("Unauthorized");
     }
 
@@ -96,6 +93,7 @@ export const getRecordingUrl = query({
     sessionKey: v.string(),
     orgId: v.string(),
     userId: v.string(),
+    orgRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const session = await getSessionByKey(ctx, args.sessionKey);
@@ -103,7 +101,7 @@ export const getRecordingUrl = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
@@ -125,6 +123,7 @@ export const getTranscriptUrl = query({
     sessionKey: v.string(),
     orgId: v.string(),
     userId: v.string(),
+    orgRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const session = await getSessionByKey(ctx, args.sessionKey);
@@ -132,7 +131,7 @@ export const getTranscriptUrl = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
@@ -154,6 +153,7 @@ export const getSessionWithFiles = query({
     sessionKey: v.string(),
     orgId: v.string(),
     userId: v.string(),
+    orgRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const session = await getSessionByKey(ctx, args.sessionKey);
@@ -161,7 +161,7 @@ export const getSessionWithFiles = query({
       throw new Error("Session not found");
     }
 
-    if (!canAccessSession(session, args.orgId, args.userId)) {
+    if (!canAccessSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 

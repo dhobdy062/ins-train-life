@@ -9,7 +9,7 @@ export function getEmailClient() {
 }
 
 export function getFromAddress() {
-  return process.env.EMAIL_FROM || "cream@support.retrospxt.com";
+  return process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM || "cream@support.retrospxt.com";
 }
 
 export function getAppUrl() {

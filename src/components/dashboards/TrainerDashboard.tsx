@@ -50,6 +50,7 @@ interface TrainerDashboardProps {
 type CreateTraineeApiResponse = {
   ok?: boolean;
   error?: string;
+  details?: string;
   trainingUrl?: string;
 };
 
@@ -120,12 +121,15 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
       });
 
       const payload = (await response.json().catch(() => ({}))) as CreateTraineeApiResponse;
+      if (payload.trainingUrl) {
+        setLatestInviteUrl(payload.trainingUrl);
+      }
+
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? "Unable to create trainee.");
+        throw new Error(payload.details ?? payload.error ?? "Unable to create trainee.");
       }
 
       setTraineeStatus("Trainee created and invitation sent.");
-      setLatestInviteUrl(payload.trainingUrl ?? null);
       setTraineeForm({
         name: "",
         email: "",
@@ -148,6 +152,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
     entitlementMode === "paid"
       ? "Paid accounts have an active Stripe subscription and can manage upgrades or downgrades in billing settings."
       : "";
+  const isPaidOrg = entitlementMode === "paid";
 
   return (
     <div className={styles.container}>
@@ -239,14 +244,15 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               <p>
                 Trial vs paid access is determined by subscription status. Trial orgs are capped by trial minutes, while paid orgs have an active Stripe subscription.
               </p>
+              <p className={styles.billingNote}>Billing is organization-wide. Members in the same organization inherit that organization&apos;s paid access.</p>
               {trialDescription ? <p className={styles.billingNote}>{trialDescription}</p> : null}
               {paidDescription ? <p className={styles.billingNote}>{paidDescription}</p> : null}
               <div className={styles.billingActions}>
-                <a className={styles.btn} href="/checkout/start?plan=starter&interval=monthly">Start paid plan (Starter)</a>
-                <a className={styles.btn} href="/checkout/start?plan=pro&interval=monthly">Choose Pro</a>
-                <a className={styles.btn} href="/checkout/start?plan=agency&interval=monthly">Choose Agency</a>
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=starter&interval=monthly">Start paid plan (Starter)</a> : null}
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=pro&interval=monthly">Choose Pro</a> : null}
+                {!isPaidOrg ? <a className={styles.btn} href="/checkout/start?plan=agency&interval=monthly">Choose Agency</a> : null}
                 <button className={styles.btn} type="button" onClick={openBillingPortal} disabled={openingPortal}>
-                  {openingPortal ? "Opening billing..." : "Manage paid plan (upgrade/downgrade)"}
+                  {openingPortal ? "Opening billing..." : isPaidOrg ? "Manage organization billing" : "Manage paid plan (upgrade/downgrade)"}
                 </button>
               </div>
               {billingError ? <p className={styles.billingError}>{billingError}</p> : null}
@@ -328,7 +334,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   </button>
                 </form>
                 <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#666" }}>
-                  IP is captured after trainee consent from their invite link.
+                  Access confirmation is completed by the trainee from their invite link.
                 </p>
                 {traineeStatus ? <p style={{ margin: "8px 0 0", fontSize: "13px" }}>{traineeStatus}</p> : null}
                 {latestInviteUrl ? (
@@ -337,7 +343,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
                   </p>
                 ) : null}
                 <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#555" }}>
-                  Dashboard reads live data from trainees, sessions, metrics, and rebuttal responses.
+                  Dashboard updates after each completed training call.
                 </p>
               </div>
 
@@ -415,7 +421,7 @@ const TrainerDashboard: React.FC<TrainerDashboardProps> = ({
               <div className={styles.tableContainer}>
                 {teamSnapshot.trainees.length === 0 ? (
                   <p style={{ padding: "16px 0", color: "#666" }}>
-                    No trainees yet. Add a trainee above to start collecting Vapi training results.
+                    No trainees yet. Add a trainee above to start collecting training results.
                   </p>
                 ) : null}
                 <table>

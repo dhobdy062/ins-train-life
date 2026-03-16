@@ -6,6 +6,10 @@ describe("validateAssistantVariableContract", () => {
       {
         difficulty: "D2",
         objectionsRequired: "3",
+        objection_sequence: JSON.stringify([
+          { order: 0, text: "First objection", rebuttalType: "dont_remember" },
+          { order: 1, text: "Second objection", rebuttalType: "not_interested" },
+        ]),
         rebuttals: JSON.stringify({ not_interested: "Sample" }),
         session_key: "sess_1",
         org_id: "org_1",

@@ -9,6 +9,8 @@ export const createTraineeProfile = mutation({
   args: {
     orgId: v.string(),
     trainerId: v.string(),
+    clerkUserId: v.optional(v.string()),
+    clerkMembershipId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
     difficultyLevel: v.string(),
@@ -28,6 +30,8 @@ export const createTraineeProfile = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         trainerId: args.trainerId,
+        clerkUserId: args.clerkUserId,
+        clerkMembershipId: args.clerkMembershipId,
         name: args.name,
         difficultyLevel: args.difficultyLevel,
         numObjections: args.numObjections,
@@ -46,6 +50,8 @@ export const createTraineeProfile = mutation({
     const traineeId = await ctx.db.insert("trainees", {
       orgId: args.orgId,
       trainerId: args.trainerId,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId,
       name: args.name,
       email: normalizedEmail,
       difficultyLevel: args.difficultyLevel,
@@ -82,6 +88,100 @@ export const getTraineeByInviteTokenHash = query({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
+export const getTraineeByOrgAndEmail = query({
+  args: {
+    orgId: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_email", (q) => q.eq("orgId", args.orgId).eq("email", normalizeEmail(args.email)))
+      .first();
+
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
+export const getTraineeByClerkUserId = query({
+  args: {
+    orgId: v.string(),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_clerkUserId", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
+      name: trainee.name,
+      email: trainee.email,
+      difficultyLevel: trainee.difficultyLevel,
+      numObjections: trainee.numObjections,
+      expectedRebuttals: trainee.expectedRebuttals,
+      status: trainee.status,
+      lastActiveAt: trainee.lastActiveAt ?? null,
+    };
+  },
+});
+
+export const getTraineeProfileById = query({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId || trainee.status === "disabled") {
+      return null;
+    }
+
+    return {
+      traineeId: trainee._id,
+      orgId: trainee.orgId,
+      trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -107,17 +207,32 @@ export const listTraineesByOrg = query({
       .order("desc")
       .take(limit);
 
-    return trainees.map((trainee) => ({
-      traineeId: trainee._id,
-      name: trainee.name,
-      email: trainee.email,
-      difficultyLevel: trainee.difficultyLevel,
-      numObjections: trainee.numObjections,
-      expectedRebuttals: trainee.expectedRebuttals,
-      status: trainee.status,
-      updatedAt: trainee.updatedAt,
-      lastActiveAt: trainee.lastActiveAt ?? null,
-    }));
+    const enriched = await Promise.all(
+      trainees.map(async (trainee) => {
+        const ipLink = await ctx.db
+          .query("traineeSessionIps")
+          .withIndex("by_org_trainee", (q) => q.eq("orgId", args.orgId).eq("traineeId", trainee._id))
+          .first();
+
+        return {
+          traineeId: trainee._id,
+          clerkUserId: trainee.clerkUserId ?? null,
+          clerkMembershipId: trainee.clerkMembershipId ?? null,
+          name: trainee.name,
+          email: trainee.email,
+          difficultyLevel: trainee.difficultyLevel,
+          numObjections: trainee.numObjections,
+          expectedRebuttals: trainee.expectedRebuttals,
+          status: trainee.status,
+          updatedAt: trainee.updatedAt,
+          lastActiveAt: trainee.lastActiveAt ?? null,
+          ipAddressMasked: ipLink?.ipAddressMasked ?? null,
+          ipConsentedAt: ipLink?.consentedAt ?? null,
+        };
+      }),
+    );
+
+    return enriched;
   },
 });
 
@@ -172,6 +287,8 @@ export const linkTraineeIpByInviteTokenHash = mutation({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -207,6 +324,8 @@ export const getTraineeProfileByIpHash = query({
       traineeId: trainee._id,
       orgId: trainee.orgId,
       trainerId: trainee.trainerId,
+      clerkUserId: trainee.clerkUserId ?? null,
+      clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
       difficultyLevel: trainee.difficultyLevel,
@@ -243,6 +362,95 @@ export const markTraineeActive = mutation({
   },
 });
 
+export const disableTraineeProfile = mutation({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId) {
+      throw new Error("Trainee not found");
+    }
+
+    const now = Date.now();
+    if (trainee.status !== "disabled") {
+      await ctx.db.patch(trainee._id, {
+        status: "disabled",
+        updatedAt: now,
+      });
+    }
+
+    return {
+      traineeId: trainee._id,
+      status: "disabled" as const,
+      updatedAt: now,
+      alreadyDisabled: trainee.status === "disabled",
+    };
+  },
+});
+
+export const linkTraineeIdentity = mutation({
+  args: {
+    traineeId: v.id("trainees"),
+    orgId: v.string(),
+    clerkUserId: v.string(),
+    clerkMembershipId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const trainee = await ctx.db.get(args.traineeId);
+    if (!trainee || trainee.orgId !== args.orgId) {
+      throw new Error("Trainee not found");
+    }
+
+    const now = Date.now();
+    const nextStatus = trainee.status === "disabled" ? "disabled" : "active";
+
+    await ctx.db.patch(trainee._id, {
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId ?? trainee.clerkMembershipId,
+      status: nextStatus,
+      lastActiveAt: now,
+      updatedAt: now,
+    });
+
+    const sessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_trainee_createdAt", (q) => q.eq("traineeId", args.traineeId))
+      .collect();
+
+    let repairedSessionCount = 0;
+    for (const session of sessions) {
+      if (session.orgId !== args.orgId) {
+        continue;
+      }
+
+      if (session.status === "completed" || session.status === "abandoned") {
+        continue;
+      }
+
+      if (session.traineeClerkUserId === args.clerkUserId) {
+        continue;
+      }
+
+      await ctx.db.patch(session._id, {
+        traineeClerkUserId: args.clerkUserId,
+        updatedAt: now,
+      });
+      repairedSessionCount += 1;
+    }
+
+    return {
+      traineeId: trainee._id,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId ?? trainee.clerkMembershipId ?? null,
+      status: nextStatus,
+      repairedSessionCount,
+      updatedAt: now,
+    };
+  },
+});
+
 export const getTraineeResultsSnapshot = query({
   args: {
     traineeId: v.id("trainees"),
@@ -260,7 +468,7 @@ export const getTraineeResultsSnapshot = query({
       .query("trainingSessions")
       .withIndex("by_trainee_createdAt", (q) => q.eq("traineeId", args.traineeId))
       .order("desc")
-      .take(limit);
+      .take(limit * 3);
 
     const metricsBySession = new Map<
       string,
@@ -296,7 +504,20 @@ export const getTraineeResultsSnapshot = query({
       );
     }
 
-    const latestSession = sessions[0] ?? null;
+    const resultSessions = sessions.filter((session) => session.status !== "assigned").slice(0, limit);
+    const latestSession = resultSessions[0] ?? null;
+    const assignedSessions = sessions
+      .filter((session) => session.status === "assigned")
+      .slice(0, limit)
+      .map((session) => ({
+        sessionKey: session.sessionKey,
+        status: session.status,
+        difficulty: session.difficulty,
+        objectionsRequired: session.objectionsRequired,
+        createdAt: session.createdAt,
+        startedAt: session.startedAt ?? null,
+        selectedObjections: session.selectedObjections ?? [],
+      }));
     let latestRebuttals: Array<{
       objectionId: string | null;
       rebuttalTypeExpected: string | null;
@@ -329,6 +550,42 @@ export const getTraineeResultsSnapshot = query({
         }));
     }
 
+    const latestSessionInfo = latestSession
+      ? {
+          sessionKey: latestSession.sessionKey,
+          status: latestSession.status,
+          assistantId: latestSession.assistantId,
+          difficulty: latestSession.difficulty,
+          objectionsRequired: latestSession.objectionsRequired,
+          startedAt: latestSession.startedAt ?? latestSession.createdAt,
+          endedAt: latestSession.endedAt ?? null,
+          structuredOutcome: latestSession.structuredOutcome ?? null,
+          recordingUrl: latestSession.recordingStorageId
+            ? await ctx.storage.getUrl(latestSession.recordingStorageId)
+            : null,
+          transcriptUrl: latestSession.transcriptStorageId
+            ? await ctx.storage.getUrl(latestSession.transcriptStorageId)
+            : null,
+        }
+      : null;
+
+    const history = await Promise.all(
+      resultSessions.map(async (session) => ({
+        sessionKey: session.sessionKey,
+        status: session.status,
+        assistantId: session.assistantId,
+        difficulty: session.difficulty,
+        objectionsRequired: session.objectionsRequired,
+        startedAt: session.startedAt ?? session.createdAt,
+        endedAt: session.endedAt ?? null,
+        selectedObjections: session.selectedObjections ?? [],
+        structuredOutcome: session.structuredOutcome ?? null,
+        recordingUrl: session.recordingStorageId ? await ctx.storage.getUrl(session.recordingStorageId) : null,
+        transcriptUrl: session.transcriptStorageId ? await ctx.storage.getUrl(session.transcriptStorageId) : null,
+        metrics: metricsBySession.get(session.sessionKey) ?? null,
+      })),
+    );
+
     return {
       trainee: {
         id: trainee._id,
@@ -337,29 +594,11 @@ export const getTraineeResultsSnapshot = query({
         numObjections: trainee.numObjections,
         status: trainee.status,
       },
-      latestSession: latestSession
-        ? {
-            sessionKey: latestSession.sessionKey,
-            status: latestSession.status,
-            assistantId: latestSession.assistantId,
-            difficulty: latestSession.difficulty,
-            objectionsRequired: latestSession.objectionsRequired,
-            startedAt: latestSession.createdAt,
-            endedAt: latestSession.endedAt ?? null,
-          }
-        : null,
+      latestSession: latestSessionInfo,
       latestMetrics: latestSession ? metricsBySession.get(latestSession.sessionKey) ?? null : null,
       latestRebuttals,
-      history: sessions.map((session) => ({
-        sessionKey: session.sessionKey,
-        status: session.status,
-        assistantId: session.assistantId,
-        difficulty: session.difficulty,
-        objectionsRequired: session.objectionsRequired,
-        startedAt: session.createdAt,
-        endedAt: session.endedAt ?? null,
-        metrics: metricsBySession.get(session.sessionKey) ?? null,
-      })),
+      assignedSessions,
+      history,
     };
   },
 });

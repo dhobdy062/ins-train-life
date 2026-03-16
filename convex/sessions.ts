@@ -1,18 +1,32 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { buildAssignedSessionStartUpdate } from "../src/lib/assigned-session-start";
+import { canDeleteSessionFiles } from "../src/lib/session-file-access";
 
 export const createTrainingSession = mutation({
   args: {
     orgId: v.string(),
     trainerId: v.string(),
     traineeId: v.optional(v.string()),
+    traineeClerkUserId: v.optional(v.string()),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
     rebuttalKeys: v.array(v.string()),
+    selectedObjections: v.optional(
+      v.array(
+        v.object({
+          order: v.number(),
+          text: v.string(),
+          rebuttalType: v.string(),
+        }),
+      ),
+    ),
+    rebuttalGuideMap: v.optional(v.record(v.string(), v.string())),
     channel: v.literal("web"),
     identityMode: v.optional(v.union(v.literal("ip_match"), v.literal("backup_code"), v.literal("manual_override"))),
     ipHash: v.optional(v.string()),
+    initialStatus: v.optional(v.union(v.literal("assigned"), v.literal("started"))),
     profileSnapshot: v.optional(
       v.object({
         difficultyLevel: v.string(),
@@ -29,16 +43,20 @@ export const createTrainingSession = mutation({
       orgId: args.orgId,
       trainerId: args.trainerId,
       traineeId: args.traineeId,
+      traineeClerkUserId: args.traineeClerkUserId,
       assistantId: args.assistantId,
       difficulty: args.difficulty,
       objectionsRequired: args.objectionsRequired,
       rebuttalKeys: args.rebuttalKeys,
+      selectedObjections: args.selectedObjections,
+      rebuttalGuideMap: args.rebuttalGuideMap,
       channel: args.channel,
       identityMode: args.identityMode,
       ipHash: args.ipHash,
       profileSnapshot: args.profileSnapshot,
-      status: "started",
+      status: args.initialStatus ?? "started",
       createdAt: Date.now(),
+      startedAt: args.initialStatus === "assigned" ? undefined : Date.now(),
       updatedAt: Date.now(),
     });
 
@@ -72,11 +90,51 @@ export const reserveTrialSession = mutation({
   },
 });
 
+export const markAssignedSessionStarted = mutation({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    traineeId: v.id("trainees"),
+    traineeClerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId) {
+      throw new Error("Session not found");
+    }
+
+    if (session.traineeId !== args.traineeId) {
+      throw new Error("Session does not belong to this trainee");
+    }
+
+    if (session.traineeClerkUserId && session.traineeClerkUserId !== args.traineeClerkUserId) {
+      throw new Error("Unauthorized");
+    }
+
+    const now = Date.now();
+    const update = buildAssignedSessionStartUpdate(session, args.traineeClerkUserId, now);
+    if (update.patch) {
+      await ctx.db.patch(session._id, update.patch);
+    }
+
+    return {
+      sessionKey: session.sessionKey,
+      status: update.status,
+      startedAt: update.startedAt,
+    };
+  },
+});
+
 export const deleteSessionWithArtifacts = mutation({
   args: {
     sessionKey: v.string(),
     orgId: v.string(),
     userId: v.string(),
+    orgRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db
@@ -88,8 +146,7 @@ export const deleteSessionWithArtifacts = mutation({
       throw new Error("Session not found");
     }
 
-    const hasAccess = session.trainerId === args.userId || session.orgId === args.orgId;
-    if (!hasAccess) {
+    if (!canDeleteSessionFiles(session, { userId: args.userId, orgId: args.orgId, orgRole: args.orgRole })) {
       throw new Error("Unauthorized");
     }
 
@@ -130,6 +187,7 @@ export const markSessionCompletedFromWebhook = internalMutation({
     const patch: {
       status?: "completed";
       endedAt?: number;
+      startedAt?: number;
       updatedAt: number;
     } = {
       updatedAt: Date.now(),
@@ -141,6 +199,10 @@ export const markSessionCompletedFromWebhook = internalMutation({
 
     if (!session.endedAt) {
       patch.endedAt = args.endedAt ?? Date.now();
+    }
+
+    if (!session.startedAt) {
+      patch.startedAt = session.createdAt;
     }
 
     await ctx.db.patch(session._id, patch);
@@ -176,6 +238,7 @@ export const markSessionCompleted = mutation({
     const now = Date.now();
     await ctx.db.patch(session._id, {
       status: "completed",
+      startedAt: session.startedAt ?? session.createdAt,
       endedAt: args.endedAt ?? now,
       updatedAt: now,
     });
@@ -256,6 +319,242 @@ export const recordRebuttalScore = mutation({
   },
 });
 
+export const getAssignedSessionForTraineeStart = query({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId) {
+      return null;
+    }
+
+    const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+    if (!trainee || trainee.status === "disabled") {
+      return null;
+    }
+
+    const linkedClerkUserId = session.traineeClerkUserId ?? trainee.clerkUserId ?? null;
+    if (!linkedClerkUserId || linkedClerkUserId !== args.clerkUserId) {
+      return null;
+    }
+
+    if (session.status === "completed" || session.status === "abandoned") {
+      return null;
+    }
+
+    return {
+      sessionKey: session.sessionKey,
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: trainee._id,
+      traineeClerkUserId: linkedClerkUserId,
+      traineeName: trainee.name,
+      assistantId: session.assistantId,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      rebuttalKeys: session.rebuttalKeys,
+      rebuttalGuideMap: session.rebuttalGuideMap ?? {},
+      selectedObjections: session.selectedObjections ?? [],
+      status: session.status,
+    };
+  },
+});
+
+export const getTrainerSessionBuilderSnapshot = query({
+  args: {
+    orgId: v.string(),
+    trainerId: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(args.limit ?? 20, 1), 50);
+    const sessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(limit * 3);
+
+    const filtered = sessions.filter((session) => session.trainerId === args.trainerId).slice(0, limit);
+
+    return Promise.all(
+      filtered.map(async (session) => {
+        const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+        const recordingUrl = session.recordingStorageId ? await ctx.storage.getUrl(session.recordingStorageId) : null;
+        const transcriptUrl = session.transcriptStorageId ? await ctx.storage.getUrl(session.transcriptStorageId) : null;
+
+        return {
+          sessionKey: session.sessionKey,
+          traineeId: session.traineeId ?? null,
+          traineeName: trainee?.name ?? "Unassigned trainee",
+          difficulty: session.difficulty,
+          objectionsRequired: session.objectionsRequired,
+          selectedObjections: session.selectedObjections ?? [],
+          status: session.status,
+          createdAt: session.createdAt,
+          startedAt: session.startedAt ?? null,
+          endedAt: session.endedAt ?? null,
+          structuredOutcome: session.structuredOutcome ?? null,
+          recordingUrl,
+          transcriptUrl,
+        };
+      }),
+    );
+  },
+});
+
+export const recoverTrainingSession = mutation({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    trainerId: v.string(),
+    action: v.union(v.literal("mark_missed"), v.literal("mark_failed"), v.literal("create_replacement")),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId || session.trainerId !== args.trainerId) {
+      throw new Error("Session not found.");
+    }
+
+    const now = Date.now();
+    const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+    const baseContext = {
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: session.traineeId ?? null,
+      sessionKey: session.sessionKey,
+      statusBefore: session.status,
+    };
+
+    if (args.action === "mark_missed" || args.action === "mark_failed") {
+      if (session.status === "completed") {
+        throw new Error("Completed sessions cannot be reclassified.");
+      }
+
+      if (session.status === "abandoned") {
+        return {
+          action: args.action,
+          sessionKey: session.sessionKey,
+          status: session.status,
+          replacementSessionKey: null,
+          message: "This session has already been flagged for follow-up.",
+        };
+      }
+
+      const reason = args.action === "mark_missed" ? "trainer_marked_missed" : "trainer_marked_failed";
+      const message =
+        args.action === "mark_missed"
+          ? "Trainer marked a session as missed."
+          : "Trainer marked a session as failed and needing follow-up.";
+
+      await ctx.db.patch(session._id, {
+        status: "abandoned",
+        endedAt: session.endedAt ?? now,
+        updatedAt: now,
+      });
+
+      await ctx.db.insert("alertEvents", {
+        source: "sessions:recoverTrainingSession",
+        severity: "warning",
+        message,
+        context: {
+          ...baseContext,
+          statusAfter: "abandoned",
+          reason,
+        },
+        createdAt: now,
+      });
+
+      return {
+        action: args.action,
+        sessionKey: session.sessionKey,
+        status: "abandoned" as const,
+        replacementSessionKey: null,
+        message:
+          args.action === "mark_missed"
+            ? "Session marked as missed."
+            : "Session marked as failed and logged for follow-up.",
+      };
+    }
+
+    if (!session.traineeId || !trainee || trainee.status === "disabled") {
+      throw new Error("This session no longer has an active trainee.");
+    }
+
+    const traineeClerkUserId = session.traineeClerkUserId ?? trainee.clerkUserId ?? null;
+    if (!traineeClerkUserId) {
+      throw new Error("Ask the trainee to open their dashboard once before sending a replacement session.");
+    }
+
+    const replacementSessionKey = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    await ctx.db.insert("trainingSessions", {
+      sessionKey: replacementSessionKey,
+      orgId: session.orgId,
+      trainerId: session.trainerId,
+      traineeId: session.traineeId,
+      traineeClerkUserId,
+      assistantId: session.assistantId,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      rebuttalKeys: session.rebuttalKeys,
+      selectedObjections: session.selectedObjections,
+      rebuttalGuideMap: session.rebuttalGuideMap,
+      channel: session.channel,
+      identityMode: session.identityMode,
+      ipHash: session.ipHash,
+      profileSnapshot:
+        session.profileSnapshot ?? {
+          difficultyLevel: session.difficulty,
+          objectionsRequired: session.objectionsRequired,
+          expectedRebuttals: session.rebuttalKeys,
+        },
+      status: "assigned",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (session.status !== "completed" && session.status !== "abandoned") {
+      await ctx.db.patch(session._id, {
+        status: "abandoned",
+        endedAt: session.endedAt ?? now,
+        updatedAt: now,
+      });
+    }
+
+    await ctx.db.insert("alertEvents", {
+      source: "sessions:recoverTrainingSession",
+      severity: "warning",
+      message: "Trainer created a replacement session after a missed or failed attempt.",
+      context: {
+        ...baseContext,
+        statusAfter: session.status === "completed" ? "completed" : "abandoned",
+        reason: "replacement_session_created",
+        replacementSessionKey,
+      },
+      createdAt: now,
+    });
+
+    return {
+      action: args.action,
+      sessionKey: session.sessionKey,
+      status: session.status === "completed" ? "completed" : ("abandoned" as const),
+      replacementSessionKey,
+      message: `Replacement session ${replacementSessionKey} is ready for ${trainee.name}.`,
+    };
+  },
+});
+
 export const getTrainerDashboardSnapshot = query({
   args: { orgId: v.string(), trainerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
@@ -271,7 +570,8 @@ export const getTrainerDashboardSnapshot = query({
       .collect();
 
     const sessions = args.trainerId ? allSessions.filter((session) => session.trainerId === args.trainerId) : allSessions;
-    const sessionKeySet = new Set(sessions.map((session) => session.sessionKey));
+    const performanceSessions = sessions.filter((session) => session.status !== "assigned");
+    const sessionKeySet = new Set(performanceSessions.map((session) => session.sessionKey));
 
     const allMetrics = await ctx.db
       .query("sessionMetrics")
@@ -310,7 +610,7 @@ export const getTrainerDashboardSnapshot = query({
 
     const responses = allResponses.filter((response) => sessionKeySet.has(response.sessionKey));
 
-    const completedSessions = sessions.filter((session) => session.status === "completed");
+    const completedSessions = performanceSessions.filter((session) => session.status === "completed");
     const latestMetricRows = Array.from(latestMetricsBySession.values());
     const scores = latestMetricRows
       .map((metric) => metric.rebuttalScore)
@@ -326,6 +626,7 @@ export const getTrainerDashboardSnapshot = query({
     const traineeRows = activeTrainees.map((trainee) => {
       const traineeSessions = sessions
         .filter((session) => session.traineeId === trainee._id)
+        .filter((session) => session.status !== "assigned")
         .sort((a, b) => b.createdAt - a.createdAt);
 
       const traineeSessionKeys = new Set(traineeSessions.map((session) => session.sessionKey));
@@ -388,7 +689,7 @@ export const getTrainerDashboardSnapshot = query({
         status: trainee.status,
         latestScore: latestMetric?.rebuttalScore ?? null,
         latestSessionStatus: latestSession?.status ?? null,
-        latestSessionAt: latestSession?.createdAt ?? null,
+        latestSessionAt: latestSession?.startedAt ?? latestSession?.createdAt ?? null,
       };
     });
 

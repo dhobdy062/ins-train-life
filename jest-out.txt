@@ -1,0 +1,35 @@
+  console.log
+    Response: 400 {
+      error: 'Selected objections are out of sync with the current library.'
+    }
+
+      at Object.<anonymous> (src/app/api/trainer/sessions/route.test.ts:45:15)
+
+  console.error
+    Caught unhandled error! JestAssertionError: expect(received).toBe(expected) // Object.is equality
+    
+    Expected: 200
+    Received: 400
+        at Object.<anonymous> (D:\trae_projects\ins-train-life\src\app\api\trainer\sessions\route.test.ts:46:26) {
+      matcherResult: {
+        actual: 400,
+        expected: 200,
+        message: 'expect(received).toBe(expected) // Object.is equality\n' +
+          '\n' +
+          'Expected: 200\n' +
+          'Received: 400',
+        name: 'toBe',
+        pass: false
+      }
+    }
+
+    [0m [90m 46 |[39m       expect(res[33m.[39mstatus)[33m.[39mtoBe([35m200[39m)[33m;[39m
+     [90m 47 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 48 |[39m       console[33m.[39merror([32m"Caught unhandled error!"[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m               [31m[1m^[22m[39m
+     [90m 49 |[39m       [36mthrow[39m error[33m;[39m
+     [90m 50 |[39m     }
+     [90m 51 |[39m   })[33m;[39m[0m
+
+      at Object.<anonymous> (src/app/api/trainer/sessions/route.test.ts:48:15)
+

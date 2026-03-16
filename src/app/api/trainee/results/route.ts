@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getTraineeByInviteTokenHash, getTraineeResultsSnapshot } from "@/lib/convex";
-import { hashInviteToken } from "@/lib/identity-link";
-import {
-  TRAINEE_SESSION_COOKIE_NAME,
-  setTraineeSessionCookie,
-  verifyTraineeSessionCookie,
-} from "@/lib/trainee-session-cookie";
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { getTraineeResultsSnapshot } from "@/lib/convex";
+import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
 
 function toIso(timestamp: number | null | undefined) {
   if (!timestamp) {
@@ -14,54 +10,42 @@ function toIso(timestamp: number | null | undefined) {
   return new Date(timestamp).toISOString();
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
+  const { userId, orgId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in to open your trainee dashboard." }, { status: 401 });
+  }
+  if (!orgId) {
+    return NextResponse.json({ error: "Choose your team to open the trainee dashboard." }, { status: 400 });
+  }
+
   const { searchParams } = new URL(request.url);
-  const inviteToken = searchParams.get("inviteToken") ?? searchParams.get("invite");
   const limitParam = Number(searchParams.get("limit"));
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 25) : undefined;
 
-  const rawCookie = request.cookies.get(TRAINEE_SESSION_COOKIE_NAME)?.value;
-  const cookieIdentity = verifyTraineeSessionCookie(rawCookie);
+  const traineeAccess = await resolveAuthenticatedTrainee({
+    userId,
+    orgId,
+    source: "api/trainee/results",
+  });
+  const trainee = traineeAccess.trainee;
 
-  let identity: { traineeId: string; orgId: string; trainerId: string } | null = cookieIdentity
-    ? {
-        traineeId: cookieIdentity.traineeId,
-        orgId: cookieIdentity.orgId,
-        trainerId: cookieIdentity.trainerId,
-      }
-    : null;
-
-  if (!identity && inviteToken && inviteToken.trim().length > 0) {
-    const trainee = await getTraineeByInviteTokenHash({
-      inviteTokenHash: hashInviteToken(inviteToken),
-    });
-    if (trainee) {
-      identity = {
-        traineeId: trainee.traineeId,
-        orgId: trainee.orgId,
-        trainerId: trainee.trainerId,
-      };
-    }
-  }
-
-  if (!identity) {
-    if (rawCookie) {
-      return NextResponse.json({ error: "Invalid trainee session cookie." }, { status: 401 });
-    }
-    return NextResponse.json({ error: "Trainee session cookie is required." }, { status: 401 });
+  if (!trainee) {
+    return NextResponse.json({ error: "Your trainee seat is not active for this team yet." }, { status: 404 });
   }
 
   const snapshot = await getTraineeResultsSnapshot({
-    traineeId: identity.traineeId,
-    orgId: identity.orgId,
+    traineeId: trainee.traineeId,
+    orgId,
     limit,
   });
-
   if (!snapshot) {
-    return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
+    return NextResponse.json({ error: "Your trainee dashboard could not be loaded for this team." }, { status: 404 });
   }
 
-  const response = NextResponse.json({
+  return NextResponse.json({
+    resolution: traineeAccess.resolution,
+    identityRepaired: traineeAccess.repaired,
     trainee: {
       id: snapshot.trainee.id,
       name: snapshot.trainee.name,
@@ -76,6 +60,9 @@ export async function GET(request: NextRequest) {
           endedAt: toIso(snapshot.latestSession.endedAt),
           status: snapshot.latestSession.status,
           assistantId: snapshot.latestSession.assistantId,
+          structuredOutcome: snapshot.latestSession.structuredOutcome,
+          recordingUrl: snapshot.latestSession.recordingUrl,
+          transcriptUrl: snapshot.latestSession.transcriptUrl,
         }
       : null,
     latestMetrics: snapshot.latestMetrics
@@ -98,6 +85,15 @@ export async function GET(request: NextRequest) {
       feedback: rebuttal.feedback,
       createdAt: toIso(rebuttal.createdAt),
     })),
+    assignedSessions: snapshot.assignedSessions.map((session) => ({
+      sessionKey: session.sessionKey,
+      status: session.status,
+      difficulty: session.difficulty,
+      objectionsRequired: session.objectionsRequired,
+      createdAt: toIso(session.createdAt),
+      startedAt: toIso(session.startedAt),
+      selectedObjections: session.selectedObjections,
+    })),
     history: snapshot.history.map((session) => ({
       sessionKey: session.sessionKey,
       startedAt: toIso(session.startedAt),
@@ -106,6 +102,10 @@ export async function GET(request: NextRequest) {
       assistantId: session.assistantId,
       difficulty: session.difficulty,
       objectionsRequired: session.objectionsRequired,
+      selectedObjections: session.selectedObjections,
+      structuredOutcome: session.structuredOutcome,
+      recordingUrl: session.recordingUrl,
+      transcriptUrl: session.transcriptUrl,
       metrics: session.metrics
         ? {
             score: session.metrics.rebuttalScore,
@@ -118,12 +118,4 @@ export async function GET(request: NextRequest) {
         : null,
     })),
   });
-
-  setTraineeSessionCookie(response, {
-    traineeId: snapshot.trainee.id,
-    orgId: identity.orgId,
-    trainerId: identity.trainerId,
-  });
-
-  return response;
 }

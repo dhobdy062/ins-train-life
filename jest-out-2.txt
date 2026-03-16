@@ -1,0 +1,14 @@
+  console.log
+    Response: 400 {"error":"Selected objections are out of sync with the current library."}
+
+      at Object.<anonymous> (src/app/api/trainer/sessions/route.test.ts:51:15)
+
+PASS src/app/api/trainer/sessions/route.test.ts
+  POST /api/trainer/sessions
+    ΓêÜ should create a session (20 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        0.808 s, estimated 1 s
+Ran all test suites matching src/app/api/trainer/sessions/route.test.ts.
