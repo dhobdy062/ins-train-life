@@ -20,6 +20,7 @@ import type * as trainee from "../trainee.js";
 import type * as traineeProfiles from "../traineeProfiles.js";
 import type * as trainerObjections from "../trainerObjections.js";
 import type * as trainerPlans from "../trainerPlans.js";
+import type * as voice from "../voice.js";
 import type * as webhooks from "../webhooks.js";
 
 import type {
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   traineeProfiles: typeof traineeProfiles;
   trainerObjections: typeof trainerObjections;
   trainerPlans: typeof trainerPlans;
+  voice: typeof voice;
   webhooks: typeof webhooks;
 }>;
 
