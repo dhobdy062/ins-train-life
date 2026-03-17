@@ -290,4 +290,8 @@ export default defineSchema({
     context: v.optional(v.any()),
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
+  ipCallTracking: defineTable({
+    ipAddress: v.string(),
+    callCount: v.number(),
+  }).index("by_ipAddress", ["ipAddress"]),
 });

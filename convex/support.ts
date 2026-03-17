@@ -124,7 +124,17 @@ export const auditIdentityAndSessionMismatches = query({
       ctx.db.query("users").collect(),
       ctx.db.query("organizationMemberships").collect(),
       ctx.db.query("trainingSessions").collect(),
-      ctx.db.query("alertEvents").withIndex("by_createdAt").order("desc").take(200),
+      ctx.db.query("alertEvents")
+        .withIndex("by_createdAt")
+        .order("desc")
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("source"), "webhooks.persistVapiEvent"),
+            q.eq(q.field("source"), "webhooks.persistWebhookSessionArtifacts"),
+            q.eq(q.field("source"), "api/vapi/session/start")
+          )
+        )
+        .take(200),
       args.orgId
         ? ctx.db.query("emailEvents").withIndex("by_org_createdAt", (q) => q.eq("orgId", args.orgId)).order("desc").take(200)
         : ctx.db.query("emailEvents").withIndex("by_createdAt").order("desc").take(200),
