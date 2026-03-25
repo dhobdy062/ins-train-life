@@ -10,6 +10,49 @@ const policyOptions = [
   "Indexed Universal Life (IUL)",
 ];
 
+type LeadSubmissionResult = {
+  status: string;
+};
+
+type SubmitLeadFormOptions = {
+  fetchImpl?: typeof fetch;
+  reset?: () => void;
+};
+
+export function LeadFormStatus({ message }: { message: string | null }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <p className="disclaimer" role="status" aria-live="polite" aria-atomic="true">
+      {message}
+    </p>
+  );
+}
+
+export async function submitLeadForm(formData: FormData, options: SubmitLeadFormOptions = {}): Promise<LeadSubmissionResult> {
+  const { fetchImpl = fetch, reset = () => {} } = options;
+  const payload = Object.fromEntries(formData.entries());
+
+  try {
+    const response = await fetchImpl("/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit form.");
+    }
+
+    reset();
+    return { status: "Check your email for the verification link to unlock the demo." };
+  } catch {
+    return { status: "Something went wrong. Please try again." };
+  }
+}
+
 export default function LeadForm() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,26 +64,13 @@ export default function LeadForm() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
+    const result = await submitLeadForm(formData, {
+      fetchImpl: fetch,
+      reset: () => form.reset(),
+    });
 
-    try {
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit form.");
-      }
-
-      setStatus("Check your email for the verification link to unlock the demo.");
-      form.reset();
-    } catch {
-      setStatus("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    setStatus(result.status);
+    setLoading(false);
   }
 
   return (
@@ -80,7 +110,7 @@ export default function LeadForm() {
           {loading ? "Sending..." : "Send verification link"}
         </button>
       </form>
-      {status ? <p className="disclaimer">{status}</p> : null}
+      <LeadFormStatus message={status} />
       <p className="disclaimer disclaimer-highlight">
         Verification email unlocks the demo. Paid plans unlock full call library, scoring, and team analytics.
       </p>

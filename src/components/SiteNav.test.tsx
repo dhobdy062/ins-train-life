@@ -2,6 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import SiteNav from "@/components/SiteNav";
 import { usePathname } from "next/navigation";
 
+let mockSignedInVisible = false;
+let mockSignedOutVisible = true;
+
 jest.mock("next/navigation", () => ({
   usePathname: jest.fn(),
 }));
@@ -38,8 +41,8 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
-  SignedIn: ({ children }: { children: unknown }) => <>{children}</>,
-  SignedOut: ({ children }: { children: unknown }) => <>{children}</>,
+  SignedIn: ({ children }: { children: unknown }) => (mockSignedInVisible ? <>{children}</> : null),
+  SignedOut: ({ children }: { children: unknown }) => (mockSignedOutVisible ? <>{children}</> : null),
   SignOutButton: ({ children }: { children: unknown }) => <>{children}</>,
   UserButton: () => <div data-testid="user-button" />,
 }));
@@ -50,6 +53,8 @@ describe("SiteNav", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedUsePathname.mockReturnValue("/");
+    mockSignedInVisible = false;
+    mockSignedOutVisible = true;
   });
 
   it("links to the FAQ page in a new tab", () => {
@@ -57,6 +62,40 @@ describe("SiteNav", () => {
 
     expect(html).toContain('href="/FAQ_Page.html"');
     expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noreferrer"');
     expect(html).toContain("Frequently Asked Questions");
+  });
+
+  it("returns null on dashboard routes", () => {
+    mockedUsePathname.mockReturnValue("/dashboard/trainer/overview");
+
+    const html = renderToStaticMarkup(<SiteNav />);
+
+    expect(html).toBe("");
+  });
+
+  it("shows signed-out controls when the user is not signed in", () => {
+    mockSignedInVisible = false;
+    mockSignedOutVisible = true;
+
+    const html = renderToStaticMarkup(<SiteNav />);
+
+    expect(html).toContain("Sign in");
+    expect(html).toContain("Sign up");
+    expect(html).not.toContain("Open workspace");
+    expect(html).not.toContain("Sign out");
+  });
+
+  it("shows signed-in controls when the user is signed in", () => {
+    mockSignedInVisible = true;
+    mockSignedOutVisible = false;
+
+    const html = renderToStaticMarkup(<SiteNav />);
+
+    expect(html).toContain("Open workspace");
+    expect(html).toContain("Sign out");
+    expect(html).toContain("user-button");
+    expect(html).not.toContain("Sign in");
+    expect(html).not.toContain("Sign up");
   });
 });

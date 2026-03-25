@@ -14,17 +14,11 @@ export default function SiteNav() {
     return null;
   }
 
-  const homeHref = pathname?.startsWith("/dashboard/trainer")
-    ? "/dashboard/trainer"
-    : pathname?.startsWith("/dashboard/trainee")
-      ? "/dashboard/trainee"
-      : "/";
-
   return (
     <header className="site-nav-wrap">
       <div className="site-nav-shell">
         <nav className="nav" aria-label="Primary">
-          <Link className="brand brand-home" href={homeHref} aria-label="Back to home page">
+          <Link className="brand brand-home" href="/" aria-label="Back to home page">
             <Image className="brand-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={44} height={44} priority />
             <span className="brand-title">Cream No Sugar</span>
           </Link>

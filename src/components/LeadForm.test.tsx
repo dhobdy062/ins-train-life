@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import LeadForm from "@/components/LeadForm";
+import LeadForm, { LeadFormStatus, submitLeadForm } from "@/components/LeadForm";
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -9,17 +9,54 @@ jest.mock("next/image", () => ({
   ),
 }));
 
-jest.mock("next/link", () => ({
-  __esModule: true,
-  default: ({ href, children, className }: { href: string; children: unknown; className?: string }) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  ),
-}));
-
 describe("LeadForm", () => {
-  it("only shows the verification link CTA", () => {
+  it("shows the status message in a live region", () => {
+    const html = renderToStaticMarkup(<LeadFormStatus message="Check your email for the verification link to unlock the demo." />);
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('aria-atomic="true"');
+  });
+
+  it("submits successfully and resets the form", async () => {
+    const reset = jest.fn();
+    const fetchImpl = jest.fn().mockResolvedValue({ ok: true });
+    const formData = new FormData();
+    formData.set("name", "Jordan Blake");
+    formData.set("agency", "North Ridge Agency");
+    formData.set("email", "jordan@example.com");
+    formData.set("policyType", "Term Life");
+
+    await expect(submitLeadForm(formData, { fetchImpl, reset })).resolves.toEqual({
+      status: "Check your email for the verification link to unlock the demo.",
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith("/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Jordan Blake",
+        agency: "North Ridge Agency",
+        email: "jordan@example.com",
+        policyType: "Term Life",
+      }),
+    });
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns an error status when submission fails", async () => {
+    const reset = jest.fn();
+    const fetchImpl = jest.fn().mockResolvedValue({ ok: false });
+    const formData = new FormData();
+
+    await expect(submitLeadForm(formData, { fetchImpl, reset })).resolves.toEqual({
+      status: "Something went wrong. Please try again.",
+    });
+
+    expect(reset).not.toHaveBeenCalled();
+  });
+
+  it("still renders the public form CTA", () => {
     const html = renderToStaticMarkup(<LeadForm />);
 
     expect(html).toContain("Send verification link");
