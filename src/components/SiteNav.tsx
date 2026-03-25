@@ -29,6 +29,9 @@ export default function SiteNav() {
             <span className="brand-title">Cream No Sugar</span>
           </Link>
           <div className="hero-actions">
+            <Link className="button secondary" href="/FAQ_Page.html" target="_blank" rel="noreferrer">
+              Frequently Asked Questions
+            </Link>
             <SignedOut>
               <Link className="button secondary" href="/sign-in">
                 Sign in

@@ -1,6 +1,6 @@
 import LeadForm from "@/components/LeadForm";
 import PricingCards from "@/components/PricingCards";
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
+import { SignedIn } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { normalizeBillingSelection } from "@/lib/billing";
 
@@ -12,11 +12,11 @@ const objectionNodes = [
   "D5 High interest, high skepticism",
 ];
 
-const trainingTracks = [
-  "Term Life",
-  "Whole Life",
-  "Universal Life",
-  "Indexed Universal Life (IUL)",
+const scoringCategories = [
+  "Objection handling",
+  "Tone and pacing",
+  "Close effectiveness",
+  "Time to appointment",
 ];
 
 type HomePageProps = {
@@ -40,16 +40,6 @@ export default async function Home({ searchParams }: HomePageProps) {
                 Instead of spending hours roleplaying in 1-1, you can upskill your entire downline at the same time.
               </p>
               <div className="hero-actions">
-                <a className="button secondary" href="#demo">
-                  Start a sample call
-                </a>
-                <SignedOut>
-                  <SignUpButton mode="modal">
-                    <button className="button" type="button">
-                      Create trainer account
-                    </button>
-                  </SignUpButton>
-                </SignedOut>
                 <SignedIn>
                   <a className="button secondary" href="/workspace/dashboard">
                     Open workspace
@@ -76,52 +66,29 @@ export default async function Home({ searchParams }: HomePageProps) {
             <LeadForm />
           </section>
 
-          <section className="glass panel" id="demo">
-            <div className="tag">Customize the Difficulty and Objections</div>
-            <h3>You decide if they pass or fail</h3>
-            <div className="grid">
-              {objectionNodes.map((node) => (
-                <div key={node} className="metric">
-                  <span>Difficulty node</span>
-                  <strong>{node}</strong>
-                </div>
-              ))}
-            </div>
-          </section>
-
           <section className="split">
             <div className="glass panel">
-              <div className="tag">Training coverage</div>
-              <h3>Customize the Knowledge Base</h3>
+              <div className="tag">Difficulty levels</div>
+              <h3>You decide if they pass or fail</h3>
               <div className="grid">
-                {trainingTracks.map((track) => (
-                  <div key={track} className="metric">
-                    <span>Track</span>
-                    <strong>{track}</strong>
+                {objectionNodes.map((node) => (
+                  <div key={node} className="metric">
+                    <span>Difficulty node</span>
+                    <strong>{node}</strong>
                   </div>
                 ))}
               </div>
             </div>
             <div className="glass panel">
-              <div className="tag">Scoring output</div>
+              <div className="tag">Scoring categories</div>
               <h3>Every call provides coaching data</h3>
               <div className="grid">
-                <div className="metric">
-                  <span>Insight</span>
-                  <strong>Objection handling</strong>
-                </div>
-                <div className="metric">
-                  <span>Insight</span>
-                  <strong>Tone and pacing</strong>
-                </div>
-                <div className="metric">
-                  <span>Insight</span>
-                  <strong>Close effectiveness</strong>
-                </div>
-                <div className="metric">
-                  <span>Insight</span>
-                  <strong>Time to appointment</strong>
-                </div>
+                {scoringCategories.map((category) => (
+                  <div key={category} className="metric">
+                    <span>Insight</span>
+                    <strong>{category}</strong>
+                  </div>
+                ))}
               </div>
             </div>
           </section>

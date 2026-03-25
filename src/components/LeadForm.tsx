@@ -1,9 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
-import { DEFAULT_BILLING_SELECTION } from "@/lib/billing";
 
 const policyOptions = [
   "Term Life",
@@ -82,14 +80,6 @@ export default function LeadForm() {
           {loading ? "Sending..." : "Send verification link"}
         </button>
       </form>
-      <div className="hero-actions">
-        <Link
-          className="button secondary"
-          href={`/checkout/start?plan=${DEFAULT_BILLING_SELECTION.planId}&interval=${DEFAULT_BILLING_SELECTION.interval}`}
-        >
-          Start paid training
-        </Link>
-      </div>
       {status ? <p className="disclaimer">{status}</p> : null}
       <p className="disclaimer disclaimer-highlight">
         Verification email unlocks the demo. Paid plans unlock full call library, scoring, and team analytics.
