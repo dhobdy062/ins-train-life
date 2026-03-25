@@ -1,7 +1,6 @@
 import { POST } from "./route";
 import * as clerkAuth from "@clerk/nextjs/server";
-import { getTraineeProfileById, createTrainingSession } from "@/lib/convex";
-import { resolveLifeAssistantId } from "@/lib/vapi-assistants";
+import { getTraineeProfileById } from "@/lib/convex";
 
 jest.mock("@clerk/nextjs/server", () => ({
   auth: jest.fn(),
@@ -14,9 +13,8 @@ jest.mock("@/lib/convex", () => ({
   createTrainingSession: jest.fn().mockResolvedValue({ sessionKey: "fake_session" }),
 }));
 
-jest.mock("@/lib/vapi-assistants", () => ({
-  resolveLifeAssistantId: jest.fn().mockReturnValue("fake_ast_id"),
-}));
+const mockedAuth = clerkAuth.auth as unknown as jest.MockedFunction<typeof clerkAuth.auth>;
+const mockedGetTraineeProfileById = getTraineeProfileById as jest.MockedFunction<typeof getTraineeProfileById>;
 
 describe("POST /api/trainer/sessions", () => {
   beforeEach(() => {
@@ -24,16 +22,25 @@ describe("POST /api/trainer/sessions", () => {
   });
 
   it("should create a session", async () => {
-    (clerkAuth.auth as jest.Mock).mockResolvedValue({
+    mockedAuth.mockResolvedValue({
       userId: "trainer_123",
       orgId: "org_123",
-    });
+    } as Awaited<ReturnType<typeof clerkAuth.auth>>);
 
-    (getTraineeProfileById as jest.Mock).mockResolvedValue({
+    mockedGetTraineeProfileById.mockResolvedValue({
       traineeId: "trainee_123",
+      orgId: "org_123",
+      trainerId: "trainer_123",
       clerkUserId: "clerk_trainee_123",
+      clerkMembershipId: "membership_123",
       name: "Test Trainee",
-    });
+      email: "trainee@example.com",
+      difficultyLevel: "D2",
+      numObjections: 3,
+      expectedRebuttals: ["spouse"],
+      status: "active",
+      lastActiveAt: 1234,
+    } as NonNullable<Awaited<ReturnType<typeof getTraineeProfileById>>>);
 
     // Provide default valid objection so it doesn't fail with 400
     const req = new Request("http://localhost/api/trainer/sessions", {

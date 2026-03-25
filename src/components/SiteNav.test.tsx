@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import SiteNav from "@/components/SiteNav";
 import { usePathname } from "next/navigation";
@@ -20,7 +21,7 @@ jest.mock("next/link", () => ({
     "aria-label": ariaLabel,
   }: {
     href: string;
-    children: unknown;
+    children: ReactNode;
     className?: string;
     target?: string;
     rel?: string;
@@ -41,9 +42,9 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("@clerk/nextjs", () => ({
-  SignedIn: ({ children }: { children: unknown }) => (mockSignedInVisible ? <>{children}</> : null),
-  SignedOut: ({ children }: { children: unknown }) => (mockSignedOutVisible ? <>{children}</> : null),
-  SignOutButton: ({ children }: { children: unknown }) => <>{children}</>,
+  SignedIn: ({ children }: { children: ReactNode }) => (mockSignedInVisible ? <>{children}</> : null),
+  SignedOut: ({ children }: { children: ReactNode }) => (mockSignedOutVisible ? <>{children}</> : null),
+  SignOutButton: ({ children }: { children: ReactNode }) => <>{children}</>,
   UserButton: () => <div data-testid="user-button" />,
 }));
 

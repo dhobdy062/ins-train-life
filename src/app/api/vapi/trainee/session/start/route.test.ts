@@ -95,12 +95,26 @@ describe("POST /api/vapi/trainee/session/start", () => {
       status: "assigned",
     });
     mockedBuildAgentVariableValues.mockReturnValue({
+      difficulty: "D2",
+      objectionsRequired: "3",
+      rebuttals: JSON.stringify({
+        busy: "Keep it brief.",
+        send_info: "Offer a short review first.",
+      }),
+      brand_name: "Cream No Sugar",
+      brand_slug: "cream-no-sugar",
+      app_url: "https://example.test",
+      trainer_dashboard_url: "https://example.test/dashboard/trainer",
+      trainee_dashboard_url: "https://example.test/dashboard/trainee",
+      dashboard_role: "trainee",
       email_sequence_stage: "trainee_invitation",
+      email_sequence_order: JSON.stringify(["trainee_invitation", "session_summary"]),
       session_key: "sess_1",
       trainee_name: "Alex Agent",
     } as ReturnType<typeof buildAgentVariableValues>);
     mockedValidateAssistantVariableContract.mockReturnValue({
       ok: true,
+      scope: "trainee",
       missingKeys: [],
     });
     mockedMarkAssignedSessionStarted.mockResolvedValue({
@@ -161,6 +175,7 @@ describe("POST /api/vapi/trainee/session/start", () => {
   it("returns 500 and records an alert when the assistant contract is invalid", async () => {
     mockedValidateAssistantVariableContract.mockReturnValue({
       ok: false,
+      scope: "trainee",
       missingKeys: ["trainee_name"],
     });
 

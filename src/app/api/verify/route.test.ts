@@ -23,7 +23,7 @@ describe("GET /api/verify", () => {
   });
 
   it("redirects valid verification to /demo?state=verified", async () => {
-    mockedVerifyToken.mockReturnValue({ email: "demo@example.com" });
+    mockedVerifyToken.mockReturnValue({ email: "demo@example.com", exp: Date.now() + 60_000 });
 
     const response = await GET(new Request("http://localhost/api/verify?token=valid"));
 
