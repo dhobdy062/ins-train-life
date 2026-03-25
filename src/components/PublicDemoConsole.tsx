@@ -77,6 +77,10 @@ export function toFriendlyPublicDemoError(rawMessage: string) {
   return "Something went wrong while starting your demo call. Please try again.";
 }
 
+export function isDemoCallBlocked(state: PublicDemoState, hasValidDemoAccess: boolean) {
+  return state === "invalid-link" || !hasValidDemoAccess;
+}
+
 function getInitialStatus(state: PublicDemoState, hasValidDemoAccess: boolean) {
   if (state === "verified" && hasValidDemoAccess) {
     return "Your email is verified. Start a demo call whenever you are ready.";
@@ -98,6 +102,7 @@ export default function PublicDemoConsole({
   hasValidDemoAccess,
   trialLimitReached = false,
 }: PublicDemoConsoleProps) {
+  const demoCallBlocked = isDemoCallBlocked(state, hasValidDemoAccess);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(getInitialStatus(state, hasValidDemoAccess));
   const [callState, setCallState] = useState("ready");
@@ -141,9 +146,9 @@ export default function PublicDemoConsole({
   }
 
   async function handleStartTrial() {
-    if (!hasValidDemoAccess) {
+    if (demoCallBlocked) {
       setCallState("blocked");
-      setStatus("Verification is required before you can start a demo call. Request a fresh link and try again.");
+      setStatus(getInitialStatus(state, hasValidDemoAccess));
       return;
     }
 
@@ -218,7 +223,7 @@ export default function PublicDemoConsole({
     }
   }
 
-  const showRecoveryActions = !hasValidDemoAccess || state === "invalid-link";
+  const showRecoveryActions = demoCallBlocked;
 
   return (
     <div className="glass panel">
@@ -245,7 +250,7 @@ export default function PublicDemoConsole({
       </div>
 
       <div className="hero-actions">
-        <button className="button" onClick={handleStartTrial} disabled={loading || limitReached}>
+        <button className="button" onClick={handleStartTrial} disabled={loading || limitReached || demoCallBlocked}>
           {loading ? "Starting..." : "Start a Demo Call"}
         </button>
         <button className="button secondary" onClick={handleStopTrial} disabled={loading || !vapiRef.current}>

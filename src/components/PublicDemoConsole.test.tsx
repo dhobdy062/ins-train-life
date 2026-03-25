@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import PublicDemoConsole, { toFriendlyPublicDemoError } from "@/components/PublicDemoConsole";
+import PublicDemoConsole, { isDemoCallBlocked, toFriendlyPublicDemoError } from "@/components/PublicDemoConsole";
 
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -23,6 +23,13 @@ describe("PublicDemoConsole", () => {
     expect(html).toContain("Verification is required");
   });
 
+  it("keeps invalid-link state in recovery mode even with a stale demo cookie", () => {
+    const html = renderToStaticMarkup(<PublicDemoConsole state="invalid-link" hasValidDemoAccess />);
+
+    expect(html).toContain("This verification link is invalid or expired");
+    expect(html).toContain("disabled");
+  });
+
   it("shows the upgrade path when the trial limit is reached", () => {
     const html = renderToStaticMarkup(
       <PublicDemoConsole state="verified" hasValidDemoAccess trialLimitReached />,
@@ -35,5 +42,11 @@ describe("PublicDemoConsole", () => {
     expect(toFriendlyPublicDemoError("Unable to start trial call.")).toBe(
       "We could not start your demo call. Please try again in a moment.",
     );
+  });
+
+  it("blocks demo-call starts for invalid links and missing verification", () => {
+    expect(isDemoCallBlocked("invalid-link", true)).toBe(true);
+    expect(isDemoCallBlocked("default", false)).toBe(true);
+    expect(isDemoCallBlocked("verified", true)).toBe(false);
   });
 });
