@@ -1,5 +1,9 @@
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+import type {
+  TrainingSessionEvaluationIssue,
+  TrainingSessionEvaluationStatus,
+} from "@/lib/training-session-evaluation";
 
 type WebhookProvider = "stripe" | "vapi";
 type AdminConvexHttpClient = ConvexHttpClient & { setAdminAuth?: (token: string) => void };
@@ -46,6 +50,9 @@ const upsertOrgTrainerTrainingPlansRef = makeFunctionReference<"mutation">(
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
+const getTrainingSessionEvaluationBySessionKeyRef = makeFunctionReference<"query">(
+  "trainingSessionEvaluations:getTrainingSessionEvaluationBySessionKey",
+);
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks:checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks:getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks:getOrgEntitlement");
@@ -721,6 +728,26 @@ export async function getSessionWithFiles(args: { sessionKey: string; orgId: str
     recordingUrl: string | null;
     transcriptUrl: string | null;
   }>;
+}
+
+export async function getTrainingSessionEvaluationBySessionKey(args: { sessionKey: string }) {
+  const client = getClient();
+  return client.query(getTrainingSessionEvaluationBySessionKeyRef, args as never) as Promise<{
+    evaluationId: string;
+    sessionKey: string;
+    orgId: string;
+    trainerId: string;
+    traineeId: string | null;
+    status: TrainingSessionEvaluationStatus;
+    source: "automatic" | "manual";
+    issues: TrainingSessionEvaluationIssue[];
+    summary: string;
+    attemptCount: number;
+    lastCompletedAt: number | null;
+    evaluatedAt: number;
+    createdAt: number;
+    updatedAt: number;
+  } | null>;
 }
 
 export async function recordAlert(args: {

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { upsertAutomaticEvaluationForSessionInContext } from "./trainingSessionEvaluations";
 
 const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
@@ -452,6 +453,7 @@ async function persistVapiEvent(
   }
 
   const endedAt = extractTimestampMs(payload) ?? Date.now();
+  let shouldTriggerAutomaticEvaluation = false;
 
   try {
     const completion = await ctx.runMutation(internal.sessions.markSessionCompletedFromWebhook, {
@@ -473,6 +475,8 @@ async function persistVapiEvent(
       });
       return;
     }
+
+    shouldTriggerAutomaticEvaluation = true;
   } catch (error) {
     await ctx.db.insert("alertEvents", {
       source: "webhooks.persistVapiEvent",
@@ -508,6 +512,10 @@ async function persistVapiEvent(
     eventType,
     payload,
   });
+
+  if (shouldTriggerAutomaticEvaluation) {
+    await triggerAutomaticSessionEvaluation(ctx, sessionKey);
+  }
 }
 
 async function persistWebhookSessionArtifacts(
@@ -590,6 +598,27 @@ async function persistWebhookSessionArtifacts(
 
   if (patch.recordingStorageId || patch.transcriptStorageId) {
     await ctx.db.patch(session._id, patch);
+  }
+}
+
+async function triggerAutomaticSessionEvaluation(
+  ctx: any,
+  sessionKey: string,
+) {
+  try {
+    await upsertAutomaticEvaluationForSessionInContext(ctx, {
+      sessionKey,
+    });
+  } catch (error) {
+    await ctx.db.insert("alertEvents", {
+      source: "webhooks.triggerAutomaticSessionEvaluation",
+      severity: "warning",
+      message: `Unable to persist training session evaluation: ${error instanceof Error ? error.message : "unknown"}`,
+      context: {
+        sessionKey,
+      },
+      createdAt: Date.now(),
+    });
   }
 }
 

@@ -110,6 +110,41 @@ export default defineSchema({
     .index("by_org_createdAt", ["orgId", "createdAt"])
     .index("by_trainee_createdAt", ["traineeId", "createdAt"]),
 
+  trainingSessionEvaluations: defineTable({
+    sessionKey: v.string(),
+    orgId: v.string(),
+    trainerId: v.string(),
+    traineeId: v.optional(v.string()),
+    status: v.union(v.literal("passed"), v.literal("warning"), v.literal("failed")),
+    source: v.union(v.literal("automatic"), v.literal("manual")),
+    issues: v.array(
+      v.object({
+        code: v.union(
+          v.literal("session_not_found"),
+          v.literal("session_not_completed"),
+          v.literal("missing_trainee_link"),
+          v.literal("missing_metric"),
+          v.literal("missing_structured_outcome"),
+          v.literal("missing_recording_artifact"),
+          v.literal("missing_transcript_artifact"),
+          v.literal("trainer_snapshot_missing_session"),
+          v.literal("trainee_snapshot_missing_session"),
+          v.literal("webhook_correlation_failed"),
+        ),
+        severity: v.union(v.literal("warning"), v.literal("failed")),
+        message: v.string(),
+      }),
+    ),
+    summary: v.string(),
+    attemptCount: v.number(),
+    lastCompletedAt: v.optional(v.number()),
+    evaluatedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_sessionKey", ["sessionKey"])
+    .index("by_org_evaluatedAt", ["orgId", "evaluatedAt"]),
+
   trainees: defineTable({
     orgId: v.string(),
     trainerId: v.string(),
