@@ -1,8 +1,10 @@
 import { api } from "./_generated/api";
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import {
   evaluateTrainingSessionDataFlow,
+  hasMeaningfulStructuredOutcome,
+  webhookPayloadExpectsStructuredOutcome,
   type TrainingSessionEvaluationIssue,
   type TrainingSessionEvaluationStatus,
 } from "../src/lib/training-session-evaluation";
@@ -32,7 +34,7 @@ export const upsertAutomaticEvaluationForSession = internalMutation({
   },
 });
 
-export const getTrainingSessionEvaluationBySessionKey = query({
+export const getTrainingSessionEvaluationBySessionKey = internalQuery({
   args: {
     sessionKey: v.string(),
   },
@@ -80,11 +82,15 @@ export async function upsertAutomaticEvaluationForSessionInContext(
     return { found: false as const, evaluationId: null };
   }
 
-  const latestMetric = await ctx.db
+  const recentMetrics = await ctx.db
     .query("sessionMetrics")
     .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", args.sessionKey))
     .order("desc")
-    .first();
+    .take(10);
+
+  const structuredOutcomeExpected = recentMetrics.some((metric: { rawPayload?: unknown }) =>
+    webhookPayloadExpectsStructuredOutcome(metric.rawPayload),
+  );
 
   const trainerSnapshot = await ctx.runQuery(api.sessions.getTrainerSessionBuilderSnapshot, {
     orgId: session.orgId,
@@ -115,12 +121,12 @@ export async function upsertAutomaticEvaluationForSessionInContext(
       traineeId: session.traineeId ?? null,
       status: session.status,
       endedAt: session.endedAt ?? null,
-      structuredOutcomeExpected: true,
-      structuredOutcomePresent: Boolean(session.structuredOutcome),
+      structuredOutcomeExpected,
+      structuredOutcomePresent: hasMeaningfulStructuredOutcome(session.structuredOutcome),
       recordingPresent: Boolean(session.recordingStorageId),
       transcriptPresent: Boolean(session.transcriptStorageId),
     },
-    latestMetricPresent: Boolean(latestMetric),
+    latestMetricPresent: recentMetrics.length > 0,
     traineeSnapshotIncludesSession,
     trainerSnapshotIncludesSession,
   });
@@ -177,13 +183,13 @@ async function upsertEvaluationRecord(
   args: PersistedTrainingSessionEvaluation,
 ) {
   const now = args.evaluatedAt;
-  const existing = await ctx.db
+  const existingRows = await ctx.db
     .query("trainingSessionEvaluations")
     .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
-    .first();
+    .collect();
 
-  if (!existing) {
-    const evaluationId = await ctx.db.insert("trainingSessionEvaluations", {
+  if (existingRows.length === 0) {
+    const insertedId = await ctx.db.insert("trainingSessionEvaluations", {
       sessionKey: args.sessionKey,
       orgId: args.orgId,
       trainerId: args.trainerId,
@@ -199,14 +205,39 @@ async function upsertEvaluationRecord(
       updatedAt: now,
     });
 
-    return {
-      evaluationId,
-      attemptCount: args.attemptCount,
-    };
+    return reconcileEvaluationRows(ctx, args.sessionKey, {
+      ...args,
+      attemptCount: 1,
+    }, insertedId);
   }
 
-  const attemptCount = existing.attemptCount + 1;
-  await ctx.db.patch(existing._id, {
+  return reconcileEvaluationRows(ctx, args.sessionKey, {
+    ...args,
+    attemptCount: existingRows.reduce((total: number, row: { attemptCount: number }) => total + row.attemptCount, 0) + 1,
+  });
+}
+
+async function reconcileEvaluationRows(
+  ctx: any,
+  sessionKey: string,
+  args: PersistedTrainingSessionEvaluation,
+  preferredEvaluationId?: string,
+) {
+  const rows = await ctx.db
+    .query("trainingSessionEvaluations")
+    .withIndex("by_sessionKey", (q) => q.eq("sessionKey", sessionKey))
+    .collect();
+
+  const canonical = chooseCanonicalEvaluationRow(rows, preferredEvaluationId);
+  if (!canonical) {
+    throw new Error(`Missing canonical evaluation row for ${sessionKey}`);
+  }
+
+  const attemptCount = Math.max(
+    args.attemptCount,
+    rows.reduce((total: number, row: { attemptCount: number }) => total + row.attemptCount, 0),
+  );
+  await ctx.db.patch(canonical._id, {
     orgId: args.orgId,
     trainerId: args.trainerId,
     traineeId: args.traineeId ?? undefined,
@@ -217,11 +248,45 @@ async function upsertEvaluationRecord(
     attemptCount,
     lastCompletedAt: args.lastCompletedAt ?? undefined,
     evaluatedAt: args.evaluatedAt,
-    updatedAt: now,
+    updatedAt: args.evaluatedAt,
   });
 
+  for (const row of rows) {
+    if (row._id !== canonical._id) {
+      await ctx.db.delete(row._id);
+    }
+  }
+
   return {
-    evaluationId: existing._id,
+    evaluationId: canonical._id,
     attemptCount,
   };
+}
+
+function chooseCanonicalEvaluationRow(
+  rows: Array<{ _id: string; createdAt?: number; _creationTime?: number }>,
+  preferredEvaluationId?: string,
+) {
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return [...rows].sort((left, right) => {
+    if (preferredEvaluationId) {
+      if (left._id === preferredEvaluationId) {
+        return -1;
+      }
+      if (right._id === preferredEvaluationId) {
+        return 1;
+      }
+    }
+
+    const leftCreatedAt = left.createdAt ?? left._creationTime ?? 0;
+    const rightCreatedAt = right.createdAt ?? right._creationTime ?? 0;
+    if (leftCreatedAt !== rightCreatedAt) {
+      return leftCreatedAt - rightCreatedAt;
+    }
+
+    return String(left._id).localeCompare(String(right._id));
+  })[0];
 }

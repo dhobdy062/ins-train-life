@@ -50,7 +50,7 @@ const upsertOrgTrainerTrainingPlansRef = makeFunctionReference<"mutation">(
 const storeSessionRecordingRef = makeFunctionReference<"mutation">("storage:storeSessionRecording");
 const storeTranscriptRef = makeFunctionReference<"mutation">("storage:storeTranscript");
 const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessionWithFiles");
-const getTrainingSessionEvaluationBySessionKeyRef = makeFunctionReference<"query">(
+const getInternalTrainingSessionEvaluationBySessionKeyRef = makeFunctionReference<"query">(
   "trainingSessionEvaluations:getTrainingSessionEvaluationBySessionKey",
 );
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks:checkLaggingWebhooks");
@@ -730,9 +730,9 @@ export async function getSessionWithFiles(args: { sessionKey: string; orgId: str
   }>;
 }
 
-export async function getTrainingSessionEvaluationBySessionKey(args: { sessionKey: string }) {
+export async function getInternalTrainingSessionEvaluationBySessionKey(args: { sessionKey: string }) {
   const client = getClient();
-  return client.query(getTrainingSessionEvaluationBySessionKeyRef, args as never) as Promise<{
+  return client.query(getInternalTrainingSessionEvaluationBySessionKeyRef, args as never) as Promise<{
     evaluationId: string;
     sessionKey: string;
     orgId: string;

@@ -18,6 +18,7 @@ import type * as storage from "../storage.js";
 import type * as support from "../support.js";
 import type * as trainee from "../trainee.js";
 import type * as traineeProfiles from "../traineeProfiles.js";
+import type * as trainingSessionEvaluations from "../trainingSessionEvaluations.js";
 import type * as trainerObjections from "../trainerObjections.js";
 import type * as trainerPlans from "../trainerPlans.js";
 import type * as voice from "../voice.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   support: typeof support;
   trainee: typeof trainee;
   traineeProfiles: typeof traineeProfiles;
+  trainingSessionEvaluations: typeof trainingSessionEvaluations;
   trainerObjections: typeof trainerObjections;
   trainerPlans: typeof trainerPlans;
   voice: typeof voice;

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { upsertAutomaticEvaluationForSessionInContext } from "./trainingSessionEvaluations";
+import { hasMeaningfulStructuredOutcome } from "../src/lib/training-session-evaluation";
 
 const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
@@ -494,15 +495,13 @@ async function persistVapiEvent(
     .query("trainingSessions")
     .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", sessionKey))
     .first();
-  if (session) {
+  const persistedStructuredOutcome = buildPersistableStructuredOutcome(structuredOutcome, {
+    providerEventId: asString(payload?.id) || asString(message?.id),
+    capturedAt: Date.now(),
+  });
+  if (session && persistedStructuredOutcome) {
     await ctx.db.patch(session._id, {
-      structuredOutcome: {
-        rebuttalPerformanceScore: structuredOutcome.rebuttalPerformanceScore,
-        appointmentSet: structuredOutcome.appointmentSet,
-        callSummary: structuredOutcome.callSummary,
-        capturedAt: Date.now(),
-        providerEventId: asString(payload?.id) || asString(message?.id),
-      },
+      structuredOutcome: persistedStructuredOutcome,
       updatedAt: Date.now(),
     });
   }
@@ -620,6 +619,28 @@ async function triggerAutomaticSessionEvaluation(
       createdAt: Date.now(),
     });
   }
+}
+
+function buildPersistableStructuredOutcome(
+  structuredOutcome: {
+    rebuttalPerformanceScore?: number;
+    appointmentSet?: boolean;
+    callSummary?: string;
+  },
+  metadata: {
+    providerEventId?: string;
+    capturedAt: number;
+  },
+) {
+  const candidate = {
+    rebuttalPerformanceScore: structuredOutcome.rebuttalPerformanceScore,
+    appointmentSet: structuredOutcome.appointmentSet,
+    callSummary: structuredOutcome.callSummary,
+    capturedAt: metadata.capturedAt,
+    providerEventId: metadata.providerEventId,
+  };
+
+  return hasMeaningfulStructuredOutcome(candidate) ? candidate : null;
 }
 
 function extractRecordingAsset(payload: any): { kind: "base64" | "url"; value: string; mimeType?: string } | null {
