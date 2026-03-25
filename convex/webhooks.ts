@@ -2,7 +2,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { upsertAutomaticEvaluationForSessionInContext } from "./trainingSessionEvaluations";
-import { hasMeaningfulStructuredOutcome } from "../src/lib/training-session-evaluation";
+import {
+  extractStructuredOutcomeFromWebhookPayload,
+  hasMeaningfulStructuredOutcome,
+} from "../src/lib/training-session-evaluation";
 
 const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
@@ -424,7 +427,7 @@ async function persistVapiEvent(
     "unknown";
 
   const durationSeconds = asNumber(call?.durationSeconds) || asNumber(payload?.durationSeconds) || 0;
-  const structuredOutcome = extractStructuredOutcome(payload);
+  const structuredOutcome = extractStructuredOutcomeFromWebhookPayload(payload);
 
   await ctx.db.insert("sessionMetrics", {
     sessionKey,
@@ -728,27 +731,6 @@ function extractTranscriptAsset(payload: any): { kind: "text" | "url"; value: st
   }
 
   return null;
-}
-
-function extractStructuredOutcome(payload: any) {
-  const call = payload?.call ?? payload?.message?.call ?? {};
-  const message = payload?.message ?? payload;
-  const analysis = message?.analysis ?? payload?.analysis ?? {};
-
-  return {
-    rebuttalPerformanceScore:
-      asNumber(analysis?.rebuttalPerformanceScore) ||
-      asNumber(analysis?.rebuttalPerformance) ||
-      asNumber(analysis?.similarityScore) ||
-      undefined,
-    appointmentSet: asBoolean(analysis?.appointmentSet),
-    callSummary:
-      asString(analysis?.callSummary) ||
-      asString(message?.summary) ||
-      asString(payload?.summary) ||
-      asString(call?.summary) ||
-      undefined,
-  };
 }
 
 async function materializeRecordingBlob(asset: { kind: "base64" | "url"; value: string; mimeType?: string }) {

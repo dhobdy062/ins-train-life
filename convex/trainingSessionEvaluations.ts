@@ -1,9 +1,10 @@
-import { api } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import {
   evaluateTrainingSessionDataFlow,
   hasMeaningfulStructuredOutcome,
+  isTrainingSessionVisibleInTraineeResults,
+  isTrainingSessionVisibleInTrainerSessionBuilder,
   webhookPayloadExpectsStructuredOutcome,
   type TrainingSessionEvaluationIssue,
   type TrainingSessionEvaluationStatus,
@@ -39,10 +40,11 @@ export const getTrainingSessionEvaluationBySessionKey = internalQuery({
     sessionKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const evaluation = await ctx.db
+    const rows = await ctx.db
       .query("trainingSessionEvaluations")
       .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
-      .first();
+      .collect();
+    const evaluation = chooseCanonicalEvaluationRow(rows);
 
     if (!evaluation) {
       return null;
@@ -92,22 +94,25 @@ export async function upsertAutomaticEvaluationForSessionInContext(
     webhookPayloadExpectsStructuredOutcome(metric.rawPayload),
   );
 
-  const trainerSnapshot = await ctx.runQuery(api.sessions.getTrainerSessionBuilderSnapshot, {
+  const trainerSnapshotIncludesSession = isTrainingSessionVisibleInTrainerSessionBuilder({
+    sessionOrgId: session.orgId,
+    sessionTrainerId: session.trainerId,
     orgId: session.orgId,
     trainerId: session.trainerId,
-    limit: 50,
   });
 
-  const trainerSnapshotIncludesSession = trainerSnapshot.some(
-    (snapshotSession: { sessionKey: string }) => snapshotSession.sessionKey === session.sessionKey,
-  );
-
-  const traineeSnapshotIncludesSession = session.traineeId
-    ? await traineeSnapshotHasSession(ctx, {
-        orgId: session.orgId,
-        traineeId: session.traineeId,
-        sessionKey: session.sessionKey,
-      })
+  const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+  const traineeSnapshotIncludesSession =
+    session.traineeId && trainee
+      ? isTrainingSessionVisibleInTraineeResults({
+          sessionOrgId: session.orgId,
+          sessionTraineeId: session.traineeId,
+          sessionStatus: session.status,
+          traineeId: trainee._id,
+          traineeOrgId: trainee.orgId,
+          traineeStatus: trainee.status,
+          orgId: session.orgId,
+        })
     : false;
 
   const evaluatedAt = Date.now();
@@ -151,31 +156,6 @@ export async function upsertAutomaticEvaluationForSessionInContext(
     status: result.status,
     attemptCount: persisted.attemptCount,
   };
-}
-
-async function traineeSnapshotHasSession(
-  ctx: any,
-  args: {
-    orgId: string;
-    traineeId: string;
-    sessionKey: string;
-  },
-) {
-  const snapshot = await ctx.runQuery(api.traineeProfiles.getTraineeResultsSnapshot, {
-    traineeId: args.traineeId,
-    orgId: args.orgId,
-    limit: 50,
-  });
-
-  if (!snapshot) {
-    return false;
-  }
-
-  if (snapshot.latestSession?.sessionKey === args.sessionKey) {
-    return true;
-  }
-
-  return snapshot.history.some((session) => session.sessionKey === args.sessionKey);
 }
 
 async function upsertEvaluationRecord(

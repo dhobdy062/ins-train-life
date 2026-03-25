@@ -1,6 +1,9 @@
 import {
   evaluateTrainingSessionDataFlow,
+  extractStructuredOutcomeFromWebhookPayload,
   hasMeaningfulStructuredOutcome,
+  isTrainingSessionVisibleInTraineeResults,
+  isTrainingSessionVisibleInTrainerSessionBuilder,
   webhookPayloadExpectsStructuredOutcome,
   getTrainingSessionEvaluationIssueLabel,
   getTrainingSessionEvaluationStatusLabel,
@@ -122,6 +125,7 @@ describe("evaluateTrainingSessionDataFlow", () => {
     expect(result.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: "missing_trainee_link", severity: "failed" })]),
     );
+    expect(result.issues.map((issue) => issue.code)).not.toContain("trainee_snapshot_missing_session");
     expect(result.summary).toContain("Training session is missing the trainee link.");
   });
 
@@ -171,6 +175,60 @@ describe("evaluateTrainingSessionDataFlow", () => {
     expect(getTrainingSessionEvaluationIssueLabel("missing_metric")).toBe("Latest metric row is missing.");
   });
 
+  it("treats call.analysis as a structured outcome source", () => {
+    expect(
+      webhookPayloadExpectsStructuredOutcome({
+        call: {
+          analysis: {
+            rebuttalPerformanceScore: 91,
+          },
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("merges structured outcome fields across analysis sources", () => {
+    expect(
+      extractStructuredOutcomeFromWebhookPayload({
+        message: {
+          analysis: {
+            unrelated: "value",
+          },
+        },
+        call: {
+          analysis: {
+            rebuttalPerformanceScore: 91,
+          },
+        },
+        summary: "Closed strong.",
+      }),
+    ).toEqual({
+      rebuttalPerformanceScore: 91,
+      appointmentSet: undefined,
+      callSummary: "Closed strong.",
+    });
+  });
+
+  it("falls back to message.call when root.call is present but empty", () => {
+    expect(
+      extractStructuredOutcomeFromWebhookPayload({
+        call: {},
+        message: {
+          call: {
+            analysis: {
+              appointmentSet: true,
+            },
+            summary: "Booked follow-up.",
+          },
+        },
+      }),
+    ).toEqual({
+      rebuttalPerformanceScore: undefined,
+      appointmentSet: true,
+      callSummary: "Booked follow-up.",
+    });
+  });
+
   it("treats scaffold-only structured outcome objects as missing", () => {
     expect(
       hasMeaningfulStructuredOutcome({
@@ -213,6 +271,50 @@ describe("evaluateTrainingSessionDataFlow", () => {
         call: {
           durationSeconds: 180,
         },
+      }),
+    ).toBe(false);
+  });
+
+  it("treats linked trainer sessions as visible in the session builder", () => {
+    expect(
+      isTrainingSessionVisibleInTrainerSessionBuilder({
+        sessionOrgId: "org_1",
+        sessionTrainerId: "trainer_1",
+        orgId: "org_1",
+        trainerId: "trainer_1",
+      }),
+    ).toBe(true);
+    expect(
+      isTrainingSessionVisibleInTrainerSessionBuilder({
+        sessionOrgId: "org_1",
+        sessionTrainerId: "trainer_1",
+        orgId: "org_1",
+        trainerId: "trainer_2",
+      }),
+    ).toBe(false);
+  });
+
+  it("treats completed trainee-linked sessions as visible in trainee results without relying on snapshot limits", () => {
+    expect(
+      isTrainingSessionVisibleInTraineeResults({
+        sessionOrgId: "org_1",
+        sessionTraineeId: "trainee_1",
+        sessionStatus: "completed",
+        traineeId: "trainee_1",
+        traineeOrgId: "org_1",
+        traineeStatus: "active",
+        orgId: "org_1",
+      }),
+    ).toBe(true);
+    expect(
+      isTrainingSessionVisibleInTraineeResults({
+        sessionOrgId: "org_1",
+        sessionTraineeId: "trainee_1",
+        sessionStatus: "completed",
+        traineeId: "trainee_1",
+        traineeOrgId: "org_1",
+        traineeStatus: "disabled",
+        orgId: "org_1",
       }),
     ).toBe(false);
   });

@@ -56,6 +56,12 @@ type PersistedStructuredOutcomeLike = {
   providerEventId?: string;
 } | null | undefined;
 
+type WebhookStructuredOutcome = {
+  rebuttalPerformanceScore?: number;
+  appointmentSet?: boolean;
+  callSummary?: string;
+};
+
 const ISSUE_MESSAGES: Record<TrainingSessionEvaluationIssueCode, string> = {
   session_not_found: "Training session record is missing.",
   session_not_completed: "Training session is not completed.",
@@ -149,7 +155,7 @@ export function evaluateTrainingSessionDataFlow(
     issues.push(buildIssue("trainer_snapshot_missing_session", withinGraceWindow ? "warning" : "failed"));
   }
 
-  if (!input.traineeSnapshotIncludesSession) {
+  if (input.session.traineeId && !input.traineeSnapshotIncludesSession) {
     issues.push(buildIssue("trainee_snapshot_missing_session", withinGraceWindow ? "warning" : "failed"));
   }
 
@@ -180,35 +186,93 @@ export function hasMeaningfulStructuredOutcome(structuredOutcome: PersistedStruc
   return typeof structuredOutcome.callSummary === "string" && structuredOutcome.callSummary.trim().length > 0;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function asNumberValue(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function asBooleanValue(value: unknown) {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function asNonEmptyString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function firstDefinedValue<T>(values: Array<T | undefined>) {
+  return values.find((value) => value !== undefined);
+}
+
+export function extractStructuredOutcomeFromWebhookPayload(payload: unknown): WebhookStructuredOutcome {
+  const root = asRecord(payload);
+  const message = asRecord(root?.message) ?? root;
+  const callCandidates = [asRecord(root?.call), asRecord(message?.call)].filter(
+    (candidate): candidate is Record<string, unknown> => Boolean(candidate),
+  );
+  const analysisCandidates = [
+    asRecord(root?.analysis),
+    asRecord(message?.analysis),
+    ...callCandidates.map((candidate) => asRecord(candidate.analysis)),
+  ].filter((candidate): candidate is Record<string, unknown> => Boolean(candidate));
+
+  const rebuttalPerformanceScore = firstDefinedValue(
+    analysisCandidates.flatMap((analysis) => [
+      asNumberValue(analysis.rebuttalPerformanceScore),
+      asNumberValue(analysis.rebuttalPerformance),
+      asNumberValue(analysis.similarityScore),
+    ]),
+  );
+  const appointmentSet = firstDefinedValue(analysisCandidates.map((analysis) => asBooleanValue(analysis.appointmentSet)));
+  const callSummary = firstDefinedValue([
+    ...analysisCandidates.map((analysis) => asNonEmptyString(analysis.callSummary)),
+    asNonEmptyString(root?.summary),
+    asNonEmptyString(message?.summary),
+    ...callCandidates.map((candidate) => asNonEmptyString(candidate.summary)),
+  ]);
+
+  return {
+    rebuttalPerformanceScore,
+    appointmentSet,
+    callSummary,
+  };
+}
+
 export function webhookPayloadExpectsStructuredOutcome(payload: unknown) {
-  if (!payload || typeof payload !== "object") {
+  return hasMeaningfulStructuredOutcome(extractStructuredOutcomeFromWebhookPayload(payload));
+}
+
+export function isTrainingSessionVisibleInTrainerSessionBuilder(args: {
+  sessionOrgId: string;
+  sessionTrainerId: string;
+  orgId: string;
+  trainerId: string;
+}) {
+  return args.sessionOrgId === args.orgId && args.sessionTrainerId === args.trainerId;
+}
+
+export function isTrainingSessionVisibleInTraineeResults(args: {
+  sessionOrgId: string;
+  sessionTraineeId?: string | null;
+  sessionStatus: string;
+  traineeId: string;
+  traineeOrgId: string;
+  traineeStatus: string;
+  orgId: string;
+}) {
+  if (args.sessionOrgId !== args.orgId || args.traineeOrgId !== args.orgId) {
     return false;
   }
 
-  const root = payload as Record<string, any>;
-  const message = root.message && typeof root.message === "object" ? root.message : undefined;
-  const call = root.call && typeof root.call === "object" ? root.call : undefined;
-  const analysisCandidates = [
-    root.analysis,
-    message?.analysis,
-    call?.analysis,
-  ].filter((candidate) => candidate && typeof candidate === "object");
-
-  for (const analysis of analysisCandidates) {
-    if (
-      typeof analysis.rebuttalPerformanceScore === "number" ||
-      typeof analysis.rebuttalPerformance === "number" ||
-      typeof analysis.similarityScore === "number" ||
-      typeof analysis.appointmentSet === "boolean"
-    ) {
-      return true;
-    }
-
-    if (typeof analysis.callSummary === "string" && analysis.callSummary.trim().length > 0) {
-      return true;
-    }
+  if (args.sessionTraineeId !== args.traineeId) {
+    return false;
   }
 
-  const summaryCandidates = [root.summary, message?.summary, call?.summary];
-  return summaryCandidates.some((candidate) => typeof candidate === "string" && candidate.trim().length > 0);
+  if (args.traineeStatus === "disabled") {
+    return false;
+  }
+
+  return args.sessionStatus !== "assigned";
 }
