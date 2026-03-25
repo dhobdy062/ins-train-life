@@ -4,14 +4,15 @@ import { createToken, verifyToken } from "@/lib/token";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
+  const invalidRedirectUrl = new URL("/demo?state=invalid-link", request.url);
 
   if (!token) {
-    return NextResponse.redirect(new URL("/demo", request.url));
+    return NextResponse.redirect(invalidRedirectUrl);
   }
 
   const secret = process.env.VERIFY_HMAC_SECRET;
   if (!secret) {
-    return NextResponse.redirect(new URL("/demo", request.url));
+    return NextResponse.redirect(invalidRedirectUrl);
   }
 
   const payload = (() => {
@@ -22,13 +23,13 @@ export async function GET(request: Request) {
     }
   })();
   if (!payload) {
-    return NextResponse.redirect(new URL("/demo", request.url));
+    return NextResponse.redirect(invalidRedirectUrl);
   }
 
   const normalizedEmail = payload.email.trim().toLowerCase();
   const trialIdentityToken = createToken({ email: normalizedEmail }, secret);
 
-  const response = NextResponse.redirect(new URL("/dashboard/trainee", request.url));
+  const response = NextResponse.redirect(new URL("/demo?state=verified", request.url));
   response.cookies.set("demo_verified", "true", {
     httpOnly: true,
     sameSite: "lax",
