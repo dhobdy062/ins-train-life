@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { buildAssignedSessionStartUpdate } from "../src/lib/assigned-session-start";
 import { canDeleteSessionFiles } from "../src/lib/session-file-access";
+import { getTrainingSessionEvaluationBySessionKeyInContext } from "./trainingSessionEvaluations";
 
 export const createTrainingSession = mutation({
   args: {
@@ -388,6 +389,9 @@ export const getTrainerSessionBuilderSnapshot = query({
         const trainee = session.traineeId ? await ctx.db.get(session.traineeId as any) : null;
         const recordingUrl = session.recordingStorageId ? await ctx.storage.getUrl(session.recordingStorageId) : null;
         const transcriptUrl = session.transcriptStorageId ? await ctx.storage.getUrl(session.transcriptStorageId) : null;
+        const evaluation = await getTrainingSessionEvaluationBySessionKeyInContext(ctx, {
+          sessionKey: session.sessionKey,
+        });
 
         return {
           sessionKey: session.sessionKey,
@@ -403,6 +407,7 @@ export const getTrainerSessionBuilderSnapshot = query({
           structuredOutcome: session.structuredOutcome ?? null,
           recordingUrl,
           transcriptUrl,
+          evaluation,
         };
       }),
     );
@@ -496,6 +501,27 @@ export const recoverTrainingSession = mutation({
       throw new Error("Ask the trainee to open their dashboard once before sending a replacement session.");
     }
 
+    const traineeSessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_trainee_createdAt", (q) => q.eq("traineeId", session.traineeId as any))
+      .collect();
+    const existingReplacement = traineeSessions.find(
+      (candidate) =>
+        candidate.orgId === session.orgId &&
+        candidate.trainerId === session.trainerId &&
+        candidate.replacementForSessionKey === session.sessionKey,
+    );
+
+    if (existingReplacement) {
+      return {
+        action: args.action,
+        sessionKey: session.sessionKey,
+        status: session.status === "completed" ? "completed" : ("abandoned" as const),
+        replacementSessionKey: existingReplacement.sessionKey,
+        message: `Replacement session ${existingReplacement.sessionKey} is already ready for ${trainee.name}.`,
+      };
+    }
+
     const replacementSessionKey = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
     await ctx.db.insert("trainingSessions", {
@@ -509,6 +535,7 @@ export const recoverTrainingSession = mutation({
       objectionsRequired: session.objectionsRequired,
       rebuttalKeys: session.rebuttalKeys,
       selectedObjections: session.selectedObjections,
+      replacementForSessionKey: session.sessionKey,
       rebuttalGuideMap: session.rebuttalGuideMap,
       channel: session.channel,
       identityMode: session.identityMode,

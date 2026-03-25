@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  getTrainingSessionEvaluationStatusLabel,
+  type TrainingSessionEvaluationIssue,
+  type TrainingSessionEvaluationStatus,
+} from "@/lib/training-session-evaluation";
 
 type TraineeOption = {
   traineeId: string;
@@ -38,6 +43,22 @@ type RecentSession = {
   } | null;
   recordingUrl: string | null;
   transcriptUrl: string | null;
+  evaluation: {
+    evaluationId: string;
+    sessionKey: string;
+    orgId: string;
+    trainerId: string;
+    traineeId: string | null;
+    status: TrainingSessionEvaluationStatus;
+    source: "automatic" | "manual";
+    issues: TrainingSessionEvaluationIssue[];
+    summary: string;
+    attemptCount: number;
+    lastCompletedAt: number | null;
+    evaluatedAt: number;
+    createdAt: number;
+    updatedAt: number;
+  } | null;
 };
 
 type SessionBuilderProps = {
@@ -81,6 +102,7 @@ export default function SessionBuilder({
     sessionKey: string;
     action: SessionRecoveryAction;
   } | null>(null);
+  const [evaluationActionSessionKey, setEvaluationActionSessionKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedTrainee) {
@@ -194,6 +216,34 @@ export default function SessionBuilder({
     }
   }
 
+  async function handleEvaluationRerun(sessionKey: string) {
+    setEvaluationActionSessionKey(sessionKey);
+    setStatus(null);
+
+    try {
+      const response = await fetch(`/api/trainer/sessions/${encodeURIComponent(sessionKey)}/evaluation`, {
+        method: "POST",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        status?: TrainingSessionEvaluationStatus | null;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to re-run this evaluation.");
+      }
+
+      const nextStatus = payload.status ? getTrainingSessionEvaluationStatusLabel(payload.status) : "pending";
+      setStatus(`Re-ran evaluation for ${sessionKey}. Current status: ${nextStatus}.`);
+      router.refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to re-run this evaluation.");
+    } finally {
+      setEvaluationActionSessionKey(null);
+    }
+  }
+
   function getRecoveryLabel(session: RecentSession) {
     if (session.status === "assigned") {
       return "Mark missed";
@@ -202,6 +252,10 @@ export default function SessionBuilder({
   }
 
   function canCreateReplacement(session: RecentSession) {
+    if (session.status === "completed") {
+      return session.evaluation?.status === "failed";
+    }
+
     return session.status === "assigned" || session.status === "started" || session.status === "abandoned";
   }
 
@@ -331,6 +385,24 @@ export default function SessionBuilder({
                       : "No"}
                 </span>
                 <span className="disclaimer">{session.structuredOutcome?.callSummary ?? "No call summary yet."}</span>
+                {session.evaluation ? (
+                  <>
+                    <span className="disclaimer">
+                      Data flow: {getTrainingSessionEvaluationStatusLabel(session.evaluation.status)} | Evaluated{" "}
+                      {formatDateTime(session.evaluation.evaluatedAt)} | Attempts {session.evaluation.attemptCount}
+                    </span>
+                    <span className="disclaimer">{session.evaluation.summary}</span>
+                    <div style={{ display: "grid", gap: 4 }}>
+                      {session.evaluation.issues.map((issue, index) => (
+                        <span key={`${session.evaluation?.evaluationId}-issue-${index}`} className="disclaimer">
+                          {issue.severity.toUpperCase()} • {issue.message}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : session.status === "completed" ? (
+                  <span className="disclaimer">Data flow evaluation has not been recorded yet.</span>
+                ) : null}
                 <div className="hero-actions" style={{ justifyContent: "flex-start" }}>
                   {session.recordingUrl ? (
                     <a className="button secondary" href={session.recordingUrl} target="_blank" rel="noreferrer">
@@ -360,11 +432,21 @@ export default function SessionBuilder({
                         : getRecoveryLabel(session)}
                     </button>
                   ) : null}
+                  {session.status === "completed" ? (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={Boolean(sessionActionState) || evaluationActionSessionKey === session.sessionKey}
+                      onClick={() => void handleEvaluationRerun(session.sessionKey)}
+                    >
+                      {evaluationActionSessionKey === session.sessionKey ? "Re-running..." : "Re-run evaluation"}
+                    </button>
+                  ) : null}
                   {canCreateReplacement(session) ? (
                     <button
                       type="button"
                       className="button secondary"
-                      disabled={Boolean(sessionActionState)}
+                      disabled={Boolean(sessionActionState) || evaluationActionSessionKey === session.sessionKey}
                       onClick={() => void handleSessionRecovery(session.sessionKey, "create_replacement")}
                     >
                       {sessionActionState?.sessionKey === session.sessionKey &&

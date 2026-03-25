@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { auditIdentityAndSessionMismatches, getOrganizationRevenueDashboard, sweepStaleSessions } from "@/lib/convex";
+import {
+  auditIdentityAndSessionMismatches,
+  getOrganizationRevenueDashboard,
+  getTrainingSessionEvaluationAdminSnapshot,
+  rerunTrainingSessionEvaluation,
+  sweepStaleSessions,
+} from "@/lib/convex";
 import { isAdminPortalUser, resolvePrimaryEmailAddress } from "@/lib/admin-portal";
+import { getTrainingSessionEvaluationStatusLabel } from "@/lib/training-session-evaluation";
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -30,6 +37,15 @@ function formatPlan(plan: {
   const interval = plan.interval ? ` (${plan.interval})` : "";
   const status = plan.stripeStatus ? ` - ${plan.stripeStatus}` : "";
   return `${plan.planId}${interval}${status}`;
+}
+
+async function requireAdminPortalAccess() {
+  const user = await currentUser().catch(() => null);
+  const primaryEmail = resolvePrimaryEmailAddress(user);
+
+  if (!isAdminPortalUser(primaryEmail)) {
+    redirect("/dashboard/admin");
+  }
 }
 
 export default async function AdminRevenueDashboardPage() {
@@ -67,6 +83,8 @@ export default async function AdminRevenueDashboardPage() {
   async function runSessionIntegritySweep() {
     "use server";
 
+    await requireAdminPortalAccess();
+
     await sweepStaleSessions({
       staleAssignedAfterHours: 24,
       staleStartedAfterHours: 2,
@@ -75,13 +93,35 @@ export default async function AdminRevenueDashboardPage() {
     redirect("/dashboard/admin");
   }
 
-  const [dashboard, audit] = await Promise.all([
+  async function rerunSessionEvaluationAction(formData: FormData) {
+    "use server";
+
+    await requireAdminPortalAccess();
+
+    const sessionKey = String(formData.get("sessionKey") ?? "").trim();
+    const orgId = String(formData.get("orgId") ?? "").trim();
+    const trainerId = String(formData.get("trainerId") ?? "").trim();
+    if (!sessionKey || !orgId || !trainerId) {
+      redirect("/dashboard/admin");
+    }
+
+    await rerunTrainingSessionEvaluation({
+      sessionKey,
+      orgId,
+      trainerId,
+    }).catch(() => null);
+
+    redirect("/dashboard/admin");
+  }
+
+  const [dashboard, audit, evaluationSnapshot] = await Promise.all([
     getOrganizationRevenueDashboard({ limit: 250 }).catch(() => null),
     auditIdentityAndSessionMismatches({
       staleAssignedAfterHours: 24,
       staleStartedAfterHours: 2,
       sampleLimit: 12,
     }).catch(() => null),
+    getTrainingSessionEvaluationAdminSnapshot({ limit: 12 }).catch(() => null),
   ]);
 
   return (
@@ -236,6 +276,88 @@ export default async function AdminRevenueDashboardPage() {
                 </div>
               )}
             </section>
+
+            {evaluationSnapshot ? (
+              <>
+                <section className="glass panel">
+                  <div className="tag">Training Data Flow</div>
+                  <h3>Session evaluation health</h3>
+                  <p className="disclaimer">
+                    Snapshot generated {new Date(evaluationSnapshot.generatedAt).toLocaleString()}. This tracks whether
+                    completed training sessions persisted the data the trainee and trainer dashboards depend on.
+                  </p>
+                  <div className="grid">
+                    <div className="metric">
+                      <span>Total evaluated sessions</span>
+                      <strong>{evaluationSnapshot.counts.total}</strong>
+                    </div>
+                    <div className="metric">
+                      <span>Healthy</span>
+                      <strong>{evaluationSnapshot.counts.passed}</strong>
+                    </div>
+                    <div className="metric">
+                      <span>Needs review</span>
+                      <strong>{evaluationSnapshot.counts.warning}</strong>
+                    </div>
+                    <div className="metric">
+                      <span>Broken data flow</span>
+                      <strong>{evaluationSnapshot.counts.failed}</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="glass panel">
+                  <div className="tag">Evaluation Queue</div>
+                  <h3>Recent non-passing sessions</h3>
+                  {evaluationSnapshot.recentIssues.length === 0 ? (
+                    <p className="disclaimer">No warning or failed session evaluations right now.</p>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {evaluationSnapshot.recentIssues.map((evaluation) => (
+                        <article
+                          key={evaluation.evaluationId}
+                          className="metric"
+                          style={{ alignItems: "stretch", textAlign: "left", gap: 8 }}
+                        >
+                          <span>
+                            {getTrainingSessionEvaluationStatusLabel(evaluation.status)} • {evaluation.orgId}
+                          </span>
+                          <strong>{evaluation.sessionKey}</strong>
+                          <span className="disclaimer">
+                            Trainer {evaluation.trainerId} • {evaluation.traineeName} • session status{" "}
+                            {evaluation.sessionStatus ?? "missing"} • evaluated {formatDate(evaluation.evaluatedAt)}
+                          </span>
+                          <span className="disclaimer">{evaluation.summary}</span>
+                          <div style={{ display: "grid", gap: 4 }}>
+                            {evaluation.issues.map((issue, index) => (
+                              <span key={`${evaluation.evaluationId}-issue-${index}`} className="disclaimer">
+                                {issue.severity.toUpperCase()} • {issue.message}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="hero-actions">
+                            <form action={rerunSessionEvaluationAction}>
+                              <input name="sessionKey" type="hidden" value={evaluation.sessionKey} />
+                              <input name="orgId" type="hidden" value={evaluation.orgId} />
+                              <input name="trainerId" type="hidden" value={evaluation.trainerId} />
+                              <button className="button secondary" type="submit">
+                                Re-run evaluation
+                              </button>
+                            </form>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
+            ) : (
+              <section className="glass panel">
+                <div className="tag">Training Data Flow</div>
+                <h3>Session evaluation audit unavailable</h3>
+                <p className="disclaimer">The training session evaluation snapshot could not be loaded right now.</p>
+              </section>
+            )}
           </>
         ) : (
           <section className="glass panel">

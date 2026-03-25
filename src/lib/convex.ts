@@ -53,6 +53,12 @@ const getSessionWithFilesRef = makeFunctionReference<"query">("storage:getSessio
 const getInternalTrainingSessionEvaluationBySessionKeyRef = makeFunctionReference<"query">(
   "trainingSessionEvaluations:getTrainingSessionEvaluationBySessionKey",
 );
+const getTrainingSessionEvaluationAdminSnapshotRef = makeFunctionReference<"query">(
+  "trainingSessionEvaluations:getTrainingSessionEvaluationAdminSnapshot",
+);
+const rerunTrainingSessionEvaluationRef = makeFunctionReference<"mutation">(
+  "trainingSessionEvaluations:rerunTrainingSessionEvaluation",
+);
 const checkLaggingWebhooksRef = makeFunctionReference<"mutation">("webhooks:checkLaggingWebhooks");
 const getOrgBillingAccessRef = makeFunctionReference<"query">("webhooks:getOrgBillingAccess");
 const getOrgEntitlementRef = makeFunctionReference<"query">("webhooks:getOrgEntitlement");
@@ -502,6 +508,22 @@ export async function getTrainerSessionBuilderSnapshot(args: { orgId: string; tr
       } | null;
       recordingUrl: string | null;
       transcriptUrl: string | null;
+      evaluation: {
+        evaluationId: string;
+        sessionKey: string;
+        orgId: string;
+        trainerId: string;
+        traineeId: string | null;
+        status: TrainingSessionEvaluationStatus;
+        source: "automatic" | "manual";
+        issues: TrainingSessionEvaluationIssue[];
+        summary: string;
+        attemptCount: number;
+        lastCompletedAt: number | null;
+        evaluatedAt: number;
+        createdAt: number;
+        updatedAt: number;
+      } | null;
     }>
   >;
 }
@@ -748,6 +770,45 @@ export async function getInternalTrainingSessionEvaluationBySessionKey(args: { s
     createdAt: number;
     updatedAt: number;
   } | null>;
+}
+
+export async function getTrainingSessionEvaluationAdminSnapshot(args?: { limit?: number }) {
+  const client = getClient();
+  return client.query(getTrainingSessionEvaluationAdminSnapshotRef, (args ?? {}) as never) as Promise<{
+    generatedAt: number;
+    counts: {
+      total: number;
+      passed: number;
+      warning: number;
+      failed: number;
+    };
+    recentIssues: Array<{
+      evaluationId: string;
+      sessionKey: string;
+      orgId: string;
+      trainerId: string;
+      traineeId: string | null;
+      traineeName: string;
+      sessionStatus: string | null;
+      status: TrainingSessionEvaluationStatus;
+      source: "automatic" | "manual";
+      issues: TrainingSessionEvaluationIssue[];
+      summary: string;
+      attemptCount: number;
+      lastCompletedAt: number | null;
+      evaluatedAt: number;
+    }>;
+  }>;
+}
+
+export async function rerunTrainingSessionEvaluation(args: { sessionKey: string; orgId: string; trainerId: string }) {
+  const client = getClient();
+  return client.mutation(rerunTrainingSessionEvaluationRef, args as never) as Promise<{
+    found: boolean;
+    evaluationId: string | null;
+    status?: TrainingSessionEvaluationStatus;
+    attemptCount?: number;
+  }>;
 }
 
 export async function recordAlert(args: {

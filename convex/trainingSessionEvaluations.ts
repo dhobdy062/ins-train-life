@@ -1,5 +1,6 @@
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { summarizeTrainingSessionEvaluationsForAdmin } from "../src/lib/training-session-evaluation-admin";
 import {
   evaluateTrainingSessionDataFlow,
   hasMeaningfulStructuredOutcome,
@@ -31,7 +32,33 @@ export const upsertAutomaticEvaluationForSession = internalMutation({
     sessionKey: v.string(),
   },
   handler: async (ctx, args) => {
-    return upsertAutomaticEvaluationForSessionInContext(ctx, args);
+    return upsertAutomaticEvaluationForSessionInContext(ctx, {
+      ...args,
+      source: "automatic",
+    });
+  },
+});
+
+export const rerunTrainingSessionEvaluation = mutation({
+  args: {
+    sessionKey: v.string(),
+    orgId: v.string(),
+    trainerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+
+    if (!session || session.orgId !== args.orgId || session.trainerId !== args.trainerId) {
+      throw new Error("Session not found.");
+    }
+
+    return upsertAutomaticEvaluationForSessionInContext(ctx, {
+      sessionKey: args.sessionKey,
+      source: "manual",
+    });
   },
 });
 
@@ -40,31 +67,62 @@ export const getTrainingSessionEvaluationBySessionKey = internalQuery({
     sessionKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const rows = await ctx.db
-      .query("trainingSessionEvaluations")
-      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
-      .collect();
-    const evaluation = chooseCanonicalEvaluationRow(rows);
+    return getTrainingSessionEvaluationBySessionKeyInContext(ctx, args);
+  },
+});
 
-    if (!evaluation) {
-      return null;
-    }
+export const getTrainingSessionEvaluationAdminSnapshot = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(args.limit ?? 12, 1), 50);
+    const rows = await ctx.db.query("trainingSessionEvaluations").collect();
+    const evaluations = listCanonicalEvaluationRows(rows).sort((left, right) => right.evaluatedAt - left.evaluatedAt);
+    const summary = summarizeTrainingSessionEvaluationsForAdmin(
+      evaluations.map((evaluation) => ({
+        sessionKey: evaluation.sessionKey,
+        status: evaluation.status,
+        evaluatedAt: evaluation.evaluatedAt,
+      })),
+      limit,
+    );
+    const evaluationBySessionKey = new Map(evaluations.map((evaluation) => [evaluation.sessionKey, evaluation]));
 
     return {
-      evaluationId: evaluation._id,
-      sessionKey: evaluation.sessionKey,
-      orgId: evaluation.orgId,
-      trainerId: evaluation.trainerId,
-      traineeId: evaluation.traineeId ?? null,
-      status: evaluation.status,
-      source: evaluation.source,
-      issues: evaluation.issues,
-      summary: evaluation.summary,
-      attemptCount: evaluation.attemptCount,
-      lastCompletedAt: evaluation.lastCompletedAt ?? null,
-      evaluatedAt: evaluation.evaluatedAt,
-      createdAt: evaluation.createdAt,
-      updatedAt: evaluation.updatedAt,
+      generatedAt: Date.now(),
+      counts: summary.counts,
+      recentIssues: await Promise.all(
+        summary.recentIssues.map(async (issue) => {
+          const evaluation = evaluationBySessionKey.get(issue.sessionKey);
+          if (!evaluation) {
+            throw new Error(`Missing canonical evaluation row for ${issue.sessionKey}`);
+          }
+
+          const session = await ctx.db
+            .query("trainingSessions")
+            .withIndex("by_sessionKey", (q) => q.eq("sessionKey", evaluation.sessionKey))
+            .first();
+          const trainee = session?.traineeId ? await ctx.db.get(session.traineeId as any) : null;
+
+          return {
+            evaluationId: evaluation._id,
+            sessionKey: evaluation.sessionKey,
+            orgId: evaluation.orgId,
+            trainerId: evaluation.trainerId,
+            traineeId: evaluation.traineeId ?? null,
+            traineeName: trainee?.name ?? "Unknown trainee",
+            sessionStatus: session?.status ?? null,
+            status: evaluation.status,
+            source: evaluation.source,
+            issues: evaluation.issues,
+            summary: evaluation.summary,
+            attemptCount: evaluation.attemptCount,
+            lastCompletedAt: evaluation.lastCompletedAt ?? session?.endedAt ?? null,
+            evaluatedAt: evaluation.evaluatedAt,
+          };
+        }),
+      ),
     };
   },
 });
@@ -73,6 +131,7 @@ export async function upsertAutomaticEvaluationForSessionInContext(
   ctx: any,
   args: {
     sessionKey: string;
+    source?: "automatic" | "manual";
   },
 ) {
   const session = await ctx.db
@@ -142,7 +201,7 @@ export async function upsertAutomaticEvaluationForSessionInContext(
     trainerId: session.trainerId,
     traineeId: session.traineeId ?? null,
     status: result.status,
-    source: "automatic",
+    source: args.source ?? "automatic",
     issues: result.issues,
     summary: result.summary,
     attemptCount: 1,
@@ -155,6 +214,40 @@ export async function upsertAutomaticEvaluationForSessionInContext(
     evaluationId: persisted.evaluationId,
     status: result.status,
     attemptCount: persisted.attemptCount,
+  };
+}
+
+export async function getTrainingSessionEvaluationBySessionKeyInContext(
+  ctx: any,
+  args: {
+    sessionKey: string;
+  },
+) {
+  const rows = await ctx.db
+    .query("trainingSessionEvaluations")
+    .withIndex("by_sessionKey", (q: any) => q.eq("sessionKey", args.sessionKey))
+    .collect();
+  const evaluation = chooseCanonicalEvaluationRow(rows);
+
+  if (!evaluation) {
+    return null;
+  }
+
+  return {
+    evaluationId: evaluation._id,
+    sessionKey: evaluation.sessionKey,
+    orgId: evaluation.orgId,
+    trainerId: evaluation.trainerId,
+    traineeId: evaluation.traineeId ?? null,
+    status: evaluation.status,
+    source: evaluation.source,
+    issues: evaluation.issues,
+    summary: evaluation.summary,
+    attemptCount: evaluation.attemptCount,
+    lastCompletedAt: evaluation.lastCompletedAt ?? null,
+    evaluatedAt: evaluation.evaluatedAt,
+    createdAt: evaluation.createdAt,
+    updatedAt: evaluation.updatedAt,
   };
 }
 
@@ -269,4 +362,29 @@ function chooseCanonicalEvaluationRow(
 
     return String(left._id).localeCompare(String(right._id));
   })[0];
+}
+
+function listCanonicalEvaluationRows<
+  T extends {
+    sessionKey: string;
+    _id: string;
+    createdAt?: number;
+    _creationTime?: number;
+  },
+>(rows: T[]) {
+  const rowsBySessionKey = new Map<string, T[]>();
+
+  for (const row of rows) {
+    const existing = rowsBySessionKey.get(row.sessionKey);
+    if (existing) {
+      existing.push(row);
+      continue;
+    }
+
+    rowsBySessionKey.set(row.sessionKey, [row]);
+  }
+
+  return Array.from(rowsBySessionKey.values())
+    .map((sessionRows) => chooseCanonicalEvaluationRow(sessionRows))
+    .filter((row): row is T => Boolean(row));
 }

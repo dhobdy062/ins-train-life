@@ -78,6 +78,7 @@ export default defineSchema({
         }),
       ),
     ),
+    replacementForSessionKey: v.optional(v.string()),
     rebuttalGuideMap: v.optional(v.record(v.string(), v.string())),
     channel: v.literal("web"),
     identityMode: v.optional(v.union(v.literal("ip_match"), v.literal("backup_code"), v.literal("manual_override"))),
