@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PublicDemoConsole, { isDemoCallBlocked, toFriendlyPublicDemoError } from "@/components/PublicDemoConsole";
 
@@ -12,6 +12,16 @@ jest.mock("next/link", () => ({
 }));
 
 describe("PublicDemoConsole", () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = jest.fn() as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
   it("shows the verified demo CTA", () => {
     const html = renderToStaticMarkup(<PublicDemoConsole state="verified" hasValidDemoAccess />);
 
@@ -47,15 +57,28 @@ describe("PublicDemoConsole", () => {
     expect(html).toContain("Upgrade to continue practice");
   });
 
-  it("surfaces call-start failures with public demo copy", () => {
-    expect(toFriendlyPublicDemoError("Unable to start trial call.")).toBe(
-      "We could not start your demo call. Please try again in a moment.",
-    );
+  it("surfaces call-start failures with public demo copy", async () => {
+    const mockedFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+    mockedFetch.mockResolvedValue({
+      ok: false,
+      text: async () => JSON.stringify({ error: "Unable to start trial call." }),
+    } as Response);
+
+    render(<PublicDemoConsole state="verified" hasValidDemoAccess />);
+    fireEvent.click(screen.getByRole("button", { name: "Start a Demo Call" }));
+
+    expect(await screen.findByText("We could not start your demo call. Please try again in a moment.")).toBeInTheDocument();
   });
 
   it("blocks demo-call starts for invalid links and missing verification", () => {
     expect(isDemoCallBlocked("invalid-link", true)).toBe(true);
     expect(isDemoCallBlocked("default", false)).toBe(true);
     expect(isDemoCallBlocked("verified", true)).toBe(false);
+  });
+
+  it("maps trial-start API failures to friendly public demo copy", () => {
+    expect(toFriendlyPublicDemoError("Unable to start trial call.")).toBe(
+      "We could not start your demo call. Please try again in a moment.",
+    );
   });
 });
