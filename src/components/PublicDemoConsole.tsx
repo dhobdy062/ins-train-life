@@ -33,6 +33,18 @@ type PublicDemoConsoleProps = {
   trialLimitReached?: boolean;
 };
 
+function PublicDemoStatus({ message }: { message: string | null }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <p className="disclaimer" role="status" aria-live="polite" aria-atomic="true">
+      {message}
+    </p>
+  );
+}
+
 function formatUnknownError(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -258,7 +270,7 @@ export default function PublicDemoConsole({
         </button>
       </div>
 
-      {status ? <p className="disclaimer">{status}</p> : null}
+      <PublicDemoStatus message={status} />
 
       {showRecoveryActions ? (
         <div className="hero-actions">

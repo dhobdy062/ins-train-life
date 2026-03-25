@@ -1,3 +1,4 @@
+import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PublicDemoConsole, { isDemoCallBlocked, toFriendlyPublicDemoError } from "@/components/PublicDemoConsole";
 
@@ -24,11 +25,18 @@ describe("PublicDemoConsole", () => {
     expect(html).toContain("/#lead-form");
   });
 
-  it("keeps invalid-link state in recovery mode even with a stale demo cookie", () => {
-    const html = renderToStaticMarkup(<PublicDemoConsole state="invalid-link" hasValidDemoAccess />);
+  it("announces demo status updates through a live region", () => {
+    const html = renderToStaticMarkup(<PublicDemoConsole state="verified" hasValidDemoAccess />);
 
-    expect(html).toContain("This verification link is invalid or expired");
-    expect(html).toContain("disabled");
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+  });
+
+  it("keeps invalid-link state in recovery mode even with a stale demo cookie", () => {
+    render(<PublicDemoConsole state="invalid-link" hasValidDemoAccess />);
+
+    expect(screen.getByRole("button", { name: "Start a Demo Call" })).toBeDisabled();
+    expect(screen.getByText(/This verification link is invalid or expired/i)).toBeInTheDocument();
   });
 
   it("shows the upgrade path when the trial limit is reached", () => {
