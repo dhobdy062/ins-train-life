@@ -5,11 +5,11 @@ import { auth } from "@clerk/nextjs/server";
 import { normalizeBillingSelection } from "@/lib/billing";
 
 const objectionNodes = [
-  "D1 Busy schedule",
-  "D2 Does not remember lead",
-  "D3 Needs spouse",
-  "D4 Already covered",
-  "D5 High interest, high skepticism",
+  "D1",
+  "D2",
+  "D3",
+  "D4",
+  "D5",
 ];
 
 const scoringCategories = [

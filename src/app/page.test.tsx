@@ -56,8 +56,16 @@ describe("Home", () => {
     const element = await Home({ searchParams: Promise.resolve({}) });
     const html = renderToStaticMarkup(element);
 
-    expect(html).toContain("D1 Busy schedule");
-    expect(html).toContain("D5 High interest, high skepticism");
+    expect(html).toContain(">D1<");
+    expect(html).toContain(">D2<");
+    expect(html).toContain(">D3<");
+    expect(html).toContain(">D4<");
+    expect(html).toContain(">D5<");
+    expect(html).not.toContain("Busy schedule");
+    expect(html).not.toContain("Does not remember lead");
+    expect(html).not.toContain("Needs spouse");
+    expect(html).not.toContain("Already covered");
+    expect(html).not.toContain("High interest, high skepticism");
     expect(html).toContain("Objection handling");
     expect(html).toContain("Tone and pacing");
     expect(html).toContain("Close effectiveness");
