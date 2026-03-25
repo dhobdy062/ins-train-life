@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import PublicDemoConsole, { type PublicDemoState } from "@/components/PublicDemoConsole";
 
@@ -36,12 +37,12 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
                 a paid plan only when you are ready for full team training.
               </p>
               <div className="hero-actions">
-                <a className="button secondary" href="/">
+                <Link className="button secondary" href="/">
                   Back to landing page
-                </a>
-                <a className="button secondary" href="/#pricing">
+                </Link>
+                <Link className="button secondary" href="/#pricing">
                   View pricing
-                </a>
+                </Link>
               </div>
             </div>
 
