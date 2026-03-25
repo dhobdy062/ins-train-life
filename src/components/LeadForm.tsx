@@ -74,7 +74,7 @@ export default function LeadForm() {
   }
 
   return (
-    <div className="glass panel">
+    <div className="glass panel" id="lead-form">
       <div className="demo-logo-wrap">
         <Image className="demo-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={220} height={220} priority />
       </div>

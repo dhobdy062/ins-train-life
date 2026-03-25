@@ -87,11 +87,11 @@ function getInitialStatus(state: PublicDemoState, hasValidDemoAccess: boolean) {
   }
 
   if (state === "invalid-link") {
-    return "This verification link is invalid or expired. Request a fresh demo link from the landing page.";
+    return "This verification link is invalid or expired. Go back to the landing-page verification form to request a fresh demo link.";
   }
 
   if (!hasValidDemoAccess) {
-    return "Verification is required before you can start a demo call. Request a fresh link from the landing page.";
+    return "Verification is required before you can start a demo call. Go back to the landing-page verification form to request a fresh link.";
   }
 
   return "Your demo access is ready. Start a call when you want another live rep.";
@@ -262,7 +262,7 @@ export default function PublicDemoConsole({
 
       {showRecoveryActions ? (
         <div className="hero-actions">
-          <Link className="button" href="/">
+          <Link className="button" href="/#lead-form">
             Request a new verification link
           </Link>
           <Link className="button secondary" href="/#pricing">

@@ -21,6 +21,7 @@ describe("PublicDemoConsole", () => {
     const html = renderToStaticMarkup(<PublicDemoConsole state="default" hasValidDemoAccess={false} />);
 
     expect(html).toContain("Verification is required");
+    expect(html).toContain("/#lead-form");
   });
 
   it("keeps invalid-link state in recovery mode even with a stale demo cookie", () => {
