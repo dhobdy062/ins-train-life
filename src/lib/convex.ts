@@ -81,6 +81,9 @@ const getUserByClerkIdRef = makeFunctionReference<"query">("identity:getUserByCl
 const getOrganizationByClerkIdRef = makeFunctionReference<"query">("identity:getOrganizationByClerkId");
 const getMembershipByClerkIdRef = makeFunctionReference<"query">("identity:getMembershipByClerkId");
 const getMembershipByOrgAndUserRef = makeFunctionReference<"query">("identity:getMembershipByOrgAndUser");
+const upsertDemoProspectRef = makeFunctionReference<"mutation">("sessions:upsertDemoProspect");
+const getDemoProspectByUserAndOrgRef = makeFunctionReference<"query">("sessions:getDemoProspectByUserAndOrg");
+const reserveAuthenticatedDemoSessionRef = makeFunctionReference<"mutation">("sessions:reserveAuthenticatedDemoSession");
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -690,6 +693,55 @@ export async function getTrainerDashboardSnapshot(args: { orgId: string; trainer
 export async function reserveTrialSession(args: { emailHash: string; sessionKey: string }) {
   const client = getClient();
   return client.mutation(reserveTrialSessionRef, args as never) as Promise<{ allowed: boolean; remaining: number }>;
+}
+
+export async function upsertDemoProspect(args: {
+  clerkUserId: string;
+  orgId: string;
+  email: string;
+  name: string;
+  organizationName: string;
+}) {
+  const client = getClient();
+  return client.mutation(upsertDemoProspectRef, args as never) as Promise<{
+    demoProspectId: string;
+    created: boolean;
+    demoCount: number;
+    demoLimit: number;
+  }>;
+}
+
+export async function getDemoProspectByUserAndOrg(args: { clerkUserId: string; orgId: string }) {
+  const client = getClient();
+  return client.query(getDemoProspectByUserAndOrgRef, args as never) as Promise<{
+    demoProspectId: string;
+    clerkUserId: string;
+    orgId: string;
+    email: string;
+    name: string;
+    organizationName: string;
+    status: string;
+    demoCount: number;
+    demoLimit: number;
+    firstRequestedAt: number;
+    lastDemoStartedAt: number | null;
+    convertedAt: number | null;
+  } | null>;
+}
+
+export async function reserveAuthenticatedDemoSession(args: {
+  clerkUserId: string;
+  orgId: string;
+  sessionKey: string;
+}) {
+  const client = getClient();
+  return client.mutation(reserveAuthenticatedDemoSessionRef, args as never) as Promise<{
+    allowed: boolean;
+    remaining: number;
+    sessionKey: string;
+    demoCount: number;
+    demoLimit: number;
+  }>;
 }
 
 export async function deleteSessionWithArtifacts(args: {

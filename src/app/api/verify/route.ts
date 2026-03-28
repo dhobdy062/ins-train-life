@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { createToken, verifyToken } from "@/lib/token";
+import { upsertDemoProspect } from "@/lib/convex";
+import { verifyToken } from "@/lib/token";
+import { provisionDemoProspectIdentity } from "@/lib/clerk-demo-prospects";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
-  const invalidRedirectUrl = new URL("/demo?state=invalid-link", request.url);
+  const invalidRedirectUrl = new URL("/#lead-form", request.url);
 
   if (!token) {
     return NextResponse.redirect(invalidRedirectUrl);
@@ -26,23 +28,27 @@ export async function GET(request: Request) {
     return NextResponse.redirect(invalidRedirectUrl);
   }
 
+  const name = payload.name?.trim();
+  const organizationName = payload.agency?.trim();
   const normalizedEmail = payload.email.trim().toLowerCase();
-  const trialIdentityToken = createToken({ email: normalizedEmail }, secret);
 
-  const response = NextResponse.redirect(new URL("/demo?state=verified", request.url));
-  response.cookies.set("demo_verified", "true", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24,
+  if (!name || !organizationName) {
+    return NextResponse.redirect(invalidRedirectUrl);
+  }
+
+  const identity = await provisionDemoProspectIdentity({
+    email: normalizedEmail,
+    name,
+    organizationName,
   });
 
-  response.cookies.set("demo_trial_identity", trialIdentityToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 30,
+  await upsertDemoProspect({
+    clerkUserId: identity.clerkUserId,
+    orgId: identity.clerkOrgId,
+    email: identity.normalizedEmail,
+    name,
+    organizationName: identity.organizationName,
   });
 
-  return response;
+  return NextResponse.redirect(identity.signInUrl);
 }

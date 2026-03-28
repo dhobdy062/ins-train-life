@@ -91,6 +91,160 @@ export const reserveTrialSession = mutation({
   },
 });
 
+export const upsertDemoProspect = mutation({
+  args: {
+    clerkUserId: v.string(),
+    orgId: v.string(),
+    email: v.string(),
+    name: v.string(),
+    organizationName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("demoProspects")
+      .withIndex("by_org_user", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        email: args.email,
+        name: args.name,
+        organizationName: args.organizationName,
+        updatedAt: now,
+      });
+
+      return {
+        demoProspectId: existing._id,
+        created: false,
+        demoCount: existing.demoCount,
+        demoLimit: existing.demoLimit,
+      };
+    }
+
+    const demoProspectId = await ctx.db.insert("demoProspects", {
+      clerkUserId: args.clerkUserId,
+      orgId: args.orgId,
+      email: args.email,
+      name: args.name,
+      organizationName: args.organizationName,
+      status: "requested",
+      demoCount: 0,
+      demoLimit: 2,
+      firstRequestedAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      demoProspectId,
+      created: true,
+      demoCount: 0,
+      demoLimit: 2,
+    };
+  },
+});
+
+export const getDemoProspectByUserAndOrg = query({
+  args: {
+    clerkUserId: v.string(),
+    orgId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const prospect = await ctx.db
+      .query("demoProspects")
+      .withIndex("by_org_user", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    if (!prospect) {
+      return null;
+    }
+
+    return {
+      demoProspectId: prospect._id,
+      clerkUserId: prospect.clerkUserId,
+      orgId: prospect.orgId,
+      email: prospect.email,
+      name: prospect.name,
+      organizationName: prospect.organizationName,
+      status: prospect.status,
+      demoCount: prospect.demoCount,
+      demoLimit: prospect.demoLimit,
+      firstRequestedAt: prospect.firstRequestedAt,
+      lastDemoStartedAt: prospect.lastDemoStartedAt ?? null,
+      convertedAt: prospect.convertedAt ?? null,
+    };
+  },
+});
+
+export const reserveAuthenticatedDemoSession = mutation({
+  args: {
+    clerkUserId: v.string(),
+    orgId: v.string(),
+    sessionKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const prospect = await ctx.db
+      .query("demoProspects")
+      .withIndex("by_org_user", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+
+    if (!prospect) {
+      return {
+        allowed: false,
+        remaining: 0,
+        sessionKey: args.sessionKey,
+        demoCount: 0,
+        demoLimit: 0,
+      };
+    }
+
+    if (prospect.demoCount >= prospect.demoLimit) {
+      if (prospect.status !== "demo_limit_reached") {
+        await ctx.db.patch(prospect._id, {
+          status: "demo_limit_reached",
+          updatedAt: Date.now(),
+        });
+      }
+
+      return {
+        allowed: false,
+        remaining: 0,
+        sessionKey: args.sessionKey,
+        demoCount: prospect.demoCount,
+        demoLimit: prospect.demoLimit,
+      };
+    }
+
+    const now = Date.now();
+    const nextDemoCount = prospect.demoCount + 1;
+    const remaining = Math.max(prospect.demoLimit - nextDemoCount, 0);
+
+    await ctx.db.insert("trialSessions", {
+      clerkUserId: args.clerkUserId,
+      orgId: args.orgId,
+      emailHash: `${args.orgId}:${args.clerkUserId}`,
+      sessionKey: args.sessionKey,
+      source: "web_trial",
+      createdAt: now,
+    });
+
+    await ctx.db.patch(prospect._id, {
+      demoCount: nextDemoCount,
+      lastDemoStartedAt: now,
+      status: remaining === 0 ? "demo_limit_reached" : "active_demo",
+      updatedAt: now,
+    });
+
+    return {
+      allowed: true,
+      remaining,
+      sessionKey: args.sessionKey,
+      demoCount: nextDemoCount,
+      demoLimit: prospect.demoLimit,
+    };
+  },
+});
+
 export const markAssignedSessionStarted = mutation({
   args: {
     sessionKey: v.string(),
