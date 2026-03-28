@@ -25,8 +25,11 @@ type VapiClient = {
   on: (event: string, callback: (...args: unknown[]) => void) => void;
 };
 
+export type PublicDemoState = "default" | "verified" | "invalid-link";
+
 type PublicDemoConsoleProps = {
-  organizationName?: string;
+  state: PublicDemoState;
+  hasValidDemoAccess: boolean;
   trialLimitReached?: boolean;
 };
 
@@ -63,20 +66,12 @@ function formatUnknownError(error: unknown) {
 export function toFriendlyPublicDemoError(rawMessage: string) {
   const message = rawMessage.toLowerCase();
 
-  if (message.includes("sign in")) {
-    return "Sign in again to continue your demo.";
+  if (message.includes("verification required") || message.includes("invalid verification token")) {
+    return "Verification is required before you can start a demo call. Request a fresh link and try again.";
   }
 
-  if (message.includes("organization context")) {
-    return "Choose your organization before starting the demo.";
-  }
-
-  if (message.includes("demo access is unavailable")) {
-    return "Demo access is not available for this account yet.";
-  }
-
-  if (message.includes("used both demo sessions") || message.includes("trial limit reached")) {
-    return "You have used both demo sessions.";
+  if (message.includes("trial limit reached")) {
+    return "You have reached the free demo limit for this email.";
   }
 
   if (message.includes("network") || message.includes("failed to fetch")) {
@@ -94,28 +89,38 @@ export function toFriendlyPublicDemoError(rawMessage: string) {
   return "Something went wrong while starting your demo call. Please try again.";
 }
 
-function getInitialStatus(organizationName: string | undefined, trialLimitReached: boolean) {
-  if (trialLimitReached) {
-    return "You have used both demo sessions.";
+export function isDemoCallBlocked(state: PublicDemoState, hasValidDemoAccess: boolean) {
+  return state === "invalid-link" || !hasValidDemoAccess;
+}
+
+function getInitialStatus(state: PublicDemoState, hasValidDemoAccess: boolean) {
+  if (state === "verified" && hasValidDemoAccess) {
+    return "Your email is verified. Start a demo call whenever you are ready.";
   }
 
-  if (organizationName) {
-    return `You are signed in for ${organizationName}. Start a demo call whenever you are ready.`;
+  if (state === "invalid-link") {
+    return "This verification link is invalid or expired. Go back to the landing-page verification form to request a fresh demo link.";
   }
 
-  return "You are signed in. Start a demo call whenever you are ready.";
+  if (!hasValidDemoAccess) {
+    return "Verification is required before you can start a demo call. Go back to the landing-page verification form to request a fresh link.";
+  }
+
+  return "Your demo access is ready. Start a call when you want another live rep.";
 }
 
 export default function PublicDemoConsole({
-  organizationName,
+  state,
+  hasValidDemoAccess,
   trialLimitReached = false,
 }: PublicDemoConsoleProps) {
+  const demoCallBlocked = isDemoCallBlocked(state, hasValidDemoAccess);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string | null>(getInitialStatus(organizationName, trialLimitReached));
+  const [status, setStatus] = useState<string | null>(getInitialStatus(state, hasValidDemoAccess));
   const [callState, setCallState] = useState("ready");
   const [remainingTrialSessions, setRemainingTrialSessions] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(trialLimitReached);
-  const [limitCtaUrl, setLimitCtaUrl] = useState("/checkout/start?plan=starter&interval=monthly");
+  const [limitCtaUrl, setLimitCtaUrl] = useState("/sign-up");
   const [agentBrand, setAgentBrand] = useState<string>("Cream No Sugar");
   const vapiRef = useRef<VapiClient | null>(null);
 
@@ -135,7 +140,7 @@ export default function PublicDemoConsole({
 
     client.on("call-end", () => {
       setCallState("ended");
-      setStatus("Demo call ended.");
+      setStatus("Demo call ended. You can start another call while free sessions remain.");
     });
 
     client.on("error", (error) => {
@@ -153,6 +158,12 @@ export default function PublicDemoConsole({
   }
 
   async function handleStartTrial() {
+    if (demoCallBlocked) {
+      setCallState("blocked");
+      setStatus(getInitialStatus(state, hasValidDemoAccess));
+      return;
+    }
+
     setLoading(true);
     setStatus(null);
     setLimitReached(false);
@@ -178,7 +189,7 @@ export default function PublicDemoConsole({
 
         if (errorPayload.code === "TRIAL_LIMIT_REACHED") {
           setLimitReached(true);
-          setLimitCtaUrl(errorPayload.ctaUrl ?? "/checkout/start?plan=starter&interval=monthly");
+          setLimitCtaUrl(errorPayload.ctaUrl ?? "/sign-up");
           setCallState("limit_reached");
           setStatus(toFriendlyPublicDemoError(errorPayload.message ?? "Trial limit reached."));
           return;
@@ -224,22 +235,20 @@ export default function PublicDemoConsole({
     }
   }
 
+  const showRecoveryActions = demoCallBlocked;
+
   return (
     <div className="glass panel">
-      <div className="tag">Authenticated demo</div>
+      <div className="tag">Demo call access</div>
       <h3>Start a Demo Call</h3>
       <p className="disclaimer">
-        Your demo is tied to your authenticated account and organization. You have up to 2 total demo sessions before
-        moving into checkout.
+        Use this public page to launch a short live demo call. Your verified email unlocks up to 3 free sessions
+        before you move to a paid plan.
       </p>
 
       <div className="grid">
         <div className="metric">
-          <span>Organization</span>
-          <strong>{organizationName ?? "Your organization"}</strong>
-        </div>
-        <div className="metric">
-          <span>Sessions remaining</span>
+          <span>Free sessions remaining</span>
           <strong>{remainingTrialSessions ?? "-"}</strong>
         </div>
         <div className="metric">
@@ -253,7 +262,7 @@ export default function PublicDemoConsole({
       </div>
 
       <div className="hero-actions">
-        <button className="button" onClick={handleStartTrial} disabled={loading || limitReached}>
+        <button className="button" onClick={handleStartTrial} disabled={loading || limitReached || demoCallBlocked}>
           {loading ? "Starting..." : "Start a Demo Call"}
         </button>
         <button className="button secondary" onClick={handleStopTrial} disabled={loading || !vapiRef.current}>
@@ -263,13 +272,24 @@ export default function PublicDemoConsole({
 
       <PublicDemoStatus message={status} />
 
+      {showRecoveryActions ? (
+        <div className="hero-actions">
+          <Link className="button" href="/#lead-form">
+            Request a new verification link
+          </Link>
+          <Link className="button secondary" href="/#pricing">
+            View pricing
+          </Link>
+        </div>
+      ) : null}
+
       {limitReached ? (
         <div className="hero-actions">
           <Link className="button" href={limitCtaUrl}>
             Upgrade to continue practice
           </Link>
-          <Link className="button secondary" href="/workspace/dashboard">
-            Open workspace
+          <Link className="button secondary" href="/#pricing">
+            Back to pricing
           </Link>
         </div>
       ) : null}

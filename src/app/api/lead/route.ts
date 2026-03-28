@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { logEmailEvent, upsertDemoProspect } from "@/lib/convex";
-import { getEmailClient, getFromAddress } from "@/lib/email";
-import { provisionDemoProspectIdentity } from "@/lib/clerk-demo-prospects";
+import { logEmailEvent } from "@/lib/convex";
+import { createToken } from "@/lib/token";
+import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 
 function hashEmail(email: string) {
   return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
@@ -13,44 +13,36 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, agency, organization, email } = body as {
+    const { name, agency, email, policyType } = body as {
       name?: string;
       agency?: string;
-      organization?: string;
       email?: string;
+      policyType?: string;
     };
 
     emailForLogging = email;
-    const organizationName = organization?.trim() || agency?.trim();
-    const normalizedEmail = email?.trim().toLowerCase();
 
-    if (!name || !organizationName || !normalizedEmail) {
+    if (!name || !agency || !email || !policyType) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
 
-    const identity = await provisionDemoProspectIdentity({
-      email: normalizedEmail,
-      name,
-      organizationName,
-    });
+    const secret = process.env.VERIFY_HMAC_SECRET;
+    if (!secret) {
+      return NextResponse.json({ error: "Missing VERIFY_HMAC_SECRET." }, { status: 500 });
+    }
 
-    await upsertDemoProspect({
-      clerkUserId: identity.clerkUserId,
-      orgId: identity.clerkOrgId,
-      email: identity.normalizedEmail,
-      name,
-      organizationName: identity.organizationName,
-    });
+    const token = createToken({ name, agency, email, policyType }, secret);
+    const verifyUrl = `${getAppUrl()}/api/verify?token=${encodeURIComponent(token)}`;
 
     const resend = getEmailClient();
-    const sendResult = await resend.emails.send({
+    await resend.emails.send({
       from: getFromAddress(),
-      to: normalizedEmail,
-      subject: "Access your Cream No Sugar demo",
+      to: email,
+      subject: "Verify your Cream No Sugar demo",
       html: `
         <p>Hi ${name},</p>
-        <p>Your authenticated demo workspace is ready.</p>
-        <p><a href="${identity.signInUrl}">Click here to sign in and start your demo</a>.</p>
+        <p>Thanks for requesting the 2-minute simulated prospect demo.</p>
+        <p><a href="${verifyUrl}">Click here to verify your email and start the demo</a>.</p>
         <p>If you did not request this, you can ignore this email.</p>
       `,
     });
@@ -58,30 +50,18 @@ export async function POST(request: Request) {
     try {
       await logEmailEvent({
         provider: "resend",
-        eventType: "authenticated_demo_access",
-        status: sendResult.error ? "failed" : "sent",
-        orgId: identity.clerkOrgId,
-        recipient: normalizedEmail,
-        recipientHash: hashEmail(normalizedEmail),
-        providerMessageId: sendResult.data?.id ?? undefined,
-        error: sendResult.error?.message,
+        eventType: "lead_verify_email",
+        status: "sent",
+        recipient: email,
+        recipientHash: hashEmail(email),
         metadata: {
           source: "api/lead",
-          organizationName: identity.organizationName,
-          clerkUserId: identity.clerkUserId,
-          clerkOrgId: identity.clerkOrgId,
-          clerkMembershipId: identity.clerkMembershipId,
+          policyType,
+          agency,
         },
       });
     } catch {
       // Ignore secondary logging failures.
-    }
-
-    if (sendResult.error) {
-      return NextResponse.json(
-        { error: "Authenticated demo signup succeeded, but email delivery failed." },
-        { status: 502 },
-      );
     }
 
     return NextResponse.json({ ok: true });
@@ -90,11 +70,11 @@ export async function POST(request: Request) {
       try {
         await logEmailEvent({
           provider: "resend",
-          eventType: "authenticated_demo_access",
+          eventType: "lead_verify_email",
           status: "failed",
           recipient: emailForLogging,
           recipientHash: hashEmail(emailForLogging),
-          error: "Unable to provision authenticated demo access.",
+          error: "Unable to send verification email.",
           metadata: {
             source: "api/lead",
           },
@@ -103,6 +83,6 @@ export async function POST(request: Request) {
         // Ignore secondary logging failures.
       }
     }
-    return NextResponse.json({ error: "Unable to provision authenticated demo access." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to send verification email." }, { status: 500 });
   }
 }

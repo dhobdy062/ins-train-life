@@ -228,43 +228,12 @@ export default defineSchema({
     .index("by_traineeId", ["traineeId"])
     .index("by_org_trainee", ["orgId", "traineeId"]),
 
-  demoProspects: defineTable({
-    clerkUserId: v.string(),
-    orgId: v.string(),
-    email: v.string(),
-    name: v.string(),
-    organizationName: v.string(),
-    status: v.union(
-      v.literal("requested"),
-      v.literal("verified"),
-      v.literal("active_demo"),
-      v.literal("demo_limit_reached"),
-      v.literal("converted"),
-      v.literal("archived"),
-    ),
-    demoCount: v.number(),
-    demoLimit: v.number(),
-    firstRequestedAt: v.number(),
-    lastDemoStartedAt: v.optional(v.number()),
-    convertedAt: v.optional(v.number()),
-    updatedAt: v.number(),
-  })
-    .index("by_clerkUserId", ["clerkUserId"])
-    .index("by_orgId", ["orgId"])
-    .index("by_org_user", ["orgId", "clerkUserId"])
-    .index("by_status", ["status"])
-    .index("by_email", ["email"]),
-
   trialSessions: defineTable({
-    clerkUserId: v.optional(v.string()),
-    orgId: v.optional(v.string()),
     emailHash: v.string(),
     sessionKey: v.string(),
     source: v.literal("web_trial"),
     createdAt: v.number(),
-  })
-    .index("by_emailHash_createdAt", ["emailHash", "createdAt"])
-    .index("by_org_user_createdAt", ["orgId", "clerkUserId", "createdAt"]),
+  }).index("by_emailHash_createdAt", ["emailHash", "createdAt"]),
 
   sessionMetrics: defineTable({
     sessionKey: v.string(),

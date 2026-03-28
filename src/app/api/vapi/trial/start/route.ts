@@ -1,10 +1,7 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import {
-  getDemoProspectByUserAndOrg,
-  recordAlert,
-  reserveAuthenticatedDemoSession,
-} from "@/lib/convex";
+import { recordAlert, reserveTrialSession } from "@/lib/convex";
+import { verifyToken } from "@/lib/token";
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 
@@ -23,13 +20,9 @@ function buildSessionKey() {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId, orgId, sessionClaims } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Sign in before starting your demo." }, { status: 401 });
-  }
-
-  if (!orgId) {
-    return NextResponse.json({ error: "Organization context is required." }, { status: 400 });
+  const secret = process.env.VERIFY_HMAC_SECRET;
+  if (!secret) {
+    return NextResponse.json({ error: "Verification service is temporarily unavailable." }, { status: 500 });
   }
 
   const assistantId = process.env.VAPI_ASSISTANT_ID?.trim();
@@ -49,27 +42,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const demoProspect = await getDemoProspectByUserAndOrg({
-    clerkUserId: userId,
-    orgId,
-  });
-  if (!demoProspect) {
-    return NextResponse.json({ error: "Demo access is unavailable for this account." }, { status: 403 });
+  const trialIdentityToken = request.cookies.get("demo_trial_identity")?.value;
+  if (!trialIdentityToken) {
+    return NextResponse.json({ error: "Verification required." }, { status: 401 });
   }
 
+  const identityPayload = (() => {
+    try {
+      return verifyToken(trialIdentityToken, secret);
+    } catch {
+      return null;
+    }
+  })();
+  if (!identityPayload?.email) {
+    return NextResponse.json({ error: "Invalid verification token." }, { status: 401 });
+  }
+
+  const normalizedEmail = identityPayload.email.trim().toLowerCase();
+  const emailHash = crypto.createHash("sha256").update(normalizedEmail).digest("hex");
   const sessionKey = buildSessionKey();
 
-  const reservation = await reserveAuthenticatedDemoSession({
-    clerkUserId: userId,
-    orgId,
-    sessionKey,
-  });
-  const reservedSessionKey = reservation.sessionKey;
+  const reservation = await reserveTrialSession({ emailHash, sessionKey });
   if (!reservation.allowed) {
     return NextResponse.json(
       {
         code: "TRIAL_LIMIT_REACHED",
-        message: "You have used both demo sessions.",
+        message: "You have used all 3 trial sessions.",
         ctaUrl: "/sign-up",
       },
       { status: 403 },
@@ -80,14 +78,12 @@ export async function POST(request: NextRequest) {
     difficulty: "D2",
     objectionsRequired: 2,
     rebuttals: DEFAULT_REBUTTALS,
-    orgRole: sessionClaims?.org_role,
+    orgRole: null, // Trial users are always trainees
     activeSequence: "trainee_invitation",
     extraVariables: {
       trial_mode: "true",
-      session_key: reservedSessionKey,
-      org_id: orgId,
-      clerk_user_id: userId,
-      demo_prospect_name: demoProspect.name,
+      session_key: sessionKey,
+      trainee_email_hash: emailHash,
     },
   });
 
@@ -96,9 +92,9 @@ export async function POST(request: NextRequest) {
     await recordAlert({
       source: "api/vapi/trial/start.contract",
       severity: "critical",
-        message: "Assistant variable contract validation failed for trial session.",
-        context: {
-        sessionKey: reservedSessionKey,
+      message: "Assistant variable contract validation failed for trial session.",
+      context: {
+        sessionKey,
         missingKeys: contractValidation.missingKeys,
       },
     }).catch(() => null);
@@ -112,17 +108,15 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    sessionKey: reservedSessionKey,
+    sessionKey,
     assistantId,
     publicKey,
     remainingTrialSessions: reservation.remaining,
     variableValues,
     metadata: {
-      sessionKey: reservedSessionKey,
-      source: "authenticated_demo",
-      orgId,
-      clerkUserId: userId,
-      sequenceStage: "authenticated_demo",
+      sessionKey,
+      source: "web_trial",
+      sequenceStage: "trainee_invitation",
     },
   });
 }

@@ -3,6 +3,13 @@
 import Image from "next/image";
 import { useState } from "react";
 
+const policyOptions = [
+  "Term Life",
+  "Whole Life",
+  "Universal Life",
+  "Indexed Universal Life (IUL)",
+];
+
 type LeadSubmissionResult = {
   status: string;
 };
@@ -40,7 +47,7 @@ export async function submitLeadForm(formData: FormData, options: SubmitLeadForm
     }
 
     reset();
-    return { status: "Check your email for the sign-in link to access your demo." };
+    return { status: "Check your email for the verification link to unlock the demo." };
   } catch {
     return { status: "Something went wrong. Please try again." };
   }
@@ -72,27 +79,40 @@ export default function LeadForm() {
         <Image className="demo-logo" src="/nosugar.svg" alt="Cream No Sugar logo" width={220} height={220} priority />
       </div>
       <div className="tag">Try it for yourself</div>
-      <h3>No credit card needed. Enter your details and we&apos;ll email your authenticated demo link.</h3>
+      <h3>No credit card needed to try a call. Sign up and get sent a verification link.</h3>
       <form className="form" onSubmit={handleSubmit}>
         <label className="field">
           Full name
           <input name="name" placeholder="Jordan Blake" required />
         </label>
         <label className="field">
-          Organization name
+          Agency name
           <input name="agency" placeholder="North Ridge Agency" required />
         </label>
         <label className="field">
           Work email
           <input name="email" type="email" placeholder="cream@support.retrospxt.com" required />
         </label>
+        <label className="field">
+          Life policy focus
+          <select name="policyType" required defaultValue="">
+            <option value="" disabled>
+              Select a policy type
+            </option>
+            {policyOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
         <button className="button" type="submit" disabled={loading}>
-          {loading ? "Sending..." : "Send demo access link"}
+          {loading ? "Sending..." : "Send verification link"}
         </button>
       </form>
       <LeadFormStatus message={status} />
       <p className="disclaimer disclaimer-highlight">
-        We&apos;ll create your authenticated demo access and send the sign-in link to your inbox.
+        Verification email unlocks the demo. Paid plans unlock full call library, scoring, and team analytics.
       </p>
     </div>
   );
