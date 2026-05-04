@@ -10,6 +10,7 @@ export const createTrainingSession = mutation({
     trainerId: v.string(),
     traineeId: v.optional(v.string()),
     traineeClerkUserId: v.optional(v.string()),
+    productType: v.optional(v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"))),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
@@ -30,6 +31,7 @@ export const createTrainingSession = mutation({
     initialStatus: v.optional(v.union(v.literal("assigned"), v.literal("started"))),
     profileSnapshot: v.optional(
       v.object({
+        productType: v.optional(v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"))),
         difficultyLevel: v.string(),
         objectionsRequired: v.number(),
         expectedRebuttals: v.array(v.string()),
@@ -43,6 +45,7 @@ export const createTrainingSession = mutation({
       sessionKey,
       orgId: args.orgId,
       trainerId: args.trainerId,
+      productType: args.productType,
       traineeId: args.traineeId,
       traineeClerkUserId: args.traineeClerkUserId,
       assistantId: args.assistantId,
@@ -511,6 +514,7 @@ export const getAssignedSessionForTraineeStart = query({
       traineeId: trainee._id,
       traineeClerkUserId: linkedClerkUserId,
       traineeName: trainee.name,
+      productType: session.productType ?? "life",
       assistantId: session.assistantId,
       difficulty: session.difficulty,
       objectionsRequired: session.objectionsRequired,
@@ -551,6 +555,7 @@ export const getTrainerSessionBuilderSnapshot = query({
           sessionKey: session.sessionKey,
           traineeId: session.traineeId ?? null,
           traineeName: trainee?.name ?? "Unassigned trainee",
+          productType: session.productType ?? "life",
           difficulty: session.difficulty,
           objectionsRequired: session.objectionsRequired,
           selectedObjections: session.selectedObjections ?? [],
@@ -682,6 +687,7 @@ export const recoverTrainingSession = mutation({
       sessionKey: replacementSessionKey,
       orgId: session.orgId,
       trainerId: session.trainerId,
+      productType: session.productType ?? "life",
       traineeId: session.traineeId,
       traineeClerkUserId,
       assistantId: session.assistantId,
@@ -696,6 +702,7 @@ export const recoverTrainingSession = mutation({
       ipHash: session.ipHash,
       profileSnapshot:
         session.profileSnapshot ?? {
+          productType: session.productType ?? "life",
           difficultyLevel: session.difficulty,
           objectionsRequired: session.objectionsRequired,
           expectedRebuttals: session.rebuttalKeys,

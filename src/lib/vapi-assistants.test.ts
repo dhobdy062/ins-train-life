@@ -1,4 +1,4 @@
-import { resolveLifeAssistantId } from "@/lib/vapi-assistants";
+import { resolveLifeAssistantId, resolveTrainingAssistantId } from "@/lib/vapi-assistants";
 
 describe("resolveLifeAssistantId", () => {
   it("resolves each configured difficulty assistant", () => {
@@ -23,6 +23,34 @@ describe("resolveLifeAssistantId", () => {
 
   it("throws when a difficulty is missing", () => {
     expect(() => resolveLifeAssistantId("D3", {})).toThrow("Missing assistant ID for D3");
+  });
+});
+
+describe("resolveTrainingAssistantId", () => {
+  it("resolves Life, Medicare Lead, and Medicare Event assistants by product and difficulty", () => {
+    const env = {
+      VAPI_ASSISTANT_D1_LIFE_ID: "life_d1",
+      VAPI_ASSISTANT_D5_LIFE_ID: "life_d5",
+      VAPI_ASSISTANT_D1_MEDICARE_LEAD_ID: "medicare_lead_d1",
+      VAPI_ASSISTANT_D3_MEDICARE_LEAD_ID: "medicare_lead_d3",
+      VAPI_ASSISTANT_D1_MEDICARE_EVENT_ID: "medicare_event_d1",
+      VAPI_ASSISTANT_D3_MEDICARE_EVENT_ID: "medicare_event_d3",
+    };
+
+    expect(resolveTrainingAssistantId("life", "D1", env)).toBe("life_d1");
+    expect(resolveTrainingAssistantId("life", "D5", env)).toBe("life_d5");
+    expect(resolveTrainingAssistantId("medicare_lead", "D1", env)).toBe("medicare_lead_d1");
+    expect(resolveTrainingAssistantId("medicare_lead", "D3", env)).toBe("medicare_lead_d3");
+    expect(resolveTrainingAssistantId("medicare_event", "D1", env)).toBe("medicare_event_d1");
+    expect(resolveTrainingAssistantId("medicare_event", "D3", env)).toBe("medicare_event_d3");
+  });
+
+  it("rejects Medicare difficulties above D3", () => {
+    expect(() =>
+      resolveTrainingAssistantId("medicare_lead", "D4", {
+        VAPI_ASSISTANT_D4_MEDICARE_LEAD_ID: "unsupported",
+      }),
+    ).toThrow("Unsupported difficulty D4 for Medicare Lead");
   });
 });
 

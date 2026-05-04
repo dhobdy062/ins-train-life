@@ -59,6 +59,7 @@ export async function GET(request: Request) {
           startedAt: toIso(snapshot.latestSession.startedAt),
           endedAt: toIso(snapshot.latestSession.endedAt),
           status: snapshot.latestSession.status,
+          productType: snapshot.latestSession.productType,
           assistantId: snapshot.latestSession.assistantId,
           structuredOutcome: snapshot.latestSession.structuredOutcome,
           recordingUrl: snapshot.latestSession.recordingUrl,
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
     assignedSessions: snapshot.assignedSessions.map((session) => ({
       sessionKey: session.sessionKey,
       status: session.status,
+      productType: session.productType,
       difficulty: session.difficulty,
       objectionsRequired: session.objectionsRequired,
       createdAt: toIso(session.createdAt),
@@ -99,6 +101,7 @@ export async function GET(request: Request) {
       startedAt: toIso(session.startedAt),
       endedAt: toIso(session.endedAt),
       status: session.status,
+      productType: session.productType,
       assistantId: session.assistantId,
       difficulty: session.difficulty,
       objectionsRequired: session.objectionsRequired,

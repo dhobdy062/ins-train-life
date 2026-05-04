@@ -90,6 +90,7 @@ describe("GET /api/trainee/results", () => {
       latestSession: {
         sessionKey: "sess_1",
         status: "completed",
+        productType: "medicare_lead",
         assistantId: "assistant_1",
         difficulty: "D2",
         objectionsRequired: 3,
@@ -129,6 +130,7 @@ describe("GET /api/trainee/results", () => {
         {
           sessionKey: "sess_assigned",
           status: "assigned",
+          productType: "medicare_event",
           difficulty: "D2",
           objectionsRequired: 2,
           createdAt: 4000,
@@ -140,6 +142,7 @@ describe("GET /api/trainee/results", () => {
         {
           sessionKey: "sess_1",
           status: "completed",
+          productType: "medicare_lead",
           assistantId: "assistant_1",
           difficulty: "D2",
           objectionsRequired: 3,
@@ -189,6 +192,7 @@ describe("GET /api/trainee/results", () => {
       latestSession: {
         sessionKey: "sess_1",
         status: "completed",
+        productType: "medicare_lead",
         assistantId: "assistant_1",
         recordingUrl: "https://files.test/recording.wav",
         transcriptUrl: "https://files.test/transcript.txt",
@@ -204,6 +208,8 @@ describe("GET /api/trainee/results", () => {
     expect(payload.latestSession.startedAt).toBe("1970-01-01T00:00:01.000Z");
     expect(payload.latestSession.endedAt).toBe("1970-01-01T00:00:02.000Z");
     expect(payload.latestMetrics.createdAt).toBe("1970-01-01T00:00:03.000Z");
+    expect(payload.history[0].productType).toBe("medicare_lead");
+    expect(payload.assignedSessions[0].productType).toBe("medicare_event");
     expect(payload.assignedSessions[0].startedAt).toBeNull();
   });
 });

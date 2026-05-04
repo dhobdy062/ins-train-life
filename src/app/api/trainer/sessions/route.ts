@@ -3,11 +3,24 @@ import { auth } from "@clerk/nextjs/server";
 import { buildExpectedRebuttalsFromAssigned, buildRebuttalGuideMapForAssigned, normalizeAssignedObjections } from "@/lib/assigned-sessions";
 import { createTrainingSession, getOrgTrainerObjectionConfig, getTraineeProfileById } from "@/lib/convex";
 import { type DifficultyLevel, isDifficultyLevel } from "@/lib/training-profile";
-import { DEFAULT_OBJECTION_LIBRARY, DEFAULT_REBUTTAL_GUIDES } from "@/lib/trainer-objections";
-import { resolveLifeAssistantId } from "@/lib/vapi-assistants";
+import {
+  DEFAULT_OBJECTION_LIBRARY,
+  DEFAULT_REBUTTAL_GUIDES,
+  getDefaultObjectionLibraryForProduct,
+  getDefaultRebuttalGuidesForProduct,
+} from "@/lib/trainer-objections";
+import {
+  getTrainingProductConfig,
+  isProductDifficultyAllowed,
+  isTrainingProductType,
+  normalizeTrainingProductType,
+  type TrainingProductType,
+} from "@/lib/training-products";
+import { resolveTrainingAssistantId } from "@/lib/vapi-assistants";
 
 type CreateAssignedSessionPayload = {
   traineeId?: string;
+  productType?: string;
   difficulty?: string;
   selectedObjections?: Array<{
     text?: string;
@@ -35,6 +48,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "traineeId is required." }, { status: 400 });
   }
 
+  if (payload.productType !== undefined && !isTrainingProductType(payload.productType)) {
+    return NextResponse.json({ error: "Invalid product type." }, { status: 400 });
+  }
+
   const trainee = await getTraineeProfileById({
     traineeId: payload.traineeId,
     orgId,
@@ -49,12 +66,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const productType: TrainingProductType = normalizeTrainingProductType(payload.productType);
+  const productConfig = getTrainingProductConfig(productType);
   const fallbackDifficulty =
     typeof trainee.difficultyLevel === "string" && isDifficultyLevel(trainee.difficultyLevel)
       ? trainee.difficultyLevel
       : "D2";
   const difficulty: DifficultyLevel =
     typeof payload.difficulty === "string" && isDifficultyLevel(payload.difficulty) ? payload.difficulty : fallbackDifficulty;
+
+  if (!isProductDifficultyAllowed(productType, difficulty)) {
+    return NextResponse.json({ error: `${difficulty} is not available for ${productConfig.productLabel}.` }, { status: 400 });
+  }
 
   const selectedObjections = normalizeAssignedObjections(
     Array.isArray(payload.selectedObjections)
@@ -70,7 +93,11 @@ export async function POST(request: Request) {
   }
 
   const objectionConfig = await getOrgTrainerObjectionConfig({ orgId }).catch(() => null);
-  const objectionLibrary = objectionConfig?.objectionLibrary?.[difficulty] ?? DEFAULT_OBJECTION_LIBRARY[difficulty];
+  const productDefaultLibrary = getDefaultObjectionLibraryForProduct(productType);
+  const objectionLibrary =
+    productType === "life"
+      ? objectionConfig?.objectionLibrary?.[difficulty] ?? DEFAULT_OBJECTION_LIBRARY[difficulty]
+      : productDefaultLibrary[difficulty];
   const validKeys = new Set(objectionLibrary.map((row) => `${row.text}::${row.rebuttalType}`));
   const invalidSelection = selectedObjections.some((row) => !validKeys.has(`${row.text}::${row.rebuttalType}`));
   if (invalidSelection) {
@@ -79,15 +106,17 @@ export async function POST(request: Request) {
 
   try {
     const expectedRebuttals = buildExpectedRebuttalsFromAssigned(selectedObjections);
+    const productDefaultGuides = getDefaultRebuttalGuidesForProduct(productType);
     const rebuttalGuideMap = buildRebuttalGuideMapForAssigned(
       selectedObjections,
-      objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES,
+      productType === "life" ? objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES : productDefaultGuides,
     );
-    const assistantId = resolveLifeAssistantId(difficulty);
+    const assistantId = resolveTrainingAssistantId(productType, difficulty);
 
     const session = await createTrainingSession({
       orgId,
       trainerId: userId,
+      productType,
       traineeId: trainee.traineeId,
       traineeClerkUserId: trainee.clerkUserId,
       assistantId,
@@ -99,6 +128,7 @@ export async function POST(request: Request) {
       channel: "web",
       initialStatus: "assigned",
       profileSnapshot: {
+        productType,
         difficultyLevel: difficulty,
         objectionsRequired: selectedObjections.length,
         expectedRebuttals,
@@ -110,12 +140,15 @@ export async function POST(request: Request) {
       sessionKey: session.sessionKey,
       traineeId: trainee.traineeId,
       traineeName: trainee.name,
+      productType,
+      productLabel: productConfig.productLabel,
       difficulty,
       objectionsRequired: selectedObjections.length,
       selectedObjections,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Session creation error:", err);
-    return NextResponse.json({ error: err?.message || "Internal server error during session creation." }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal server error during session creation.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

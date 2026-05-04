@@ -71,6 +71,9 @@ const auditIdentityAndSessionMismatchesRef = makeFunctionReference<"query">(
   "support:auditIdentityAndSessionMismatches",
 );
 const sweepStaleSessionsRef = makeFunctionReference<"mutation">("support:sweepStaleSessions");
+const getVapiSmokeVerificationSnapshotRef = makeFunctionReference<"query">(
+  "support:getVapiSmokeVerificationSnapshot",
+);
 const upsertUserRef = makeFunctionReference<"mutation">("identity:upsertUser");
 const upsertOrganizationRef = makeFunctionReference<"mutation">("identity:upsertOrganization");
 const upsertOrganizationMembershipRef = makeFunctionReference<"mutation">("identity:upsertOrganizationMembership");
@@ -123,6 +126,7 @@ export async function enqueueWebhookEvent(args: {
 export async function createTrainingSession(args: {
   orgId: string;
   trainerId: string;
+  productType?: "life" | "medicare_lead" | "medicare_event";
   traineeId?: string;
   traineeClerkUserId?: string;
   assistantId: string;
@@ -136,6 +140,7 @@ export async function createTrainingSession(args: {
   ipHash?: string;
   initialStatus?: "assigned" | "started";
   profileSnapshot?: {
+    productType?: "life" | "medicare_lead" | "medicare_event";
     difficultyLevel: string;
     objectionsRequired: number;
     expectedRebuttals: string[];
@@ -349,6 +354,7 @@ export async function getAssignedSessionForTraineeStart(args: {
     traineeId: string;
     traineeClerkUserId: string;
     traineeName: string;
+    productType: "life" | "medicare_lead" | "medicare_event";
     assistantId: string;
     difficulty: string;
     objectionsRequired: number;
@@ -416,6 +422,7 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
     latestSession: {
       sessionKey: string;
       status: string;
+      productType: "life" | "medicare_lead" | "medicare_event";
       assistantId: string;
       difficulty: string;
       objectionsRequired: number;
@@ -452,6 +459,7 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
     assignedSessions: Array<{
       sessionKey: string;
       status: string;
+      productType: "life" | "medicare_lead" | "medicare_event";
       difficulty: string;
       objectionsRequired: number;
       createdAt: number;
@@ -461,6 +469,7 @@ export async function getTraineeResultsSnapshot(args: { traineeId: string; orgId
     history: Array<{
       sessionKey: string;
       status: string;
+      productType: "life" | "medicare_lead" | "medicare_event";
       assistantId: string;
       difficulty: string;
       objectionsRequired: number;
@@ -495,6 +504,7 @@ export async function getTrainerSessionBuilderSnapshot(args: { orgId: string; tr
       sessionKey: string;
       traineeId: string | null;
       traineeName: string;
+      productType: "life" | "medicare_lead" | "medicare_event";
       difficulty: string;
       objectionsRequired: number;
       selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
@@ -1035,6 +1045,50 @@ export async function sweepStaleSessions(args?: {
       staleAssigned: Array<Record<string, unknown>>;
       staleStarted: Array<Record<string, unknown>>;
     };
+  }>;
+}
+
+export async function getVapiSmokeVerificationSnapshot(args: {
+  sessionKey: string;
+  providerEventId: string;
+  orgId: string;
+  trainerId: string;
+  traineeId: string;
+}) {
+  const client = getClient();
+  return client.query(getVapiSmokeVerificationSnapshotRef, args as never) as Promise<{
+    webhook: {
+      status: "queued" | "processed" | "failed";
+      providerEventId: string | null;
+      processedAt: number | null;
+      error: string | null;
+    } | null;
+    session: {
+      sessionKey: string;
+      orgId: string;
+      trainerId: string;
+      traineeId: string | null;
+      status: "assigned" | "started" | "completed" | "abandoned";
+      endedAt: number | null;
+      structuredOutcome: {
+        rebuttalPerformanceScore?: number;
+        appointmentSet?: boolean;
+        callSummary?: string;
+        capturedAt: number;
+        providerEventId?: string;
+      } | null;
+    } | null;
+    latestMetric: {
+      eventType: string;
+      durationSeconds: number | null;
+      rebuttalScore: number | null;
+      toneStrikeCount: number | null;
+      appointmentSet: boolean | null;
+      providerEventId: string | null;
+      createdAt: number;
+    } | null;
+    trainerSnapshotIncludesSession: boolean;
+    traineeSnapshotIncludesSession: boolean;
   }>;
 }
 

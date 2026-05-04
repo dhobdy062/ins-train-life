@@ -16,6 +16,10 @@ describe("validateAssistantVariableContract", () => {
         trainer_id: "trainer_1",
         trainee_id: "trainee_1",
         trainee_name: "Sarah",
+        product_type: "medicare_lead",
+        product_label: "Medicare Lead",
+        scenario_type: "lead",
+        scenario_label: "Medicare Lead",
         expected_rebuttals: JSON.stringify(["dont_remember", "not_interested"]),
       },
       "trainee",
@@ -40,6 +44,31 @@ describe("validateAssistantVariableContract", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.missingKeys).toEqual(expect.arrayContaining(["rebuttals", "session_key", "trainer_id"]));
+    }
+  });
+
+  it("requires product and scenario keys for trainee payloads", () => {
+    const result = validateAssistantVariableContract(
+      {
+        difficulty: "D2",
+        objectionsRequired: "3",
+        objection_sequence: JSON.stringify([{ order: 0, text: "First", rebuttalType: "busy" }]),
+        rebuttals: JSON.stringify({ busy: "Sample" }),
+        session_key: "sess_1",
+        org_id: "org_1",
+        trainer_id: "trainer_1",
+        trainee_id: "trainee_1",
+        trainee_name: "Sarah",
+        expected_rebuttals: JSON.stringify(["busy"]),
+      },
+      "trainee",
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.missingKeys).toEqual(
+        expect.arrayContaining(["product_type", "product_label", "scenario_type", "scenario_label"]),
+      );
     }
   });
 });

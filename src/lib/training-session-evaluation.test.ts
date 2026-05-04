@@ -9,6 +9,7 @@ import {
   getTrainingSessionEvaluationStatusLabel,
   type TrainingSessionEvaluationInput,
 } from "@/lib/training-session-evaluation";
+import { buildVapiSessionEndWebhookFixture } from "@/test/fixtures/vapi-webhook";
 
 function buildInput(overrides: Partial<TrainingSessionEvaluationInput> = {}): TrainingSessionEvaluationInput {
   return {
@@ -273,6 +274,14 @@ describe("evaluateTrainingSessionDataFlow", () => {
         },
       }),
     ).toBe(false);
+  });
+
+  it("extracts dashboard outcome fields from the Vapi end webhook fixture", () => {
+    expect(extractStructuredOutcomeFromWebhookPayload(buildVapiSessionEndWebhookFixture())).toEqual({
+      rebuttalPerformanceScore: 91,
+      appointmentSet: true,
+      callSummary: "Trainee handled the objection and booked a follow-up.",
+    });
   });
 
   it("treats linked trainer sessions as visible in the session builder", () => {

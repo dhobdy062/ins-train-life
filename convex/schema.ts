@@ -65,6 +65,7 @@ export default defineSchema({
     trainerId: v.string(),
     traineeId: v.optional(v.string()),
     traineeClerkUserId: v.optional(v.string()),
+    productType: v.optional(v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"))),
     assistantId: v.string(),
     difficulty: v.string(),
     objectionsRequired: v.number(),
@@ -85,6 +86,7 @@ export default defineSchema({
     ipHash: v.optional(v.string()),
     profileSnapshot: v.optional(
       v.object({
+        productType: v.optional(v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"))),
         difficultyLevel: v.string(),
         objectionsRequired: v.number(),
         expectedRebuttals: v.array(v.string()),

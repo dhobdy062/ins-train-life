@@ -8,6 +8,7 @@ import {
 import { buildAgentVariableValues } from "@/lib/agent-context";
 import { validateAssistantVariableContract } from "@/lib/assistant-variable-contract";
 import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
+import { getTrainingProductConfig, normalizeTrainingProductType } from "@/lib/training-products";
 
 type TraineeSessionStartPayload = {
   sessionKey?: string;
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const productType = normalizeTrainingProductType(assignedSession.productType);
+  const productConfig = getTrainingProductConfig(productType);
+
   const variableValues = buildAgentVariableValues({
     difficulty: assignedSession.difficulty,
     objectionsRequired: assignedSession.objectionsRequired,
@@ -79,6 +83,10 @@ export async function POST(request: Request) {
       trainer_id: assignedSession.trainerId,
       trainee_id: assignedSession.traineeId,
       trainee_name: assignedSession.traineeName,
+      product_type: productType,
+      product_label: productConfig.productLabel,
+      scenario_type: productConfig.scenarioType,
+      scenario_label: productConfig.scenarioLabel,
       session_key: assignedSession.sessionKey,
       expected_rebuttals: JSON.stringify(assignedSession.rebuttalKeys),
       objection_sequence: JSON.stringify(assignedSession.selectedObjections),
@@ -122,6 +130,10 @@ export async function POST(request: Request) {
       trainerId: assignedSession.trainerId,
       traineeId: assignedSession.traineeId,
       sessionKey: assignedSession.sessionKey,
+      productType,
+      productLabel: productConfig.productLabel,
+      scenarioType: productConfig.scenarioType,
+      scenarioLabel: productConfig.scenarioLabel,
       sequenceStage: variableValues.email_sequence_stage,
     },
   });

@@ -11,6 +11,7 @@
     "check:hygiene": "node scripts/check-repo-hygiene.mjs",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
+    "verify:vapi-dashboard-flow": "tsx scripts/verify-vapi-dashboard-flow.ts",
     "backfill:clerk:convex": "tsx scripts/backfill-clerk-to-convex.ts",
     "audit:identity-sessions": "tsx scripts/audit-identity-session-mismatches.ts"
   },

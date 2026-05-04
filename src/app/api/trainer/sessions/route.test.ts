@@ -1,13 +1,12 @@
 import { POST } from "./route";
 import * as clerkAuth from "@clerk/nextjs/server";
-import { getTraineeProfileById } from "@/lib/convex";
+import { createTrainingSession, getTraineeProfileById } from "@/lib/convex";
 
 jest.mock("@clerk/nextjs/server", () => ({
   auth: jest.fn(),
 }));
 
 jest.mock("@/lib/convex", () => ({
-  ...jest.requireActual("@/lib/convex"),
   getTraineeProfileById: jest.fn(),
   getOrgTrainerObjectionConfig: jest.fn().mockResolvedValue(null),
   createTrainingSession: jest.fn().mockResolvedValue({ sessionKey: "fake_session" }),
@@ -15,18 +14,23 @@ jest.mock("@/lib/convex", () => ({
 
 const mockedAuth = clerkAuth.auth as unknown as jest.MockedFunction<typeof clerkAuth.auth>;
 const mockedGetTraineeProfileById = getTraineeProfileById as jest.MockedFunction<typeof getTraineeProfileById>;
+const mockedCreateTrainingSession = createTrainingSession as jest.MockedFunction<typeof createTrainingSession>;
+
+function buildRequest(body: Record<string, unknown>) {
+  return new Request("http://localhost/api/trainer/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
 
 describe("POST /api/trainer/sessions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it("should create a session", async () => {
     mockedAuth.mockResolvedValue({
       userId: "trainer_123",
       orgId: "org_123",
     } as Awaited<ReturnType<typeof clerkAuth.auth>>);
-
     mockedGetTraineeProfileById.mockResolvedValue({
       traineeId: "trainee_123",
       orgId: "org_123",
@@ -41,23 +45,98 @@ describe("POST /api/trainer/sessions", () => {
       status: "active",
       lastActiveAt: 1234,
     } as NonNullable<Awaited<ReturnType<typeof getTraineeProfileById>>>);
+    process.env.VAPI_ASSISTANT_D2_LIFE_ID = "assistant_life_d2";
+    process.env.VAPI_ASSISTANT_D2_MEDICARE_LEAD_ID = "assistant_medicare_lead_d2";
+    process.env.VAPI_ASSISTANT_D3_MEDICARE_EVENT_ID = "assistant_medicare_event_d3";
+  });
 
-    // Provide default valid objection so it doesn't fail with 400
-    const req = new Request("http://localhost/api/trainer/sessions", {
-      method: "POST",
-      body: JSON.stringify({
+  it("creates a Life Lead session by default", async () => {
+    const response = await POST(
+      buildRequest({
         traineeId: "trainee_123",
         difficulty: "D2",
-        selectedObjections: [{ text: "I need to talk to my spouse", rebuttalType: "spouse" }],
+        selectedObjections: [{ text: "How did you get my number?", rebuttalType: "dont_remember" }],
       }),
-    });
+    );
 
-    try {
-      const res = await POST(req);
-      const text = await res.text();
-      console.log("Response:", res.status, text);
-    } catch (error) {
-      console.error("Caught unhandled error!", error);
-    }
+    expect(response.status).toBe(200);
+    expect(mockedCreateTrainingSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productType: "life",
+        assistantId: "assistant_life_d2",
+        difficulty: "D2",
+      }),
+    );
+  });
+
+  it("creates a Medicare Lead session with the Medicare assistant", async () => {
+    const response = await POST(
+      buildRequest({
+        traineeId: "trainee_123",
+        productType: "medicare_lead",
+        difficulty: "D2",
+        selectedObjections: [{ text: "I am worried this will cost me more.", rebuttalType: "medicare_cost_concern" }],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedCreateTrainingSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productType: "medicare_lead",
+        assistantId: "assistant_medicare_lead_d2",
+        profileSnapshot: expect.objectContaining({ productType: "medicare_lead" }),
+      }),
+    );
+  });
+
+  it("creates a Medicare Event session with the Medicare event assistant", async () => {
+    const response = await POST(
+      buildRequest({
+        traineeId: "trainee_123",
+        productType: "medicare_event",
+        difficulty: "D3",
+        selectedObjections: [
+          { text: "Transportation is difficult for me.", rebuttalType: "medicare_event_transportation" },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedCreateTrainingSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productType: "medicare_event",
+        assistantId: "assistant_medicare_event_d3",
+      }),
+    );
+  });
+
+  it("returns 400 for an invalid product", async () => {
+    const response = await POST(
+      buildRequest({
+        traineeId: "trainee_123",
+        productType: "medical_lead",
+        difficulty: "D2",
+        selectedObjections: [{ text: "How did you get my number?", rebuttalType: "dont_remember" }],
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid product type." });
+    expect(mockedCreateTrainingSession).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when Medicare uses a Life-only difficulty", async () => {
+    const response = await POST(
+      buildRequest({
+        traineeId: "trainee_123",
+        productType: "medicare_lead",
+        difficulty: "D4",
+        selectedObjections: [{ text: "I already have a Medicare plan and do not need another one.", rebuttalType: "medicare_plan_confusion" }],
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "D4 is not available for Medicare Lead." });
+    expect(mockedCreateTrainingSession).not.toHaveBeenCalled();
   });
 });

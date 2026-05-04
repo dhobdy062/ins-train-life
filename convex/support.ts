@@ -418,3 +418,72 @@ export const sweepStaleSessions = mutation({
     };
   },
 });
+
+export const getVapiSmokeVerificationSnapshot = query({
+  args: {
+    sessionKey: v.string(),
+    providerEventId: v.string(),
+    orgId: v.string(),
+    trainerId: v.string(),
+    traineeId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("trainingSessions")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .first();
+    const metrics = await ctx.db
+      .query("sessionMetrics")
+      .withIndex("by_sessionKey", (q) => q.eq("sessionKey", args.sessionKey))
+      .collect();
+    const webhooks = await ctx.db
+      .query("webhookEvents")
+      .withIndex("by_receivedAt")
+      .order("desc")
+      .take(200);
+
+    const webhook = webhooks.find(
+      (event) => event.provider === "vapi" && event.providerEventId === args.providerEventId,
+    );
+    const latestMetric = [...metrics].sort((a, b) => b.createdAt - a.createdAt)[0] ?? null;
+
+    return {
+      webhook: webhook
+        ? {
+            status: webhook.status,
+            providerEventId: webhook.providerEventId ?? null,
+            processedAt: webhook.processedAt ?? null,
+            error: webhook.error ?? null,
+          }
+        : null,
+      session: session
+        ? {
+            sessionKey: session.sessionKey,
+            orgId: session.orgId,
+            trainerId: session.trainerId,
+            traineeId: session.traineeId ?? null,
+            status: session.status,
+            endedAt: session.endedAt ?? null,
+            structuredOutcome: session.structuredOutcome ?? null,
+          }
+        : null,
+      latestMetric: latestMetric
+        ? {
+            eventType: latestMetric.eventType,
+            durationSeconds: latestMetric.durationSeconds ?? null,
+            rebuttalScore: latestMetric.rebuttalScore ?? null,
+            toneStrikeCount: latestMetric.toneStrikeCount ?? null,
+            appointmentSet: latestMetric.appointmentSet ?? null,
+            providerEventId: latestMetric.providerEventId ?? null,
+            createdAt: latestMetric.createdAt,
+          }
+        : null,
+      trainerSnapshotIncludesSession:
+        session?.orgId === args.orgId && session.trainerId === args.trainerId && session.status !== "assigned",
+      traineeSnapshotIncludesSession:
+        session?.orgId === args.orgId &&
+        session.traineeId === args.traineeId &&
+        session.status !== "assigned",
+    };
+  },
+});

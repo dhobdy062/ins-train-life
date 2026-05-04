@@ -7,6 +7,17 @@ import {
   type TrainingSessionEvaluationIssue,
   type TrainingSessionEvaluationStatus,
 } from "@/lib/training-session-evaluation";
+import {
+  getAllowedDifficultiesForProduct,
+  getTrainingProductConfig,
+  normalizeDifficultyForProduct,
+  TRAINING_PRODUCT_OPTIONS,
+  type TrainingProductType,
+} from "@/lib/training-products";
+import {
+  getDefaultObjectionLibraryForProduct,
+  getDefaultRebuttalGuidesForProduct,
+} from "@/lib/trainer-objections";
 
 type TraineeOption = {
   traineeId: string;
@@ -29,6 +40,7 @@ type ObjectionLibrary = Record<Difficulty, ObjectionRow[]>;
 type RecentSession = {
   sessionKey: string;
   traineeName: string;
+  productType?: TrainingProductType;
   difficulty: string;
   objectionsRequired: number;
   selectedObjections: Array<{ order: number; text: string; rebuttalType: string }>;
@@ -89,12 +101,25 @@ export default function SessionBuilder({
 }: SessionBuilderProps) {
   const router = useRouter();
   const [selectedTraineeId, setSelectedTraineeId] = useState(trainees[0]?.traineeId ?? "");
+  const [productType, setProductType] = useState<TrainingProductType>("life");
   const selectedTrainee = useMemo(
     () => trainees.find((item) => item.traineeId === selectedTraineeId) ?? null,
     [trainees, selectedTraineeId],
   );
   const [difficulty, setDifficulty] = useState<Difficulty>((selectedTrainee?.difficultyLevel as Difficulty) ?? "D2");
-  const availableObjections = useMemo(() => objectionLibrary[difficulty] ?? [], [objectionLibrary, difficulty]);
+  const availableDifficulties = getAllowedDifficultiesForProduct(productType);
+  const productObjectionLibrary = useMemo(
+    () => (productType === "life" ? objectionLibrary : getDefaultObjectionLibraryForProduct(productType)),
+    [objectionLibrary, productType],
+  );
+  const activeRebuttalGuides = useMemo(
+    () => (productType === "life" ? rebuttalGuides : getDefaultRebuttalGuidesForProduct(productType)),
+    [productType, rebuttalGuides],
+  );
+  const availableObjections = useMemo(
+    () => productObjectionLibrary[difficulty] ?? [],
+    [productObjectionLibrary, difficulty],
+  );
   const [selectedObjections, setSelectedObjections] = useState<ObjectionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -118,8 +143,13 @@ export default function SessionBuilder({
     setSelectedTraineeId(nextTraineeId);
     const nextTrainee = trainees.find((item) => item.traineeId === nextTraineeId);
     if (nextTrainee) {
-      setDifficulty(nextTrainee.difficultyLevel as Difficulty);
+      setDifficulty(normalizeDifficultyForProduct(productType, nextTrainee.difficultyLevel) as Difficulty);
     }
+  }
+
+  function handleProductChange(nextProductType: TrainingProductType) {
+    setProductType(nextProductType);
+    setDifficulty((current) => normalizeDifficultyForProduct(nextProductType, current) as Difficulty);
   }
 
   function toggleObjection(row: ObjectionRow) {
@@ -162,6 +192,7 @@ export default function SessionBuilder({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           traineeId: selectedTrainee.traineeId,
+          productType,
           difficulty,
           selectedObjections,
         }),
@@ -275,13 +306,24 @@ export default function SessionBuilder({
           </label>
 
           <label className="field">
+            Product
+            <select value={productType} onChange={(event) => handleProductChange(event.target.value as TrainingProductType)}>
+              {TRAINING_PRODUCT_OPTIONS.map((option) => (
+                <option value={option.productType} key={option.productType}>
+                  {option.productLabel}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
             Difficulty
             <select value={difficulty} onChange={(event) => setDifficulty(event.target.value as Difficulty)}>
-              <option value="D1">D1</option>
-              <option value="D2">D2</option>
-              <option value="D3">D3</option>
-              <option value="D4">D4</option>
-              <option value="D5">D5</option>
+              {availableDifficulties.map((level) => (
+                <option value={level} key={level}>
+                  {level}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -324,7 +366,7 @@ export default function SessionBuilder({
                 <div key={`${objectionKey(row)}_${index}`} style={{ display: "grid", gap: 6, textAlign: "left" }}>
                   <strong>{index + 1}. {row.text}</strong>
                   <span className="disclaimer">
-                    Expected rebuttal: {row.rebuttalType} | {rebuttalGuides[row.rebuttalType] ?? "No guide configured."}
+                    Expected rebuttal: {row.rebuttalType} | {activeRebuttalGuides[row.rebuttalType] ?? "No guide configured."}
                   </span>
                   <div className="hero-actions" style={{ justifyContent: "flex-start" }}>
                     <button type="button" className="button secondary" onClick={() => moveObjection(index, -1)}>
@@ -368,7 +410,10 @@ export default function SessionBuilder({
           <div style={{ display: "grid", gap: 16 }}>
             {recentSessions.map((session) => (
               <article key={session.sessionKey} className="metric" style={{ alignItems: "stretch", textAlign: "left" }}>
-                <span>{session.traineeName} • {session.difficulty} • {session.status}</span>
+                <span>
+                  {session.traineeName} • {getTrainingProductConfig(session.productType ?? "life").productLabel} •{" "}
+                  {session.difficulty} • {session.status}
+                </span>
                 <strong>{session.sessionKey}</strong>
                 <span className="disclaimer">
                   Assigned {formatDateTime(session.createdAt)} | Started {formatDateTime(session.startedAt)} | Ended {formatDateTime(session.endedAt)}

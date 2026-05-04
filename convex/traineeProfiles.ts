@@ -512,6 +512,7 @@ export const getTraineeResultsSnapshot = query({
       .map((session) => ({
         sessionKey: session.sessionKey,
         status: session.status,
+        productType: session.productType ?? "life",
         difficulty: session.difficulty,
         objectionsRequired: session.objectionsRequired,
         createdAt: session.createdAt,
@@ -554,6 +555,7 @@ export const getTraineeResultsSnapshot = query({
       ? {
           sessionKey: latestSession.sessionKey,
           status: latestSession.status,
+          productType: latestSession.productType ?? "life",
           assistantId: latestSession.assistantId,
           difficulty: latestSession.difficulty,
           objectionsRequired: latestSession.objectionsRequired,
@@ -573,6 +575,7 @@ export const getTraineeResultsSnapshot = query({
       resultSessions.map(async (session) => ({
         sessionKey: session.sessionKey,
         status: session.status,
+        productType: session.productType ?? "life",
         assistantId: session.assistantId,
         difficulty: session.difficulty,
         objectionsRequired: session.objectionsRequired,

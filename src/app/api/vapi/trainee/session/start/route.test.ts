@@ -83,6 +83,7 @@ describe("POST /api/vapi/trainee/session/start", () => {
       traineeId: "trainee_1",
       traineeClerkUserId: "user_1",
       traineeName: "Alex Agent",
+      productType: "medicare_event",
       assistantId: "assistant_1",
       difficulty: "D2",
       objectionsRequired: 3,
@@ -109,6 +110,10 @@ describe("POST /api/vapi/trainee/session/start", () => {
       dashboard_role: "trainee",
       email_sequence_stage: "trainee_invitation",
       email_sequence_order: JSON.stringify(["trainee_invitation", "session_summary"]),
+      product_type: "medicare_event",
+      product_label: "Medicare Event",
+      scenario_type: "event",
+      scenario_label: "Medicare Event",
       session_key: "sess_1",
       trainee_name: "Alex Agent",
     } as ReturnType<typeof buildAgentVariableValues>);
@@ -231,8 +236,22 @@ describe("POST /api/vapi/trainee/session/start", () => {
         trainerId: "trainer_1",
         traineeId: "trainee_1",
         sessionKey: "sess_1",
+        productType: "medicare_event",
+        productLabel: "Medicare Event",
+        scenarioType: "event",
+        scenarioLabel: "Medicare Event",
         sequenceStage: "trainee_invitation",
       },
     });
+    expect(mockedBuildAgentVariableValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraVariables: expect.objectContaining({
+          product_type: "medicare_event",
+          product_label: "Medicare Event",
+          scenario_type: "event",
+          scenario_label: "Medicare Event",
+        }),
+      }),
+    );
   });
 });
