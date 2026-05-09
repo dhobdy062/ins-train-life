@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import sectionStyles from "@/components/trainer/TrainerSection.module.css";
 import { getOrgEntitlement, getTrainerDashboardSnapshot } from "@/lib/convex";
 import styles from "./overview.module.css";
 
@@ -46,6 +47,16 @@ export default async function TrainerOverviewPage() {
 
   return (
     <div className={styles.pageStack}>
+      <section className={sectionStyles.panel}>
+        <div className={sectionStyles.headerRow}>
+          <div>
+            <p className={sectionStyles.sectionTag}>Agency Dashboard</p>
+            <h2>Agency Dashboard</h2>
+            <p className={sectionStyles.helpText}>Review trainee activity, call volume, score trends, and coaching focus.</p>
+          </div>
+        </div>
+      </section>
+
       <section className={styles.cardGrid}>
         <article className={styles.kpiCard}>
           <p className={styles.kpiLabel}>Team Close Rate</p>

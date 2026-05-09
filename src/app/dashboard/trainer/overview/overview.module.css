@@ -1,82 +1,103 @@
 .pageStack {
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .kpiCard {
-  background: #fff;
-  border: 1px solid #d8cec5;
-  border-radius: 18px;
-  padding: 26px 24px;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.055)),
+    rgba(12, 14, 19, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  padding: 24px;
   display: grid;
   gap: 12px;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.kpiCard::after {
+  content: "";
+  position: absolute;
+  inset: auto -28px -42px auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(137, 226, 193, 0.1);
+  pointer-events: none;
 }
 
 .kpiCardSuccess {
-  border-color: #40ad4e;
+  border-color: rgba(137, 226, 193, 0.38);
 }
 
 .kpiCardWarn {
-  border-color: #d48a24;
+  border-color: rgba(240, 179, 106, 0.42);
 }
 
 .kpiLabel {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #9c6a43;
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: #89e2c1;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .kpiValue {
   margin: 0;
-  color: #6b3410;
-  font-size: clamp(2.1rem, 1.7vw + 1.2rem, 3.15rem);
-  font-weight: 800;
+  color: #f7f7f2;
+  font-size: clamp(2rem, 1.5vw + 1.3rem, 3rem);
+  font-weight: 850;
   line-height: 1;
 }
 
 .kpiValueSub {
   margin-left: 6px;
-  font-size: 0.62em;
-  color: #8f8e89;
+  font-size: 0.58em;
+  color: rgba(247, 247, 242, 0.62);
   font-weight: 700;
 }
 
 .kpiMeta {
   margin: 0;
-  color: #5f965f;
-  font-size: 1rem;
+  color: rgba(247, 247, 242, 0.72);
+  font-size: 0.95rem;
 }
 
 .progressTrack {
   width: 100%;
   border-radius: 999px;
   height: 8px;
-  background: #dfd8d2;
+  background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
   border-radius: 999px;
-  background: #8b4513;
+  background: linear-gradient(90deg, #89e2c1, #f0b36a);
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #d8cec5;
-  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.055)),
+    rgba(12, 14, 19, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
   padding: 24px;
   display: grid;
   gap: 18px;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
 }
 
 .panelHead {
@@ -88,18 +109,19 @@
 
 .panelHead h2 {
   margin: 0;
-  color: #6b3410;
-  font-size: 2.15rem;
-  line-height: 1.05;
+  color: #f7f7f2;
+  font-size: clamp(1.35rem, 1.4vw, 2rem);
+  line-height: 1.08;
 }
 
 .actionButton {
-  border-radius: 10px;
-  background: #8b4513;
-  color: #fff;
+  border-radius: 999px;
+  background: #89e2c1;
+  color: #07080b;
   padding: 11px 18px;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(137, 226, 193, 0.18);
 }
 
 .performerList {
@@ -113,9 +135,10 @@
   grid-template-columns: 36px 58px minmax(0, 1fr) auto;
   gap: 14px;
   padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #e7ddd4;
-  background: #fbfaf8;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.065);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
 }
 
 .rankBadge {
@@ -125,22 +148,22 @@
   display: grid;
   place-items: center;
   font-size: 0.78rem;
-  font-weight: 700;
-  color: #6b3410;
-  background: #edd7be;
+  font-weight: 800;
+  color: #07080b;
+  background: #f0b36a;
 }
 
 .avatar {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  border: 2px solid #b18254;
+  border: 2px solid rgba(137, 226, 193, 0.45);
   display: grid;
   place-items: center;
-  background: #d5bb95;
-  color: #fff;
-  font-size: 1.55rem;
-  font-weight: 700;
+  background: linear-gradient(135deg, rgba(137, 226, 193, 0.28), rgba(240, 179, 106, 0.24));
+  color: #f7f7f2;
+  font-size: 1.4rem;
+  font-weight: 800;
 }
 
 .performerInfo {
@@ -150,45 +173,46 @@
 
 .performerName {
   margin: 0;
-  color: #55290f;
-  font-size: 1.65rem;
-  font-weight: 700;
+  color: #f7f7f2;
+  font-size: 1.25rem;
+  font-weight: 800;
 }
 
 .performerMeta {
   margin: 0;
-  color: #7e6d60;
-  font-size: 1rem;
+  color: rgba(247, 247, 242, 0.65);
+  font-size: 0.94rem;
 }
 
 .performerScore {
   margin: 0;
-  color: #6b3410;
-  font-size: 2.35rem;
-  font-weight: 800;
+  color: #89e2c1;
+  font-size: 1.8rem;
+  font-weight: 850;
 }
 
 .filterTabs {
   display: flex;
-  gap: 24px;
-  font-size: 1.15rem;
-  color: #8b8e94;
-  border-bottom: 1px solid #dfd3c8;
+  gap: 18px;
+  color: rgba(247, 247, 242, 0.58);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .filterTabActive {
-  color: #8b4513;
-  border-bottom: 2px solid #8b4513;
+  color: #89e2c1;
+  border-bottom: 2px solid #89e2c1;
   padding-bottom: 10px;
-  margin-bottom: -11px;
-  font-weight: 700;
+  margin-bottom: -13px;
+  font-weight: 800;
 }
 
 .tableWrap {
   overflow-x: auto;
-  border: 1px solid #dfd5cc;
-  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(7, 8, 11, 0.36);
 }
 
 .table {
@@ -199,20 +223,24 @@
 
 .table thead th {
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #5e3518;
-  padding: 16px;
-  background: #f5f3ef;
-  border-bottom: 1px solid #ded5cc;
+  letter-spacing: 0.08em;
+  color: #89e2c1;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.055);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .table tbody td {
-  padding: 17px 16px;
-  border-bottom: 1px solid #ece4dd;
-  color: #3d2518;
-  font-size: 1.07rem;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f7f7f2;
+  font-size: 0.98rem;
+}
+
+.table tbody tr:hover {
+  background: rgba(137, 226, 193, 0.055);
 }
 
 .nameCell {
@@ -221,30 +249,31 @@
 }
 
 .nameCell strong {
-  font-size: 1.9rem;
-  color: #5f2d10;
+  font-size: 1.1rem;
+  color: #f7f7f2;
 }
 
 .nameCell span {
-  font-size: 0.94rem;
-  color: #8f8176;
+  font-size: 0.88rem;
+  color: rgba(247, 247, 242, 0.58);
 }
 
 .statusPill {
   border-radius: 999px;
   padding: 6px 12px;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 0.82rem;
 }
 
 .statusActive {
-  background: #e4efe6;
-  color: #33953d;
+  background: rgba(137, 226, 193, 0.14);
+  color: #89e2c1;
+  border: 1px solid rgba(137, 226, 193, 0.28);
 }
 
 .statusInactive {
-  background: #ececec;
-  color: #8e8e8e;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(247, 247, 242, 0.68);
 }
 
 .scoreCell {
@@ -257,41 +286,40 @@
   width: 110px;
   height: 10px;
   border-radius: 999px;
-  background: #dadada;
+  background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 
 .scoreFill {
   height: 100%;
   border-radius: 999px;
-  background: #8b4513;
+  background: linear-gradient(90deg, #89e2c1, #f0b36a);
 }
 
 .scoreStrong {
-  background: #7d3d11;
+  background: #89e2c1;
 }
 
 .scoreGood {
-  background: #a05a25;
+  background: #f0b36a;
 }
 
 .scoreRisk {
-  background: #bf6b2e;
+  background: #ff8a7a;
 }
 
 .levelCell {
-  font-weight: 800;
-  color: #2e1c2f;
+  font-weight: 850;
+  color: #f0b36a;
 }
 
-.emptyText {
-  margin: 0;
-  color: #7f6f64;
+.emptyText,
+.emptyCell {
+  color: rgba(247, 247, 242, 0.68);
 }
 
 .emptyCell {
   text-align: center;
-  color: #7f6f64;
   padding: 20px;
 }
 
@@ -306,25 +334,11 @@
     grid-template-columns: 1fr;
   }
 
-  .panelHead h2 {
-    font-size: 1.45rem;
-  }
-
-  .performerName {
-    font-size: 1.24rem;
-  }
-
-  .performerMeta {
-    font-size: 0.92rem;
+  .performerRow {
+    grid-template-columns: 32px 46px minmax(0, 1fr);
   }
 
   .performerScore {
-    font-size: 1.7rem;
-  }
-
-  .filterTabs {
-    gap: 14px;
-    font-size: 0.95rem;
-    flex-wrap: wrap;
+    grid-column: 3;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import styles from "@/components/trainer/TrainerSection.module.css";
 import { buildDefaultTrainingPlans, type CoachingDraft, type TrainerTrainingPlans, type TrainingGoalDraft } from "@/lib/trainer-plans";
 
 type GoalKey = "day30" | "day60" | "day90";
@@ -117,21 +118,25 @@ export default function TrainingPlansPage() {
   }
 
   return (
-    <>
-      <section className="glass panel">
-        <div className="tag">Training Plans</div>
-        <h3>Editable 30/60/90 day goals</h3>
-        <p className="disclaimer">Set team milestones, track targets, and publish updates for all trainers.</p>
-        <div className="hero-actions">
-          <button className="button" type="button" onClick={() => void savePlan()} disabled={loading || saving}>
+    <div className={styles.stack}>
+      <section className={styles.panel}>
+        <div className={styles.headerRow}>
+          <div>
+            <p className={styles.sectionTag}>30/60/90 Plans</p>
+            <h2>30/60/90 Plans</h2>
+            <p className={styles.helpText}>Set team milestones, track targets, and publish updates for all trainers.</p>
+          </div>
+          <div className={styles.actions}>
+          <button className={styles.primaryButton} type="button" onClick={() => void savePlan()} disabled={loading || saving}>
             {saving ? "Saving..." : "Save plan"}
           </button>
-          <button className="button secondary" type="button" onClick={resetPlan} disabled={loading || saving}>
+          <button className={styles.secondaryButton} type="button" onClick={resetPlan} disabled={loading || saving}>
             Reset defaults
           </button>
-          <button className="button secondary" type="button" onClick={() => void loadPlans()} disabled={loading || saving}>
+          <button className={styles.secondaryButton} type="button" onClick={() => void loadPlans()} disabled={loading || saving}>
             {loading ? "Loading..." : "Reload team plan"}
           </button>
+          </div>
         </div>
         <div className="metric">
           <span>Milestones configured</span>
@@ -141,9 +146,13 @@ export default function TrainingPlansPage() {
         {status ? <p className="disclaimer">{status}</p> : null}
       </section>
 
-      <section className="glass panel">
-        <div className="tag">30/60/90</div>
-        <h3>Team milestone editor</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>30/60/90</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Team milestone editor</h3>
+          </div>
+        </div>
         <div className="split">
           {PLAN_ORDER.map(({ key, label }) => (
             <article className="card" key={key}>
@@ -191,9 +200,13 @@ export default function TrainingPlansPage() {
         </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">Coaching Block</div>
-        <h3>Plan the next group session</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Coaching Block</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Plan the next group session</h3>
+          </div>
+        </div>
         <div className="split">
           <label className="field">
             Topic
@@ -250,6 +263,6 @@ export default function TrainingPlansPage() {
           />
         </label>
       </section>
-    </>
+    </div>
   );
 }

@@ -195,6 +195,7 @@ export async function createTraineeProfile(args: {
   clerkMembershipId?: string;
   name: string;
   email: string;
+  availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
   difficultyLevel: string;
   numObjections: number;
   expectedRebuttals: string[];
@@ -217,6 +218,7 @@ export async function getTraineeByInviteTokenHash(args: { inviteTokenHash: strin
     clerkMembershipId: string | null;
     name: string;
     email: string;
+    availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
     difficultyLevel: string;
     numObjections: number;
     expectedRebuttals: string[];
@@ -235,6 +237,7 @@ export async function getTraineeByOrgAndEmail(args: { orgId: string; email: stri
     clerkMembershipId: string | null;
     name: string;
     email: string;
+    availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
     difficultyLevel: string;
     numObjections: number;
     expectedRebuttals: string[];
@@ -253,6 +256,7 @@ export async function getTraineeByClerkUserId(args: { orgId: string; clerkUserId
     clerkMembershipId: string | null;
     name: string;
     email: string;
+    availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
     difficultyLevel: string;
     numObjections: number;
     expectedRebuttals: string[];
@@ -271,6 +275,7 @@ export async function getTraineeProfileById(args: { traineeId: string; orgId: st
     clerkMembershipId: string | null;
     name: string;
     email: string;
+    availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
     difficultyLevel: string;
     numObjections: number;
     expectedRebuttals: string[];
@@ -288,6 +293,7 @@ export async function listTraineesByOrg(args: { orgId: string; limit?: number })
       clerkMembershipId: string | null;
       name: string;
       email: string;
+      availableProductTypes: Array<"life" | "medicare_lead" | "medicare_event">;
       difficultyLevel: string;
       numObjections: number;
       expectedRebuttals: string[];

@@ -18,11 +18,13 @@ import {
   getDefaultObjectionLibraryForProduct,
   getDefaultRebuttalGuidesForProduct,
 } from "@/lib/trainer-objections";
+import styles from "@/components/trainer/TrainerSection.module.css";
 
 type TraineeOption = {
   traineeId: string;
   clerkUserId: string | null;
   name: string;
+  availableProductTypes: TrainingProductType[];
   difficultyLevel: string;
   numObjections: number;
 };
@@ -101,10 +103,25 @@ export default function SessionBuilder({
 }: SessionBuilderProps) {
   const router = useRouter();
   const [selectedTraineeId, setSelectedTraineeId] = useState(trainees[0]?.traineeId ?? "");
-  const [productType, setProductType] = useState<TrainingProductType>("life");
+  const initialProductType = trainees[0]?.availableProductTypes[0] ?? "life";
+  const [productType, setProductType] = useState<TrainingProductType>(initialProductType);
   const selectedTrainee = useMemo(
     () => trainees.find((item) => item.traineeId === selectedTraineeId) ?? null,
     [trainees, selectedTraineeId],
+  );
+  const allowedProductTypes = useMemo(
+    () => {
+      const allowed =
+        selectedTrainee?.availableProductTypes.filter((item) =>
+          TRAINING_PRODUCT_OPTIONS.some((option) => option.productType === item),
+        ) ?? [];
+      return allowed.length > 0 ? allowed : (["life"] as TrainingProductType[]);
+    },
+    [selectedTrainee],
+  );
+  const productOptions = useMemo(
+    () => TRAINING_PRODUCT_OPTIONS.filter((option) => allowedProductTypes.includes(option.productType)),
+    [allowedProductTypes],
   );
   const [difficulty, setDifficulty] = useState<Difficulty>((selectedTrainee?.difficultyLevel as Difficulty) ?? "D2");
   const availableDifficulties = getAllowedDifficultiesForProduct(productType);
@@ -135,15 +152,26 @@ export default function SessionBuilder({
       return;
     }
 
+    if (!allowedProductTypes.includes(productType)) {
+      const nextProductType = allowedProductTypes[0] ?? "life";
+      setProductType(nextProductType);
+      setDifficulty(normalizeDifficultyForProduct(nextProductType, selectedTrainee.difficultyLevel) as Difficulty);
+      return;
+    }
+
     const fallbackCount = Math.max(1, Math.min(selectedTrainee.numObjections, availableObjections.length));
     setSelectedObjections(availableObjections.slice(0, fallbackCount));
-  }, [availableObjections, selectedTrainee]);
+  }, [allowedProductTypes, availableObjections, productType, selectedTrainee]);
 
   function handleTraineeChange(nextTraineeId: string) {
     setSelectedTraineeId(nextTraineeId);
     const nextTrainee = trainees.find((item) => item.traineeId === nextTraineeId);
     if (nextTrainee) {
-      setDifficulty(normalizeDifficultyForProduct(productType, nextTrainee.difficultyLevel) as Difficulty);
+      const nextProductType = nextTrainee.availableProductTypes.includes(productType)
+        ? productType
+        : nextTrainee.availableProductTypes[0] ?? "life";
+      setProductType(nextProductType);
+      setDifficulty(normalizeDifficultyForProduct(nextProductType, nextTrainee.difficultyLevel) as Difficulty);
     }
   }
 
@@ -292,6 +320,13 @@ export default function SessionBuilder({
 
   return (
     <>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Session Builder</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Assign exact objection sequences to trainees</h3>
+          </div>
+        </div>
       <form className="form" onSubmit={handleAssign}>
         <div className="split">
           <label className="field">
@@ -308,7 +343,7 @@ export default function SessionBuilder({
           <label className="field">
             Product
             <select value={productType} onChange={(event) => handleProductChange(event.target.value as TrainingProductType)}>
-              {TRAINING_PRODUCT_OPTIONS.map((option) => (
+              {productOptions.map((option) => (
                 <option value={option.productType} key={option.productType}>
                   {option.productLabel}
                 </option>
@@ -400,10 +435,15 @@ export default function SessionBuilder({
         ) : null}
         {status ? <p className="disclaimer">{status}</p> : null}
       </form>
+      </section>
 
-      <section className="glass panel" style={{ marginTop: 24 }}>
-        <div className="tag">Recent Sessions</div>
-        <h3>Assigned and completed trainee sessions</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Recent Sessions</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Assigned and completed trainee sessions</h3>
+          </div>
+        </div>
         {recentSessions.length === 0 ? (
           <p className="disclaimer">No assigned sessions yet.</p>
         ) : (

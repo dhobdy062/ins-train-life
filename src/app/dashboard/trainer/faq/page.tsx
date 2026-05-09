@@ -1,3 +1,5 @@
+import styles from "@/components/trainer/TrainerSection.module.css";
+
 type HelpItem = {
   question: string;
   answer: string;
@@ -12,7 +14,7 @@ const TRAINER_FAQ: HelpItem[] = [
   {
     question: "How do I add team members?",
     answer:
-      "Open Team Members, add name and email, set a starting difficulty, and set an objection count. Share the invite link so the trainee can begin.",
+      "Open Team Members or Trainees Setup, add name and email, set products, set a starting difficulty, and set an objection count. Share the invite link so the trainee can begin.",
   },
   {
     question: "How do I set up training calls?",
@@ -63,8 +65,8 @@ const QUICK_GUIDES: GuideItem[] = [
   {
     title: "How to add team members",
     steps: [
-      "Open Team Members and click Add trainee.",
-      "Enter name, email, starting level, and objection count.",
+      "Open Team Members or Trainees Setup and click Add trainee.",
+      "Enter name, email, products, starting level, and objection count.",
       "Send invite link and confirm they start their first call.",
     ],
   },
@@ -106,16 +108,24 @@ const PLAYBOOK_ROWS = [
 
 export default function TrainerFaqPage() {
   return (
-    <>
-      <section className="glass panel">
-        <div className="tag">FAQ</div>
-        <h3>Trainer and trainee documentation</h3>
-        <p className="disclaimer">Use this page as your team reference for onboarding, coaching, and scoring.</p>
+    <div className={styles.stack}>
+      <section className={styles.panel}>
+        <div className={styles.headerRow}>
+          <div>
+            <p className={styles.sectionTag}>FAQ</p>
+            <h2>FAQ</h2>
+            <p className={styles.helpText}>Use this page as your team reference for onboarding, coaching, and scoring.</p>
+          </div>
+        </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">Quick Start</div>
-        <h3>Core workflows</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Quick Start</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Core workflows</h3>
+          </div>
+        </div>
         <div className="split">
           {QUICK_GUIDES.map((guide) => (
             <article className="card" key={guide.title}>
@@ -132,9 +142,13 @@ export default function TrainerFaqPage() {
         </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">FAQ</div>
-        <h3>Common trainer questions</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>FAQ</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Common trainer questions</h3>
+          </div>
+        </div>
         <div className="split">
           {TRAINER_FAQ.map((item) => (
             <article className="card" key={item.question}>
@@ -145,9 +159,13 @@ export default function TrainerFaqPage() {
         </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">FAQ</div>
-        <h3>Common trainee questions</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>FAQ</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Common trainee questions</h3>
+          </div>
+        </div>
         <div className="split">
           {TRAINEE_FAQ.map((item) => (
             <article className="card" key={item.question}>
@@ -158,9 +176,13 @@ export default function TrainerFaqPage() {
         </div>
       </section>
 
-      <section className="glass panel">
-        <div className="tag">Rebuttal Playbook</div>
-        <h3>Core strategy map</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Rebuttal Playbook</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Core strategy map</h3>
+          </div>
+        </div>
         <div className="grid">
           {PLAYBOOK_ROWS.map((row) => (
             <div className="metric" key={row.rebuttal}>
@@ -170,6 +192,6 @@ export default function TrainerFaqPage() {
           ))}
         </div>
       </section>
-    </>
+    </div>
   );
 }

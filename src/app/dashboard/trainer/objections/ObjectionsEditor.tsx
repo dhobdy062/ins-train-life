@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ObjectionLibrary, ObjectionRow } from "@/lib/trainer-objections";
-import styles from "./page.module.css";
+import styles from "@/components/trainer/TrainerSection.module.css";
 
 type Difficulty = "D1" | "D2" | "D3" | "D4" | "D5";
 
@@ -62,7 +62,7 @@ export default function ObjectionsEditor({ initialLibrary, initialGuides }: Obje
   function handleReset() {
     setLibrary(savedLibrary);
     setGuides(savedGuides);
-    setStatus("Reset to last saved organization settings.");
+    setStatus("Reset to last saved team settings.");
   }
 
   function updateObjection(difficulty: Difficulty, index: number, key: keyof ObjectionRow, value: string) {
@@ -101,8 +101,8 @@ export default function ObjectionsEditor({ initialLibrary, initialGuides }: Obje
         <div className={styles.headerRow}>
           <div>
             <p className={styles.sectionTag}>Objection Library</p>
-            <h2>Edit objections and rebuttal mappings</h2>
-            <p className={styles.helpText}>Changes apply across your organization sessions.</p>
+            <h2>Objection Library</h2>
+            <p className={styles.helpText}>Changes apply across your team sessions.</p>
           </div>
           <div className={styles.actions}>
             <button type="button" className={styles.secondaryButton} onClick={handleReset} disabled={saving}>

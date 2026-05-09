@@ -4,8 +4,8 @@ module.exports = {
   setupFilesAfterEnv: ['@testing-library/jest-dom'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   moduleNameMapper: {
+    '\\.(css|less|scss|sass)$': '<rootDir>/src/test/styleMock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
