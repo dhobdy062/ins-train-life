@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import styles from "@/components/trainer/TrainerSection.module.css";
 import SessionBuilder from "@/components/trainer/SessionBuilder";
 import { getOrgTrainerObjectionConfig, getTrainerSessionBuilderSnapshot, listTraineesByOrg } from "@/lib/convex";
 import { DEFAULT_OBJECTION_LIBRARY, DEFAULT_REBUTTAL_GUIDES } from "@/lib/trainer-objections";
@@ -16,30 +17,37 @@ export default async function SessionBuilderPage() {
   ]);
 
   return (
-    <>
-      <section className="glass panel">
-        <div className="tag">Session Builder</div>
-        <h3>Assign exact objection sequences to trainees</h3>
-        <p className="disclaimer">
-          Choose the trainee, set the difficulty, select the objection order, and hand the exact session to the trainee dashboard.
-        </p>
-        {trainees.length === 0 ? (
-          <p className="disclaimer">Add at least one trainee in the Trainees tab before creating sessions.</p>
-        ) : (
-          <SessionBuilder
-            trainees={trainees.map((trainee) => ({
-              traineeId: trainee.traineeId,
-              clerkUserId: trainee.clerkUserId,
-              name: trainee.name,
-              difficultyLevel: trainee.difficultyLevel,
-              numObjections: trainee.numObjections,
-            }))}
-            objectionLibrary={objectionConfig?.objectionLibrary ?? DEFAULT_OBJECTION_LIBRARY}
-            rebuttalGuides={objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES}
-            recentSessions={recentSessions}
-          />
-        )}
+    <div className={styles.stack}>
+      <section className={styles.panel}>
+        <div className={styles.headerRow}>
+          <div>
+            <p className={styles.sectionTag}>Training Calls</p>
+            <h2>Training Calls</h2>
+            <p className={styles.helpText}>
+              Choose the trainee, product, difficulty, and objection order for each training call.
+            </p>
+          </div>
+        </div>
       </section>
-    </>
+      {trainees.length === 0 ? (
+        <section className={styles.panel}>
+          <p className={styles.helpText}>Add at least one trainee in Team Members or Trainees Setup before creating sessions.</p>
+        </section>
+      ) : (
+        <SessionBuilder
+          trainees={trainees.map((trainee) => ({
+            traineeId: trainee.traineeId,
+            clerkUserId: trainee.clerkUserId,
+            name: trainee.name,
+            availableProductTypes: trainee.availableProductTypes,
+            difficultyLevel: trainee.difficultyLevel,
+            numObjections: trainee.numObjections,
+          }))}
+          objectionLibrary={objectionConfig?.objectionLibrary ?? DEFAULT_OBJECTION_LIBRARY}
+          rebuttalGuides={objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES}
+          recentSessions={recentSessions}
+        />
+      )}
+    </div>
   );
 }

@@ -17,6 +17,7 @@ describe("SessionBuilder", () => {
             traineeId: "trainee_1",
             clerkUserId: "user_1",
             name: "Alex Agent",
+            availableProductTypes: ["life", "medicare_lead", "medicare_event"],
             difficultyLevel: "D2",
             numObjections: 2,
           },
@@ -50,5 +51,29 @@ describe("SessionBuilder", () => {
     expect(html).toContain("Medicare Event");
     expect(html).toContain("Alex Agent");
     expect(html).toContain("Medicare Event");
+  });
+
+  it("limits product choices to the selected trainee availability", () => {
+    const html = renderToStaticMarkup(
+      <SessionBuilder
+        trainees={[
+          {
+            traineeId: "trainee_1",
+            clerkUserId: "user_1",
+            name: "Alex Agent",
+            availableProductTypes: ["medicare_lead"],
+            difficultyLevel: "D2",
+            numObjections: 2,
+          },
+        ]}
+        objectionLibrary={DEFAULT_OBJECTION_LIBRARY}
+        rebuttalGuides={DEFAULT_REBUTTAL_GUIDES}
+        recentSessions={[]}
+      />,
+    );
+
+    expect(html).toContain("Medicare Lead");
+    expect(html).not.toContain("Life Lead");
+    expect(html).not.toContain("Medicare Event");
   });
 });

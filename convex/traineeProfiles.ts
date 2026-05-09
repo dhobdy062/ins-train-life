@@ -5,6 +5,9 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+const ALL_PRODUCT_TYPES = ["life", "medicare_lead", "medicare_event"] as const;
+const productTypeValidator = v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"));
+
 export const createTraineeProfile = mutation({
   args: {
     orgId: v.string(),
@@ -13,6 +16,7 @@ export const createTraineeProfile = mutation({
     clerkMembershipId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
+    availableProductTypes: v.optional(v.array(productTypeValidator)),
     difficultyLevel: v.string(),
     numObjections: v.number(),
     expectedRebuttals: v.array(v.string()),
@@ -21,6 +25,7 @@ export const createTraineeProfile = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const normalizedEmail = normalizeEmail(args.email);
+    const availableProductTypes = args.availableProductTypes ?? ["life"];
 
     const existing = await ctx.db
       .query("trainees")
@@ -33,6 +38,7 @@ export const createTraineeProfile = mutation({
         clerkUserId: args.clerkUserId,
         clerkMembershipId: args.clerkMembershipId,
         name: args.name,
+        availableProductTypes,
         difficultyLevel: args.difficultyLevel,
         numObjections: args.numObjections,
         expectedRebuttals: args.expectedRebuttals,
@@ -54,6 +60,7 @@ export const createTraineeProfile = mutation({
       clerkMembershipId: args.clerkMembershipId,
       name: args.name,
       email: normalizedEmail,
+      availableProductTypes,
       difficultyLevel: args.difficultyLevel,
       numObjections: args.numObjections,
       expectedRebuttals: args.expectedRebuttals,
@@ -92,6 +99,7 @@ export const getTraineeByInviteTokenHash = query({
       clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
+      availableProductTypes: trainee.availableProductTypes ?? [...ALL_PRODUCT_TYPES],
       difficultyLevel: trainee.difficultyLevel,
       numObjections: trainee.numObjections,
       expectedRebuttals: trainee.expectedRebuttals,
@@ -124,6 +132,7 @@ export const getTraineeByOrgAndEmail = query({
       clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
+      availableProductTypes: trainee.availableProductTypes ?? [...ALL_PRODUCT_TYPES],
       difficultyLevel: trainee.difficultyLevel,
       numObjections: trainee.numObjections,
       expectedRebuttals: trainee.expectedRebuttals,
@@ -156,6 +165,7 @@ export const getTraineeByClerkUserId = query({
       clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
+      availableProductTypes: trainee.availableProductTypes ?? [...ALL_PRODUCT_TYPES],
       difficultyLevel: trainee.difficultyLevel,
       numObjections: trainee.numObjections,
       expectedRebuttals: trainee.expectedRebuttals,
@@ -184,6 +194,7 @@ export const getTraineeProfileById = query({
       clerkMembershipId: trainee.clerkMembershipId ?? null,
       name: trainee.name,
       email: trainee.email,
+      availableProductTypes: trainee.availableProductTypes ?? [...ALL_PRODUCT_TYPES],
       difficultyLevel: trainee.difficultyLevel,
       numObjections: trainee.numObjections,
       expectedRebuttals: trainee.expectedRebuttals,
@@ -220,6 +231,7 @@ export const listTraineesByOrg = query({
           clerkMembershipId: trainee.clerkMembershipId ?? null,
           name: trainee.name,
           email: trainee.email,
+          availableProductTypes: trainee.availableProductTypes ?? [...ALL_PRODUCT_TYPES],
           difficultyLevel: trainee.difficultyLevel,
           numObjections: trainee.numObjections,
           expectedRebuttals: trainee.expectedRebuttals,

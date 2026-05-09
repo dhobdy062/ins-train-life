@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TRAINING_PRODUCT_OPTIONS, type TrainingProductType } from "@/lib/training-products";
 
 type CreateTraineeApiResponse = {
   ok?: boolean;
@@ -19,9 +20,24 @@ export default function AddTraineeForm() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    availableProductTypes: ["life"] as TrainingProductType[],
     difficultyLevel: "D2",
     numObjections: 3,
   });
+
+  function toggleProduct(productType: TrainingProductType) {
+    setForm((previous) => {
+      const hasProduct = previous.availableProductTypes.includes(productType);
+      const availableProductTypes = hasProduct
+        ? previous.availableProductTypes.filter((item) => item !== productType)
+        : [...previous.availableProductTypes, productType];
+
+      return {
+        ...previous,
+        availableProductTypes,
+      };
+    });
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +69,7 @@ export default function AddTraineeForm() {
       setForm({
         name: "",
         email: "",
+        availableProductTypes: ["life"],
         difficultyLevel: "D2",
         numObjections: 3,
       });
@@ -67,6 +84,22 @@ export default function AddTraineeForm() {
   return (
     <form className="form" onSubmit={onSubmit}>
       <div className="split">
+        <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+          <span>Products</span>
+          <div style={{ display: "grid", gap: 8 }}>
+            {TRAINING_PRODUCT_OPTIONS.map((option) => (
+              <label key={option.productType} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={form.availableProductTypes.includes(option.productType)}
+                  onChange={() => toggleProduct(option.productType)}
+                />
+                {option.productLabel}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         <label className="field">
           Name
           <input
@@ -118,11 +151,12 @@ export default function AddTraineeForm() {
       </div>
 
       <div className="hero-actions">
-        <button className="button" type="submit" disabled={submitting}>
+        <button className="button" type="submit" disabled={submitting || form.availableProductTypes.length === 0}>
           {submitting ? "Adding..." : "Add trainee"}
         </button>
       </div>
 
+      {form.availableProductTypes.length === 0 ? <p className="disclaimer">Select at least one product.</p> : null}
       {status ? <p className="disclaimer">{status}</p> : null}
       {inviteUrl ? (
         <p className="disclaimer">

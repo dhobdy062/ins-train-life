@@ -10,12 +10,8 @@ export default async function TrainerDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userId, orgId, sessionClaims } = await auth();
+  const { userId, orgId } = await auth();
   const canOpenDashboard = Boolean(userId && orgId);
-  const orgName =
-    typeof (sessionClaims as { org_name?: unknown } | null)?.org_name === "string"
-      ? ((sessionClaims as { org_name?: string }).org_name ?? "Organization")
-      : "Organization";
 
   const entitlement = canOpenDashboard
     ? await getOrgEntitlement({ orgId: orgId as string }).catch(() => null)
@@ -34,7 +30,7 @@ export default async function TrainerDashboardLayout({
             <span className={styles.brandBadge}>Cream No Sugar</span>
             <span className={styles.brandSubtext}>Trainer Workspace</span>
           </div>
-          <p className={styles.brandOrg}>{canOpenDashboard ? orgName : "Sign in to open your dashboard"}</p>
+          <p className={styles.brandOrg}>{canOpenDashboard ? "Dashboard workspace" : "Sign in to open your dashboard"}</p>
         </div>
         {canOpenDashboard ? (
           <>
@@ -52,10 +48,7 @@ export default async function TrainerDashboardLayout({
 
       <div className={styles.main}>
         <header className={styles.topBar}>
-          <div>
-            <h1 className={styles.pageTitle}>Team Dashboard</h1>
-            <p className={styles.pageSubtitle}>{canOpenDashboard ? orgName : "Sign in to open your team dashboard"}</p>
-          </div>
+          <div className={styles.pageContext}>Trainer Dashboard</div>
           <div className={styles.topActions}>
             {canOpenDashboard ? (
               <OrganizationSwitcher
@@ -82,8 +75,8 @@ export default async function TrainerDashboardLayout({
         ) : (
           <main className={styles.contentArea}>
             <div className={styles.authCard}>
-              <h3>Sign in and choose an organization to open the trainer dashboard.</h3>
-              <p>Sign-in protects training configuration and organization-scoped analytics.</p>
+              <h3>Sign in and choose a team to open the trainer dashboard.</h3>
+              <p>Sign-in protects training configuration and team-scoped analytics.</p>
               <Link className={styles.primaryButton} href="/sign-in?redirect_url=/dashboard/trainer/overview">
                 Sign in
               </Link>

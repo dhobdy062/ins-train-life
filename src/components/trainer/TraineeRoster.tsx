@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getTraineeRosterActionRequest } from "@/components/trainer/trainee-roster-actions";
+import { getTrainingProductConfig, type TrainingProductType } from "@/lib/training-products";
 
 type TraineeRow = {
   traineeId: string;
   name: string;
   email: string;
+  availableProductTypes: TrainingProductType[];
   difficultyLevel: string;
   numObjections: number;
   status: string;
@@ -102,6 +104,7 @@ export default function TraineeRoster({ trainees, avgScoreById }: TraineeRosterP
             <tr>
               <th style={{ textAlign: "left", padding: "10px" }}>Name</th>
               <th style={{ textAlign: "left", padding: "10px" }}>Email</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Products</th>
               <th style={{ textAlign: "left", padding: "10px" }}>Difficulty</th>
               <th style={{ textAlign: "left", padding: "10px" }}>Objections</th>
               <th style={{ textAlign: "left", padding: "10px" }}>Access status</th>
@@ -119,6 +122,9 @@ export default function TraineeRoster({ trainees, avgScoreById }: TraineeRosterP
                 <tr key={trainee.traineeId}>
                   <td style={{ padding: "10px" }}>{trainee.name}</td>
                   <td style={{ padding: "10px" }}>{trainee.email}</td>
+                  <td style={{ padding: "10px" }}>
+                    {trainee.availableProductTypes.map((productType) => getTrainingProductConfig(productType).productLabel).join(", ")}
+                  </td>
                   <td style={{ padding: "10px" }}>{trainee.difficultyLevel}</td>
                   <td style={{ padding: "10px" }}>{trainee.numObjections}</td>
                   <td style={{ padding: "10px" }}>

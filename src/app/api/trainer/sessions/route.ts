@@ -68,6 +68,13 @@ export async function POST(request: Request) {
 
   const productType: TrainingProductType = normalizeTrainingProductType(payload.productType);
   const productConfig = getTrainingProductConfig(productType);
+  const traineeProductTypes = trainee.availableProductTypes ?? ["life", "medicare_lead", "medicare_event"];
+  if (!traineeProductTypes.includes(productType)) {
+    return NextResponse.json(
+      { error: `${productConfig.productLabel} is not enabled for ${trainee.name}.` },
+      { status: 400 },
+    );
+  }
   const fallbackDifficulty =
     typeof trainee.difficultyLevel === "string" && isDifficultyLevel(trainee.difficultyLevel)
       ? trainee.difficultyLevel

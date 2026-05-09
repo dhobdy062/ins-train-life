@@ -37,6 +37,7 @@ export const TRAINING_PRODUCT_CONFIGS: Record<TrainingProductType, TrainingProdu
 };
 
 export const TRAINING_PRODUCT_OPTIONS = Object.values(TRAINING_PRODUCT_CONFIGS);
+export const ALL_TRAINING_PRODUCT_TYPES = TRAINING_PRODUCT_OPTIONS.map((option) => option.productType);
 
 export function getDefaultProductType(): TrainingProductType {
   return DEFAULT_TRAINING_PRODUCT_TYPE;
@@ -48,6 +49,19 @@ export function isTrainingProductType(value: unknown): value is TrainingProductT
 
 export function normalizeTrainingProductType(value: unknown): TrainingProductType {
   return isTrainingProductType(value) ? value : DEFAULT_TRAINING_PRODUCT_TYPE;
+}
+
+export function normalizeTrainingProductTypes(
+  values: unknown,
+  fallback: readonly TrainingProductType[] = [DEFAULT_TRAINING_PRODUCT_TYPE],
+) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values.filter(isTrainingProductType);
+  const unique = Array.from(new Set(normalized));
+  return unique.length > 0 ? unique : [...fallback];
 }
 
 export function getTrainingProductConfig(productType: TrainingProductType) {

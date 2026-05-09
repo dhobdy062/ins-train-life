@@ -4,6 +4,7 @@ import {
   getProductLabels,
   isProductDifficultyAllowed,
   isTrainingProductType,
+  normalizeTrainingProductTypes,
 } from "@/lib/training-products";
 
 describe("training products", () => {
@@ -27,5 +28,7 @@ describe("training products", () => {
     expect(getDefaultProductType()).toBe("life");
     expect(isTrainingProductType("medicare_lead")).toBe(true);
     expect(isTrainingProductType("medical_lead")).toBe(false);
+    expect(normalizeTrainingProductTypes(["life", "medicare_lead", "life"])).toEqual(["life", "medicare_lead"]);
+    expect(normalizeTrainingProductTypes(undefined)).toEqual(["life"]);
   });
 });

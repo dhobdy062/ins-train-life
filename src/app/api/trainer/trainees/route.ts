@@ -16,11 +16,13 @@ import { getAppUrl, getEmailClient, getFromAddress } from "@/lib/email";
 import { renderEmailSequence } from "@/lib/email-sequences";
 import { hashInviteToken } from "@/lib/identity-link";
 import { buildExpectedRebuttals, isDifficultyLevel, type DifficultyLevel } from "@/lib/training-profile";
+import { normalizeTrainingProductTypes, type TrainingProductType } from "@/lib/training-products";
 import { buildExpectedRebuttalsFromLibrary } from "@/lib/trainer-objections";
 
 type CreateTraineePayload = {
   name?: string;
   email?: string;
+  availableProductTypes?: unknown;
   difficultyLevel?: string;
   numObjections?: number;
   trainerName?: string;
@@ -87,6 +89,10 @@ export async function POST(request: Request) {
   const email = payload.email?.trim().toLowerCase();
   const difficulty: DifficultyLevel =
     payload.difficultyLevel && isDifficultyLevel(payload.difficultyLevel) ? payload.difficultyLevel : "D2";
+  const availableProductTypes: TrainingProductType[] = normalizeTrainingProductTypes(payload.availableProductTypes);
+  if (Array.isArray(payload.availableProductTypes) && payload.availableProductTypes.length === 0) {
+    return NextResponse.json({ error: "Select at least one product." }, { status: 400 });
+  }
   const objectionsRequired =
     typeof payload.numObjections === "number" && payload.numObjections >= 1 && payload.numObjections <= 7
       ? payload.numObjections
@@ -133,6 +139,7 @@ export async function POST(request: Request) {
       clerkMembershipId: clerkIdentity.clerkMembershipId,
       name,
       email,
+      availableProductTypes,
       difficultyLevel: difficulty,
       numObjections: objectionsRequired,
       expectedRebuttals,
@@ -245,6 +252,7 @@ export async function POST(request: Request) {
     traineeId: result.traineeId,
     created: result.created,
     difficulty,
+    availableProductTypes,
     numObjections: objectionsRequired,
     expectedRebuttals,
     trainingUrl,

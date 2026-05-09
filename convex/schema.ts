@@ -155,6 +155,9 @@ export default defineSchema({
     clerkMembershipId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
+    availableProductTypes: v.optional(
+      v.array(v.union(v.literal("life"), v.literal("medicare_lead"), v.literal("medicare_event"))),
+    ),
     difficultyLevel: v.string(),
     numObjections: v.number(),
     expectedRebuttals: v.array(v.string()),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import styles from "@/components/trainer/TrainerSection.module.css";
 
 type ScoreWeights = {
   rebuttalAccuracy: number;
@@ -38,11 +39,15 @@ export default function ScoringPage() {
   }
 
   return (
-    <>
-      <section className="glass panel">
-        <div className="tag">Scoring Rules</div>
-        <h3>Define how trainee responses are graded</h3>
-        <p className="disclaimer">Keep weight totals at 100% for consistent coaching feedback.</p>
+    <div className={styles.stack}>
+      <section className={styles.panel}>
+        <div className={styles.headerRow}>
+          <div>
+            <p className={styles.sectionTag}>Scoring</p>
+            <h2>Scoring</h2>
+            <p className={styles.helpText}>Define how trainee responses are graded and keep weight totals at 100%.</p>
+          </div>
+        </div>
 
         <div className="split">
           <label className="field">
@@ -101,9 +106,13 @@ export default function ScoringPage() {
         {status ? <p className="disclaimer">{status}</p> : null}
       </section>
 
-      <section className="glass panel">
-        <div className="tag">Grade Bands</div>
-        <h3>Recommended performance bands</h3>
+      <section className={styles.panel}>
+        <div>
+          <p className={styles.sectionTag}>Grade Bands</p>
+          <div className={styles.headerRowCompact}>
+            <h3>Recommended performance bands</h3>
+          </div>
+        </div>
         <div className="grid">
           <div className="metric">
             <span>Excellent</span>
@@ -123,6 +132,6 @@ export default function ScoringPage() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
