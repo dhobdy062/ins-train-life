@@ -1,13 +1,14 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['@testing-library/jest-dom'],
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  setupFiles: ['dotenv/config'],
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.jsx?$': 'babel-jest',
+    '\\.css$': 'jest-transform-css',
+  },
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': '<rootDir>/src/test/styleMock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
-  },
+  testPathIgnorePatterns: ['<rootDir>/e2e/'],
 };
