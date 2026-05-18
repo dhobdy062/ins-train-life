@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import styles from "@/components/trainer/TrainerSection.module.css";
 import SessionBuilder from "@/components/trainer/SessionBuilder";
 import { getOrgTrainerObjectionConfig, getTrainerSessionBuilderSnapshot, listTraineesByOrg } from "@/lib/convex";
@@ -15,6 +15,8 @@ export default async function SessionBuilderPage() {
     getOrgTrainerObjectionConfig({ orgId }).catch(() => null),
     getTrainerSessionBuilderSnapshot({ orgId, trainerId: userId, limit: 20 }).catch(() => []),
   ]);
+  const user = await currentUser().catch(() => null);
+  const selfName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.primaryEmailAddress?.emailAddress || "Myself";
 
   return (
     <div className={styles.stack}>
@@ -29,25 +31,20 @@ export default async function SessionBuilderPage() {
           </div>
         </div>
       </section>
-      {trainees.length === 0 ? (
-        <section className={styles.panel}>
-          <p className={styles.helpText}>Add at least one trainee in Team Members or Trainees Setup before creating sessions.</p>
-        </section>
-      ) : (
-        <SessionBuilder
-          trainees={trainees.map((trainee) => ({
+      <SessionBuilder
+        selfOption={{ name: selfName }}
+        trainees={trainees.map((trainee) => ({
             traineeId: trainee.traineeId,
             clerkUserId: trainee.clerkUserId,
             name: trainee.name,
             availableProductTypes: trainee.availableProductTypes,
             difficultyLevel: trainee.difficultyLevel,
             numObjections: trainee.numObjections,
-          }))}
-          objectionLibrary={objectionConfig?.objectionLibrary ?? DEFAULT_OBJECTION_LIBRARY}
-          rebuttalGuides={objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES}
-          recentSessions={recentSessions}
-        />
-      )}
+        }))}
+        objectionLibrary={objectionConfig?.objectionLibrary ?? DEFAULT_OBJECTION_LIBRARY}
+        rebuttalGuides={objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES}
+        recentSessions={recentSessions}
+      />
     </div>
   );
 }

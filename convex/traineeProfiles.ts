@@ -77,6 +77,96 @@ export const createTraineeProfile = mutation({
   },
 });
 
+export const getOrCreateSelfTraineeProfile = mutation({
+  args: {
+    orgId: v.string(),
+    clerkUserId: v.string(),
+    clerkMembershipId: v.optional(v.string()),
+    name: v.string(),
+    email: v.string(),
+    availableProductTypes: v.optional(v.array(productTypeValidator)),
+    difficultyLevel: v.string(),
+    numObjections: v.number(),
+    expectedRebuttals: v.array(v.string()),
+    inviteTokenHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const normalizedEmail = normalizeEmail(args.email);
+    const availableProductTypes = args.availableProductTypes ?? [...ALL_PRODUCT_TYPES];
+
+    const byUser = await ctx.db
+      .query("trainees")
+      .withIndex("by_org_clerkUserId", (q) => q.eq("orgId", args.orgId).eq("clerkUserId", args.clerkUserId))
+      .first();
+    const byEmail = byUser
+      ? null
+      : await ctx.db
+          .query("trainees")
+          .withIndex("by_org_email", (q) => q.eq("orgId", args.orgId).eq("email", normalizedEmail))
+          .first();
+    const existing = byUser ?? byEmail;
+
+    const patch = {
+      trainerId: args.clerkUserId,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId,
+      name: args.name,
+      email: normalizedEmail,
+      availableProductTypes,
+      difficultyLevel: args.difficultyLevel,
+      numObjections: args.numObjections,
+      expectedRebuttals: args.expectedRebuttals,
+      inviteTokenHash: args.inviteTokenHash,
+      status: "active" as const,
+      lastActiveAt: now,
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, patch);
+      return {
+        traineeId: existing._id,
+        orgId: args.orgId,
+        trainerId: args.clerkUserId,
+        clerkUserId: args.clerkUserId,
+        clerkMembershipId: args.clerkMembershipId ?? null,
+        name: args.name,
+        email: normalizedEmail,
+        availableProductTypes,
+        difficultyLevel: args.difficultyLevel,
+        numObjections: args.numObjections,
+        expectedRebuttals: args.expectedRebuttals,
+        status: "active",
+        lastActiveAt: now,
+        created: false,
+      };
+    }
+
+    const traineeId = await ctx.db.insert("trainees", {
+      ...patch,
+      createdAt: now,
+    });
+
+    return {
+      traineeId,
+      orgId: args.orgId,
+      trainerId: args.clerkUserId,
+      clerkUserId: args.clerkUserId,
+      clerkMembershipId: args.clerkMembershipId ?? null,
+      name: args.name,
+      email: normalizedEmail,
+      availableProductTypes,
+      difficultyLevel: args.difficultyLevel,
+      numObjections: args.numObjections,
+      expectedRebuttals: args.expectedRebuttals,
+      status: "active",
+      lastActiveAt: now,
+      created: true,
+    };
+  },
+});
+
 export const getTraineeByInviteTokenHash = query({
   args: {
     inviteTokenHash: v.string(),

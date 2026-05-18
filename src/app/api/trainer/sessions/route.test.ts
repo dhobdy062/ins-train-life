@@ -1,6 +1,6 @@
 import { POST } from "./route";
 import * as clerkAuth from "@clerk/nextjs/server";
-import { createTrainingSession, getTraineeProfileById } from "@/lib/convex";
+import { createTrainingSession, getOrCreateSelfTraineeProfile, getTraineeProfileById } from "@/lib/convex";
 
 jest.mock("@clerk/nextjs/server", () => ({
   auth: jest.fn(),
@@ -8,12 +8,22 @@ jest.mock("@clerk/nextjs/server", () => ({
 
 jest.mock("@/lib/convex", () => ({
   getTraineeProfileById: jest.fn(),
+  getOrCreateSelfTraineeProfile: jest.fn(),
   getOrgTrainerObjectionConfig: jest.fn().mockResolvedValue(null),
   createTrainingSession: jest.fn().mockResolvedValue({ sessionKey: "fake_session" }),
 }));
 
+jest.mock("@/lib/clerk-org-join", () => ({
+  getClerkUserProfile: jest.fn().mockResolvedValue({
+    clerkUserId: "trainer_123",
+    name: "Trainer User",
+    email: "trainer@example.com",
+  }),
+}));
+
 const mockedAuth = clerkAuth.auth as unknown as jest.MockedFunction<typeof clerkAuth.auth>;
 const mockedGetTraineeProfileById = getTraineeProfileById as jest.MockedFunction<typeof getTraineeProfileById>;
+const mockedGetOrCreateSelfTraineeProfile = getOrCreateSelfTraineeProfile as jest.MockedFunction<typeof getOrCreateSelfTraineeProfile>;
 const mockedCreateTrainingSession = createTrainingSession as jest.MockedFunction<typeof createTrainingSession>;
 
 function buildRequest(body: Record<string, unknown>) {
@@ -45,6 +55,22 @@ describe("POST /api/trainer/sessions", () => {
       status: "active",
       lastActiveAt: 1234,
     } as NonNullable<Awaited<ReturnType<typeof getTraineeProfileById>>>);
+    mockedGetOrCreateSelfTraineeProfile.mockResolvedValue({
+      traineeId: "self_trainee_123",
+      orgId: "org_123",
+      trainerId: "trainer_123",
+      clerkUserId: "trainer_123",
+      clerkMembershipId: null,
+      name: "Trainer User",
+      email: "trainer@example.com",
+      availableProductTypes: ["life", "medicare_lead", "medicare_event"],
+      difficultyLevel: "D2",
+      numObjections: 3,
+      expectedRebuttals: ["dont_remember", "not_interested"],
+      status: "active",
+      lastActiveAt: 1234,
+      created: false,
+    } as Awaited<ReturnType<typeof getOrCreateSelfTraineeProfile>>);
     process.env.VAPI_ASSISTANT_D2_LIFE_ID = "assistant_life_d2";
     process.env.VAPI_ASSISTANT_D2_MEDICARE_LEAD_ID = "assistant_medicare_lead_d2";
     process.env.VAPI_ASSISTANT_D3_MEDICARE_EVENT_ID = "assistant_medicare_event_d3";
@@ -137,6 +163,50 @@ describe("POST /api/trainer/sessions", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "D4 is not available for Medicare Lead." });
+    expect(mockedCreateTrainingSession).not.toHaveBeenCalled();
+  });
+
+  it("creates a self session with a random persisted objection sequence", async () => {
+    const response = await POST(
+      buildRequest({
+        target: "self",
+        productType: "life",
+        difficulty: "D2",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedGetTraineeProfileById).not.toHaveBeenCalled();
+    expect(mockedGetOrCreateSelfTraineeProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orgId: "org_123",
+        clerkUserId: "trainer_123",
+      }),
+    );
+    expect(mockedCreateTrainingSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        traineeId: "self_trainee_123",
+        traineeClerkUserId: "trainer_123",
+        objectionsRequired: expect.any(Number),
+        selectedObjections: expect.arrayContaining([
+          expect.objectContaining({ order: 0, text: expect.any(String), rebuttalType: expect.any(String) }),
+        ]),
+        initialStatus: "assigned",
+      }),
+    );
+  });
+
+  it("rejects manually selected objections for self sessions", async () => {
+    const response = await POST(
+      buildRequest({
+        target: "self",
+        difficulty: "D2",
+        selectedObjections: [{ text: "How did you get my number?", rebuttalType: "dont_remember" }],
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Self sessions choose objections automatically." });
     expect(mockedCreateTrainingSession).not.toHaveBeenCalled();
   });
 });

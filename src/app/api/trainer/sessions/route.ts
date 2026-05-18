@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { buildExpectedRebuttalsFromAssigned, buildRebuttalGuideMapForAssigned, normalizeAssignedObjections } from "@/lib/assigned-sessions";
-import { createTrainingSession, getOrgTrainerObjectionConfig, getTraineeProfileById } from "@/lib/convex";
+import { createTrainingSession, getOrCreateSelfTraineeProfile, getOrgTrainerObjectionConfig, getTraineeProfileById } from "@/lib/convex";
+import { getClerkUserProfile } from "@/lib/clerk-org-join";
+import { hashInviteToken } from "@/lib/identity-link";
 import { type DifficultyLevel, isDifficultyLevel } from "@/lib/training-profile";
 import {
   DEFAULT_OBJECTION_LIBRARY,
   DEFAULT_REBUTTAL_GUIDES,
   getDefaultObjectionLibraryForProduct,
   getDefaultRebuttalGuidesForProduct,
+  selectRandomObjectionsForDifficulty,
 } from "@/lib/trainer-objections";
 import {
   getTrainingProductConfig,
@@ -19,6 +22,7 @@ import {
 import { resolveTrainingAssistantId } from "@/lib/vapi-assistants";
 
 type CreateAssignedSessionPayload = {
+  target?: string;
   traineeId?: string;
   productType?: string;
   difficulty?: string;
@@ -27,6 +31,10 @@ type CreateAssignedSessionPayload = {
     rebuttalType?: string;
   }>;
 };
+
+function buildSelfInviteTokenHash(orgId: string, userId: string) {
+  return hashInviteToken(`self-session:${orgId}:${userId}`);
+}
 
 export async function POST(request: Request) {
   const { userId, orgId } = await auth();
@@ -44,22 +52,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
-  if (!payload.traineeId) {
+  const isSelfSession = payload.target === "self";
+  if (!isSelfSession && !payload.traineeId) {
     return NextResponse.json({ error: "traineeId is required." }, { status: 400 });
+  }
+  if (isSelfSession && Array.isArray(payload.selectedObjections) && payload.selectedObjections.length > 0) {
+    return NextResponse.json({ error: "Self sessions choose objections automatically." }, { status: 400 });
   }
 
   if (payload.productType !== undefined && !isTrainingProductType(payload.productType)) {
     return NextResponse.json({ error: "Invalid product type." }, { status: 400 });
   }
 
-  const trainee = await getTraineeProfileById({
-    traineeId: payload.traineeId,
-    orgId,
-  });
+  const trainee = isSelfSession
+    ? null
+    : await getTraineeProfileById({
+        traineeId: payload.traineeId as string,
+        orgId,
+      });
   if (!trainee) {
-    return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
+    if (!isSelfSession) {
+      return NextResponse.json({ error: "Trainee not found." }, { status: 404 });
+    }
   }
-  if (!trainee.clerkUserId) {
+  if (trainee && !trainee.clerkUserId) {
     return NextResponse.json(
       { error: "This trainee's sign-in access is still syncing. Ask them to open their dashboard once, then retry." },
       { status: 409 },
@@ -68,15 +84,15 @@ export async function POST(request: Request) {
 
   const productType: TrainingProductType = normalizeTrainingProductType(payload.productType);
   const productConfig = getTrainingProductConfig(productType);
-  const traineeProductTypes = trainee.availableProductTypes ?? ["life", "medicare_lead", "medicare_event"];
+  const traineeProductTypes = trainee?.availableProductTypes ?? ["life", "medicare_lead", "medicare_event"];
   if (!traineeProductTypes.includes(productType)) {
     return NextResponse.json(
-      { error: `${productConfig.productLabel} is not enabled for ${trainee.name}.` },
+      { error: `${productConfig.productLabel} is not enabled for ${trainee?.name ?? "this trainee"}.` },
       { status: 400 },
     );
   }
   const fallbackDifficulty =
-    typeof trainee.difficultyLevel === "string" && isDifficultyLevel(trainee.difficultyLevel)
+    typeof trainee?.difficultyLevel === "string" && isDifficultyLevel(trainee.difficultyLevel)
       ? trainee.difficultyLevel
       : "D2";
   const difficulty: DifficultyLevel =
@@ -86,25 +102,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `${difficulty} is not available for ${productConfig.productLabel}.` }, { status: 400 });
   }
 
-  const selectedObjections = normalizeAssignedObjections(
-    Array.isArray(payload.selectedObjections)
-      ? payload.selectedObjections.map((row) => ({
-          text: row.text ?? "",
-          rebuttalType: row.rebuttalType ?? "",
-        }))
-      : [],
-  );
-
-  if (selectedObjections.length === 0) {
-    return NextResponse.json({ error: "Select at least one objection." }, { status: 400 });
-  }
-
   const objectionConfig = await getOrgTrainerObjectionConfig({ orgId }).catch(() => null);
   const productDefaultLibrary = getDefaultObjectionLibraryForProduct(productType);
   const objectionLibrary =
     productType === "life"
       ? objectionConfig?.objectionLibrary?.[difficulty] ?? DEFAULT_OBJECTION_LIBRARY[difficulty]
       : productDefaultLibrary[difficulty];
+  const selectedObjections = isSelfSession
+    ? selectRandomObjectionsForDifficulty({ ...DEFAULT_OBJECTION_LIBRARY, [difficulty]: objectionLibrary }, difficulty)
+    : normalizeAssignedObjections(
+        Array.isArray(payload.selectedObjections)
+          ? payload.selectedObjections.map((row) => ({
+              text: row.text ?? "",
+              rebuttalType: row.rebuttalType ?? "",
+            }))
+          : [],
+      );
+
+  if (selectedObjections.length === 0) {
+    return NextResponse.json({ error: "Select at least one objection." }, { status: 400 });
+  }
+
   const validKeys = new Set(objectionLibrary.map((row) => `${row.text}::${row.rebuttalType}`));
   const invalidSelection = selectedObjections.some((row) => !validKeys.has(`${row.text}::${row.rebuttalType}`));
   if (invalidSelection) {
@@ -119,13 +137,31 @@ export async function POST(request: Request) {
       productType === "life" ? objectionConfig?.rebuttalGuides ?? DEFAULT_REBUTTAL_GUIDES : productDefaultGuides,
     );
     const assistantId = resolveTrainingAssistantId(productType, difficulty);
+    const selfProfile = isSelfSession ? await getClerkUserProfile(userId) : null;
+    const targetTrainee = isSelfSession
+      ? await getOrCreateSelfTraineeProfile({
+          orgId,
+          clerkUserId: userId,
+          name: selfProfile?.name ?? "Trainer",
+          email: selfProfile?.email ?? "trainer@example.com",
+          availableProductTypes: ["life", "medicare_lead", "medicare_event"],
+          difficultyLevel: difficulty,
+          numObjections: selectedObjections.length,
+          expectedRebuttals,
+          inviteTokenHash: buildSelfInviteTokenHash(orgId, userId),
+        })
+      : trainee;
+
+    if (!targetTrainee?.clerkUserId) {
+      return NextResponse.json({ error: "Unable to link this session to a trainee account." }, { status: 409 });
+    }
 
     const session = await createTrainingSession({
       orgId,
       trainerId: userId,
       productType,
-      traineeId: trainee.traineeId,
-      traineeClerkUserId: trainee.clerkUserId,
+      traineeId: targetTrainee.traineeId,
+      traineeClerkUserId: targetTrainee.clerkUserId,
       assistantId,
       difficulty,
       objectionsRequired: selectedObjections.length,
@@ -145,8 +181,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       sessionKey: session.sessionKey,
-      traineeId: trainee.traineeId,
-      traineeName: trainee.name,
+      traineeId: targetTrainee.traineeId,
+      traineeName: targetTrainee.name,
       productType,
       productLabel: productConfig.productLabel,
       difficulty,
