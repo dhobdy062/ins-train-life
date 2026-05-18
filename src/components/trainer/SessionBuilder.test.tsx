@@ -12,6 +12,7 @@ describe("SessionBuilder", () => {
   it("renders the product selector with Life and Medicare options", () => {
     const html = renderToStaticMarkup(
       <SessionBuilder
+        selfOption={{ name: "Trainer User" }}
         trainees={[
           {
             traineeId: "trainee_1",
@@ -50,12 +51,13 @@ describe("SessionBuilder", () => {
     expect(html).toContain("Medicare Lead");
     expect(html).toContain("Medicare Event");
     expect(html).toContain("Alex Agent");
-    expect(html).toContain("Medicare Event");
+    expect(html).toContain("Myself (Trainer User)");
   });
 
-  it("limits product choices to the selected trainee availability", () => {
+  it("shows self sessions as the default session target", () => {
     const html = renderToStaticMarkup(
       <SessionBuilder
+        selfOption={{ name: "Trainer User" }}
         trainees={[
           {
             traineeId: "trainee_1",
@@ -72,8 +74,8 @@ describe("SessionBuilder", () => {
       />,
     );
 
-    expect(html).toContain("Medicare Lead");
-    expect(html).not.toContain("Life Lead");
-    expect(html).not.toContain("Medicare Event");
+    expect(html).toContain("Myself (Trainer User)");
+    expect(html).toContain("Create my session");
+    expect(html).toContain("Chosen automatically from difficulty.");
   });
 });

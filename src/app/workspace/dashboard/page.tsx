@@ -4,7 +4,7 @@ import { isAdminPortalUser, resolvePrimaryEmailAddress } from "@/lib/admin-porta
 import { resolveAuthenticatedTrainee } from "@/lib/trainee-access";
 
 export default async function WorkspaceDashboardAliasPage() {
-  const { userId, orgId } = await auth();
+  const { userId, orgId, sessionClaims } = await auth();
 
   if (!userId) {
     redirect("/sign-in?redirect_url=%2Fworkspace%2Fdashboard");
@@ -18,6 +18,10 @@ export default async function WorkspaceDashboardAliasPage() {
 
   if (!orgId) {
     redirect("/workspace/select-organization?redirect_url=%2Fworkspace%2Fdashboard");
+  }
+
+  if (sessionClaims?.org_role === "org:admin") {
+    redirect("/dashboard/trainer");
   }
 
   const traineeAccess = await resolveAuthenticatedTrainee({

@@ -1,11 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { upsertAutomaticEvaluationForSessionInContext } from "./trainingSessionEvaluations";
-import {
-  extractStructuredOutcomeFromWebhookPayload,
-  hasMeaningfulStructuredOutcome,
-} from "../src/lib/training-session-evaluation";
+import { persistVapiEvent, persistStripeEvent } from "@/lib/webhook-processor";
 
 const DEFAULT_BILLING_EVENT_LIMIT = 200;
 const MAX_BILLING_EVENT_LIMIT = 500;
@@ -61,37 +57,52 @@ export const processWebhookEvent = internalMutation({
       return;
     }
 
-    try {
-      if (record.provider === "stripe") {
-        await persistStripeEvent(ctx, record.payload);
-      } else {
-        await persistVapiEvent(ctx, record.payload);
+      try {
+        if (record.provider === "stripe") {
+          await persistStripeEvent(ctx, record.payload);
+        } else {
+          await persistVapiEvent(ctx, record.payload);
+        }
+
+        await ctx.db.patch(args.eventId, {
+          status: "processed",
+          processedAt: Date.now(),
+          error: undefined,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown processing error";
+        const attemptCount = (record.attemptCount ?? 0) + 1;
+
+        if (attemptCount >= (record.maxAttempts ?? 3)) {
+          await ctx.db.patch(args.eventId, {
+            status: "failed",
+            processedAt: Date.now(),
+            error: message,
+            attemptCount,
+          });
+
+          await ctx.db.insert("alertEvents", {
+            source: `webhook:${record.provider}`,
+            severity: "critical",
+            message,
+            context: {
+              eventId: args.eventId,
+              providerEventId: record.providerEventId,
+            },
+            createdAt: Date.now(),
+          });
+        } else {
+          await ctx.db.patch(args.eventId, {
+            status: "failed",
+            processedAt: Date.now(),
+            error: message,
+            attemptCount,
+          });
+
+          const backoff = 2 ** attemptCount * 1000; // Exponential backoff
+          await ctx.scheduler.runAfter(backoff, internal.webhooks.processWebhookEvent, { eventId: args.eventId });
+        }
       }
-
-      await ctx.db.patch(args.eventId, {
-        status: "processed",
-        processedAt: Date.now(),
-        error: undefined,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown processing error";
-      await ctx.db.patch(args.eventId, {
-        status: "failed",
-        processedAt: Date.now(),
-        error: message,
-      });
-
-      await ctx.db.insert("alertEvents", {
-        source: `webhook:${record.provider}`,
-        severity: "critical",
-        message,
-        context: {
-          eventId: args.eventId,
-          providerEventId: record.providerEventId,
-        },
-        createdAt: Date.now(),
-      });
-    }
   },
 });
 
