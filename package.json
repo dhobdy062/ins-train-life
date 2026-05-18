@@ -19,7 +19,6 @@
     "@clerk/nextjs": "^6.37.3",
     "@clerk/testing": "^2.0.27",
     "@vapi-ai/web": "^2.5.2",
-    "@vercel/analytics": "^2.0.1",
     "convex": "^1.31.7",
     "next": "16.1.6",
     "react": "19.2.3",

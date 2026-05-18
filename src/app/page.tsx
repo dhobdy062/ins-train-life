@@ -1,8 +1,4 @@
-import LeadForm from "@/components/LeadForm";
-import PricingCards from "@/components/PricingCards";
-import { SignedIn } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { normalizeBillingSelection } from "@/lib/billing";
 
 const objectionNodes = [
   "D1",
@@ -24,9 +20,8 @@ type HomePageProps = {
 };
 
 export default async function Home({ searchParams }: HomePageProps) {
-  const params = await searchParams;
-  const selection = normalizeBillingSelection({ planId: params.plan, interval: params.interval });
-  const { userId } = await auth();
+  await searchParams;
+  await auth();
 
   return (
     <div className="page">
@@ -40,30 +35,14 @@ export default async function Home({ searchParams }: HomePageProps) {
                 Instead of spending hours roleplaying in 1-1, you can upskill your entire downline at the same time.
               </p>
               <div className="hero-actions">
-                <SignedIn>
-                  <a className="button secondary" href="/workspace/dashboard">
-                    Open workspace
-                  </a>
-                </SignedIn>
-              </div>
-              <div className="split">
-                <div className="card">
-                <h4>The first real objection shouldn&apos;t be with a real prospect</h4>
-                <p className="disclaimer">
-                  Cream No Sugar. Smooth Delivered Training. No Sugar Added. You don&apos;t get paid to feel ready. You are
-                  paid to close. Cream No Sugar helps you get there.
-                </p>
-              </div>
-                <div className="card">
-                <h4>Confidence Comes from Repitition</h4>
-                <p className="disclaimer">
-                  Give every agent a live realistic prospect for training whenever they need it.
-                </p>
-              </div>
+                <a className="button primary" href="/book-demo">
+                  Book a Team Demo
+                </a>
+                <a className="button secondary" href="/demo">
+                  Try a Sample Call
+                </a>
               </div>
             </div>
-
-            <LeadForm />
           </section>
 
           <section className="split">
@@ -93,20 +72,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             </div>
           </section>
 
-          <section className="glass panel" id="pricing">
-            <div className="tag">Pricing</div>
-            <h3>Pick your plan and we&apos;ll guide you through secure checkout.</h3>
-            <p className="disclaimer">
-              {userId
-                ? "Choose monthly or annual billing to continue."
-                : "Choose monthly or annual billing, then create your account to continue."}
-            </p>
-            <PricingCards
-              selectedPlanId={selection.planId}
-              selectedInterval={selection.interval}
-              signedIn={Boolean(userId)}
-            />
-          </section>
+
         </main>
 
         <footer className="footer">
