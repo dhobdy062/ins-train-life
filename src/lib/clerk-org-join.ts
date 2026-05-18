@@ -41,6 +41,53 @@ export async function getClerkUserProfile(userId: string) {
   };
 }
 
+export async function findClerkOrganizationsByIdSuffix(suffix: string) {
+  const normalizedSuffix = suffix.trim().toLowerCase();
+  if (normalizedSuffix.length !== 6) {
+    return [];
+  }
+
+  const client = await clerkClient();
+  const matches: Array<{ clerkOrgId: string; name: string }> = [];
+  let offset = 0;
+  const limit = 100;
+
+  while (matches.length < 2) {
+    const page = await client.organizations.getOrganizationList({ limit, offset });
+    const organizations = page.data ?? [];
+
+    for (const organization of organizations) {
+      if (organization.id.toLowerCase().endsWith(normalizedSuffix)) {
+        matches.push({
+          clerkOrgId: organization.id,
+          name: organization.name ?? organization.slug ?? "Your organization",
+        });
+
+        await upsertIdentityOrganization({
+          clerkOrgId: organization.id,
+          name: organization.name ?? undefined,
+          slug: organization.slug ?? undefined,
+          imageUrl: organization.imageUrl ?? undefined,
+          status: "active",
+          createdAt: timestamp(organization.createdAt),
+          updatedAt: timestamp(organization.updatedAt),
+        });
+
+        if (matches.length >= 2) {
+          break;
+        }
+      }
+    }
+
+    if (organizations.length < limit) {
+      break;
+    }
+    offset += limit;
+  }
+
+  return matches;
+}
+
 export async function ensureClerkOrganizationMembership(args: {
   orgId: string;
   userId: string;

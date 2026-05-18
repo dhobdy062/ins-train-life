@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { findActiveOrganizationsByClerkIdSuffix } from "@/lib/convex";
+import { findClerkOrganizationsByIdSuffix } from "@/lib/clerk-org-join";
 import { createOrgCodeToken } from "@/lib/org-code-token";
 
 type LookupPayload = {
@@ -23,7 +24,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter the last 6 characters of your organization ID." }, { status: 400 });
   }
 
-  const matches = await findActiveOrganizationsByClerkIdSuffix({ suffix: orgCode }).catch(() => []);
+  const convexMatches = await findActiveOrganizationsByClerkIdSuffix({ suffix: orgCode }).catch(() => []);
+  const clerkMatches = await findClerkOrganizationsByIdSuffix(orgCode).catch((error) => {
+    console.error("Org-code Clerk lookup failed:", error);
+    return null;
+  });
+
+  const matches = clerkMatches ?? convexMatches;
   if (matches.length !== 1) {
     return NextResponse.json({ error: "We could not confirm that organization ID." }, { status: 404 });
   }
