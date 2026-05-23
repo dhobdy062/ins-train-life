@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import styles from "./TrainerTabs.module.css";
 
 const TABS = [
+  { href: "/dashboard/trainer/practice", label: "Start My Practice" },
   { href: "/dashboard/trainer/overview", label: "Agency Dashboard" },
   { href: "/dashboard/trainer/trainees", label: "Team Members or Trainees Setup" },
   { href: "/dashboard/trainer/session-builder", label: "Training Calls" },

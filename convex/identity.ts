@@ -113,6 +113,30 @@ export const getOrganizationByClerkId = query({
   },
 });
 
+export const findActiveOrganizationsByClerkIdSuffix = query({
+  args: { suffix: v.string() },
+  handler: async (ctx, args) => {
+    const suffix = args.suffix.trim().toLowerCase();
+    if (suffix.length !== 6) {
+      return [];
+    }
+
+    const organizations = await ctx.db.query("organizations").collect();
+    return organizations
+      .filter((organization) => {
+        if (organization.status !== "active") {
+          return false;
+        }
+        return organization.clerkOrgId.toLowerCase().endsWith(suffix);
+      })
+      .slice(0, 2)
+      .map((organization) => ({
+        clerkOrgId: organization.clerkOrgId,
+        name: organization.name ?? organization.slug ?? "Your organization",
+      }));
+  },
+});
+
 export const getMembershipByClerkId = query({
   args: { clerkMembershipId: v.string() },
   handler: async (ctx, args) => {

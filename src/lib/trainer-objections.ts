@@ -247,3 +247,29 @@ export function buildGuideMapForExpected(expectedRebuttals: string[], guides: Re
     return acc;
   }, {});
 }
+
+export function getRandomObjectionCountForDifficulty(difficulty: DifficultyLevel, rng: () => number = Math.random) {
+  const [min, max] =
+    difficulty === "D1" ? [1, 2] : difficulty === "D2" || difficulty === "D3" ? [2, 3] : [3, 4];
+  return min + Math.floor(rng() * (max - min + 1));
+}
+
+export function selectRandomObjectionsForDifficulty(
+  library: ObjectionLibrary,
+  difficulty: DifficultyLevel,
+  rng: () => number = Math.random,
+) {
+  const pool = [...(library[difficulty] ?? [])];
+  const count = Math.min(getRandomObjectionCountForDifficulty(difficulty, rng), pool.length);
+
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+  }
+
+  return pool.slice(0, count).map((row, index) => ({
+    order: index,
+    text: row.text,
+    rebuttalType: row.rebuttalType,
+  }));
+}

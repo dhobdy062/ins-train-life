@@ -51,6 +51,11 @@ export default async function TrainerDashboardLayout({
           <div className={styles.pageContext}>Trainer Dashboard</div>
           <div className={styles.topActions}>
             {canOpenDashboard ? (
+              <Link className={styles.practiceButton} href="/dashboard/trainer/practice">
+                Start my practice
+              </Link>
+            ) : null}
+            {canOpenDashboard ? (
               <OrganizationSwitcher
                 hidePersonal
                 appearance={{

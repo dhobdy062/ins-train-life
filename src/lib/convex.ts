@@ -18,6 +18,9 @@ const getTrainerDashboardSnapshotRef = makeFunctionReference<"query">("sessions:
 const reserveTrialSessionRef = makeFunctionReference<"mutation">("sessions:reserveTrialSession");
 const deleteSessionWithArtifactsRef = makeFunctionReference<"mutation">("sessions:deleteSessionWithArtifacts");
 const createTraineeProfileRef = makeFunctionReference<"mutation">("traineeProfiles:createTraineeProfile");
+const getOrCreateSelfTraineeProfileRef = makeFunctionReference<"mutation">(
+  "traineeProfiles:getOrCreateSelfTraineeProfile",
+);
 const getTraineeByInviteTokenHashRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByInviteTokenHash");
 const getTraineeByOrgAndEmailRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByOrgAndEmail");
 const getTraineeByClerkUserIdRef = makeFunctionReference<"query">("traineeProfiles:getTraineeByClerkUserId");
@@ -82,6 +85,9 @@ const markOrganizationDeletedRef = makeFunctionReference<"mutation">("identity:m
 const markOrganizationMembershipDeletedRef = makeFunctionReference<"mutation">("identity:markOrganizationMembershipDeleted");
 const getUserByClerkIdRef = makeFunctionReference<"query">("identity:getUserByClerkId");
 const getOrganizationByClerkIdRef = makeFunctionReference<"query">("identity:getOrganizationByClerkId");
+const findActiveOrganizationsByClerkIdSuffixRef = makeFunctionReference<"query">(
+  "identity:findActiveOrganizationsByClerkIdSuffix",
+);
 const getMembershipByClerkIdRef = makeFunctionReference<"query">("identity:getMembershipByClerkId");
 const getMembershipByOrgAndUserRef = makeFunctionReference<"query">("identity:getMembershipByOrgAndUser");
 const upsertDemoProspectRef = makeFunctionReference<"mutation">("sessions:upsertDemoProspect");
@@ -204,6 +210,37 @@ export async function createTraineeProfile(args: {
   const client = getClient();
   return client.mutation(createTraineeProfileRef, args as never) as Promise<{
     traineeId: string;
+    created: boolean;
+  }>;
+}
+
+export async function getOrCreateSelfTraineeProfile(args: {
+  orgId: string;
+  clerkUserId: string;
+  clerkMembershipId?: string;
+  name: string;
+  email: string;
+  availableProductTypes?: Array<"life" | "medicare_lead" | "medicare_event">;
+  difficultyLevel: string;
+  numObjections: number;
+  expectedRebuttals: string[];
+  inviteTokenHash: string;
+}) {
+  const client = getClient();
+  return client.mutation(getOrCreateSelfTraineeProfileRef, args as never) as Promise<{
+    traineeId: string;
+    orgId: string;
+    trainerId: string;
+    clerkUserId: string;
+    clerkMembershipId: string | null;
+    name: string;
+    email: string;
+    availableProductTypes: Array<"life" | "medicare_lead" | "medicare_event">;
+    difficultyLevel: string;
+    numObjections: number;
+    expectedRebuttals: string[];
+    status: string;
+    lastActiveAt: number | null;
     created: boolean;
   }>;
 }
@@ -1171,6 +1208,13 @@ export async function getIdentityUserByClerkId(args: { clerkUserId: string }) {
 export async function getIdentityOrganizationByClerkId(args: { clerkOrgId: string }) {
   const client = getClient();
   return client.query(getOrganizationByClerkIdRef, args as never);
+}
+
+export async function findActiveOrganizationsByClerkIdSuffix(args: { suffix: string }) {
+  const client = getClient();
+  return client.query(findActiveOrganizationsByClerkIdSuffixRef, args as never) as Promise<
+    Array<{ clerkOrgId: string; name: string }>
+  >;
 }
 
 export async function getIdentityMembershipByClerkId(args: { clerkMembershipId: string }) {

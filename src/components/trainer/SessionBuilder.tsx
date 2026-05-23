@@ -76,6 +76,9 @@ type RecentSession = {
 };
 
 type SessionBuilderProps = {
+  selfOption: {
+    name: string;
+  };
   trainees: TraineeOption[];
   objectionLibrary: ObjectionLibrary;
   rebuttalGuides: Record<string, string>;
@@ -96,28 +99,34 @@ function formatDateTime(timestamp: number | null) {
 }
 
 export default function SessionBuilder({
+  selfOption,
   trainees,
   objectionLibrary,
   rebuttalGuides,
   recentSessions,
 }: SessionBuilderProps) {
   const router = useRouter();
-  const [selectedTraineeId, setSelectedTraineeId] = useState(trainees[0]?.traineeId ?? "");
-  const initialProductType = trainees[0]?.availableProductTypes[0] ?? "life";
+  const selfTargetId = "__self__";
+  const [selectedTraineeId, setSelectedTraineeId] = useState(selfTargetId);
+  const initialProductType = "life";
   const [productType, setProductType] = useState<TrainingProductType>(initialProductType);
   const selectedTrainee = useMemo(
     () => trainees.find((item) => item.traineeId === selectedTraineeId) ?? null,
     [trainees, selectedTraineeId],
   );
+  const isSelfSession = selectedTraineeId === selfTargetId;
   const allowedProductTypes = useMemo(
     () => {
+      if (isSelfSession) {
+        return TRAINING_PRODUCT_OPTIONS.map((option) => option.productType);
+      }
       const allowed =
         selectedTrainee?.availableProductTypes.filter((item) =>
           TRAINING_PRODUCT_OPTIONS.some((option) => option.productType === item),
         ) ?? [];
       return allowed.length > 0 ? allowed : (["life"] as TrainingProductType[]);
     },
-    [selectedTrainee],
+    [isSelfSession, selectedTrainee],
   );
   const productOptions = useMemo(
     () => TRAINING_PRODUCT_OPTIONS.filter((option) => allowedProductTypes.includes(option.productType)),
@@ -146,7 +155,12 @@ export default function SessionBuilder({
   } | null>(null);
   const [evaluationActionSessionKey, setEvaluationActionSessionKey] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Existing builder state is synchronized from selected controls. */
   useEffect(() => {
+    if (isSelfSession) {
+      return;
+    }
+
     if (!selectedTrainee) {
       setSelectedObjections([]);
       return;
@@ -161,10 +175,15 @@ export default function SessionBuilder({
 
     const fallbackCount = Math.max(1, Math.min(selectedTrainee.numObjections, availableObjections.length));
     setSelectedObjections(availableObjections.slice(0, fallbackCount));
-  }, [allowedProductTypes, availableObjections, productType, selectedTrainee]);
+  }, [allowedProductTypes, availableObjections, isSelfSession, productType, selectedTrainee]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleTraineeChange(nextTraineeId: string) {
     setSelectedTraineeId(nextTraineeId);
+    if (nextTraineeId === selfTargetId) {
+      setDifficulty("D2");
+      return;
+    }
     const nextTrainee = trainees.find((item) => item.traineeId === nextTraineeId);
     if (nextTrainee) {
       const nextProductType = nextTrainee.availableProductTypes.includes(productType)
@@ -207,7 +226,7 @@ export default function SessionBuilder({
 
   async function handleAssign(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedTrainee) {
+    if (!isSelfSession && !selectedTrainee) {
       return;
     }
 
@@ -219,10 +238,11 @@ export default function SessionBuilder({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          traineeId: selectedTrainee.traineeId,
+          target: isSelfSession ? "self" : undefined,
+          traineeId: isSelfSession ? undefined : selectedTrainee?.traineeId,
           productType,
           difficulty,
-          selectedObjections,
+          selectedObjections: isSelfSession ? undefined : selectedObjections,
         }),
       });
 
@@ -235,7 +255,7 @@ export default function SessionBuilder({
         throw new Error(payload.error ?? "Unable to assign session.");
       }
 
-      setStatus(`Assigned session ${payload.sessionKey} to ${selectedTrainee.name}.`);
+      setStatus(`Assigned session ${payload.sessionKey} to ${isSelfSession ? selfOption.name : selectedTrainee?.name}.`);
       router.refresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to assign session.");
@@ -332,6 +352,7 @@ export default function SessionBuilder({
           <label className="field">
             Trainee
             <select value={selectedTraineeId} onChange={(event) => handleTraineeChange(event.target.value)}>
+              <option value={selfTargetId}>Myself ({selfOption.name})</option>
               {trainees.map((trainee) => (
                 <option value={trainee.traineeId} key={trainee.traineeId}>
                   {trainee.name}
@@ -364,11 +385,18 @@ export default function SessionBuilder({
 
           <div className="metric">
             <span>Objections selected</span>
-            <strong>{selectedObjections.length}</strong>
-            <span className="disclaimer">Count is derived from the ordered list below.</span>
+            <strong>{isSelfSession ? "Auto" : selectedObjections.length}</strong>
+            <span className="disclaimer">
+              {isSelfSession ? "Chosen automatically from difficulty." : "Count is derived from the ordered list below."}
+            </span>
           </div>
         </div>
 
+        {isSelfSession ? (
+          <p className="disclaimer">
+            Self sessions choose the number of objections and the objection sequence automatically after you pick a difficulty.
+          </p>
+        ) : (
         <div className="grid">
           <div className="metric" style={{ alignItems: "stretch" }}>
             <span>Available objections</span>
@@ -416,18 +444,22 @@ export default function SessionBuilder({
             </div>
           </div>
         </div>
+        )}
 
         <div className="hero-actions">
           <button
             className="button"
             type="submit"
-            disabled={loading || !selectedTrainee || selectedObjections.length === 0 || !selectedTrainee.clerkUserId}
+            disabled={
+              loading ||
+              (!isSelfSession && (!selectedTrainee || selectedObjections.length === 0 || !selectedTrainee.clerkUserId))
+            }
           >
-            {loading ? "Assigning..." : "Assign session"}
+            {loading ? "Assigning..." : isSelfSession ? "Create my session" : "Assign session"}
           </button>
         </div>
 
-        {!selectedTrainee?.clerkUserId ? (
+        {!isSelfSession && !selectedTrainee?.clerkUserId ? (
           <p className="disclaimer">
             This trainee&apos;s sign-in access is still syncing. Ask them to open their dashboard once, then try assigning the
             session again.

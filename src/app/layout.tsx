@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Sora, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Analytics } from "@vercel/analytics/next";
 import SiteNav from "@/components/SiteNav";
 import "./globals.css";
 
@@ -33,7 +32,6 @@ export default function RootLayout({
         <body className={`${sora.variable} ${plexMono.variable}`}>
           <SiteNav />
           {children}
-          <Analytics />
         </body>
       </html>
     </ClerkProvider>

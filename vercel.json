@@ -5,6 +5,14 @@
     {
       "path": "/api/internal/webhook-lag",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/internal/admin-alerts",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/internal/admin-weekly-report",
+      "schedule": "0 14 * * 1"
     }
   ]
 }

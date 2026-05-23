@@ -1,0 +1,45 @@
+{
+  "cookies": [
+    {
+      "name": "__cf_bm",
+      "value": "v51VlB.HJI80AdMfXh4PuDvDLzSX5lkNrs3_V0xdco8-1778685287-1.0.1.1-I7VdTTC4b5dpbciuj6K654lTiF9oxvMiHuiuAq4ydX4Trw30iOnNPLc27AD5furibLE3JzAs_oopKh_69gkVHlO8y2z9a6ILjV5dFQikOHA",
+      "domain": ".intent-mako-87.clerk.accounts.dev",
+      "path": "/",
+      "expires": 1778687087.117253,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cfuvid",
+      "value": "SuSUtMluKXQkQ3pmtM0pffz697yw3ryFxKAneg3IQvg-1778685287202-0.0.1.1-604800000",
+      "domain": ".intent-mako-87.clerk.accounts.dev",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__clerk_redirect_count",
+      "value": "3",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1778685289.503949,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__session",
+      "value": "sess_3Dfu8ZkVaX56XUELOkWuYRqQwD7",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
