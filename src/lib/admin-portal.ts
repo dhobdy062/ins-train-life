@@ -29,6 +29,26 @@ function getAdminEmailAllowlist() {
   return new Set(combined);
 }
 
+export function getAdminNotificationEmails() {
+  const configured =
+    process.env.ADMIN_ALERT_EMAILS ?? process.env.OPS_ALERT_EMAILS ?? process.env.ADMIN_PORTAL_EMAILS ?? process.env.ADMIN_EMAILS ?? "";
+  const parsed = configured
+    .split(",")
+    .map((entry) => normalizeEmail(entry))
+    .filter((entry): entry is string => Boolean(entry));
+
+  return parsed.length > 0 ? parsed : DEFAULT_ADMIN_EMAILS;
+}
+
+export function getWeeklyAdminReportEmail() {
+  const configured = normalizeEmail(process.env.ADMIN_WEEKLY_REPORT_EMAIL);
+  if (configured) {
+    return configured;
+  }
+
+  return getAdminNotificationEmails()[0] ?? DEFAULT_ADMIN_EMAILS[0];
+}
+
 export function resolvePrimaryEmailAddress(user: UserWithEmails) {
   if (!user) {
     return null;
