@@ -32,7 +32,7 @@
 .tab:focus-visible {
   border-color: rgba(137, 226, 193, 0.35);
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: #fff;
   transform: translateX(2px);
   outline: none;
 }

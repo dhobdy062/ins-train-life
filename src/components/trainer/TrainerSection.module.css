@@ -13,7 +13,7 @@
   display: grid;
   gap: 16px;
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(18px);
+  
 }
 
 .headerRow {
@@ -88,7 +88,7 @@
 
 .primaryButton {
   background: #89e2c1;
-  color: #07080b;
+  color: #fff;
   box-shadow: 0 12px 30px rgba(137, 226, 193, 0.2);
 }
 

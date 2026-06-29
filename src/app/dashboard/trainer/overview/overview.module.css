@@ -21,7 +21,7 @@
   display: grid;
   gap: 12px;
   box-shadow: 0 22px 58px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(18px);
+  
 }
 
 .kpiCard::after {
@@ -97,7 +97,7 @@
   display: grid;
   gap: 18px;
   box-shadow: 0 22px 58px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(18px);
+  
 }
 
 .panelHead {
@@ -117,7 +117,7 @@
 .actionButton {
   border-radius: 999px;
   background: #89e2c1;
-  color: #07080b;
+  color: #fff;
   padding: 11px 18px;
   font-size: 0.95rem;
   font-weight: 800;
@@ -149,7 +149,7 @@
   place-items: center;
   font-size: 0.78rem;
   font-weight: 800;
-  color: #07080b;
+  color: #fff;
   background: #f0b36a;
 }
 
