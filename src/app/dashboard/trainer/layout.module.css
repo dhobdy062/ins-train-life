@@ -1,18 +1,18 @@
 .shell {
-  --trainer-bg: #0c0e13;
-  --trainer-bg-deep: #07080b;
-  --trainer-surface: rgba(255, 255, 255, 0.08);
-  --trainer-surface-strong: rgba(255, 255, 255, 0.13);
-  --trainer-stroke: rgba(255, 255, 255, 0.14);
-  --trainer-stroke-strong: rgba(137, 226, 193, 0.34);
-  --trainer-ink: #f7f7f2;
-  --trainer-muted: #c6c7c0;
-  --trainer-soft: rgba(247, 247, 242, 0.72);
-  --trainer-accent: #89e2c1;
-  --trainer-accent-2: #f0b36a;
-  --trainer-danger: #ff8a7a;
-  --trainer-shadow: 0 24px 80px rgba(7, 8, 11, 0.55);
-  --trainer-shadow-soft: 0 16px 44px rgba(7, 8, 11, 0.36);
+  --trainer-bg: #f6f2ea;
+  --trainer-bg-deep: #ffffff;
+  --trainer-surface: #ffffff;
+  --trainer-surface-strong: #fcfaf7;
+  --trainer-stroke: #e9e2d6;
+  --trainer-stroke-strong: #d6c6ad;
+  --trainer-ink: #1f1a14;
+  --trainer-muted: #6b6256;
+  --trainer-soft: #7c7266;
+  --trainer-accent: #8b4513;
+  --trainer-accent-2: #a86a3d;
+  --trainer-danger: #c04030;
+  --trainer-shadow: 0 18px 44px rgba(49, 33, 15, 0.09);
+  --trainer-shadow-soft: 0 10px 28px rgba(49, 33, 15, 0.08);
 
   min-height: 100vh;
   display: grid;
@@ -37,7 +37,7 @@
     rgba(12, 14, 19, 0.92);
   border-right: 1px solid var(--trainer-stroke);
   box-shadow: 18px 0 48px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(18px);
+  
 }
 
 .brandBlock {
@@ -123,7 +123,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  backdrop-filter: blur(18px);
+  
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
@@ -191,7 +191,7 @@
   display: grid;
   gap: 10px;
   box-shadow: var(--trainer-shadow);
-  backdrop-filter: blur(18px);
+  
 }
 
 .authCard h3 {
@@ -210,7 +210,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--trainer-accent);
-  color: #07080b;
+  color: #fff;
   padding: 11px 18px;
   font-size: 0.9rem;
   font-weight: 800;
@@ -222,7 +222,7 @@
   border: 1px solid var(--trainer-stroke);
   border-radius: 20px;
   box-shadow: var(--trainer-shadow-soft);
-  backdrop-filter: blur(18px);
+  
 }
 
 .contentArea :global(.panel) {
@@ -288,7 +288,7 @@
 .contentArea :global(.button) {
   border-radius: 999px;
   background: var(--trainer-accent);
-  color: #07080b;
+  color: #fff;
   box-shadow: 0 12px 28px rgba(137, 226, 193, 0.16);
 }
 
